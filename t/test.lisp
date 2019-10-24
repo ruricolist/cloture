@@ -38,3 +38,7 @@
 
 (test qq
   (is (equal '(:x) (eval (clj "`(~:X)")))))
+
+(test reader-conditional
+  (is (null (clj "#?(:clj 1)")))
+  (is (eql 1 (clj "#?(:cl 1 :clj 2)"))))

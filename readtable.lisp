@@ -24,7 +24,7 @@
 (defun read-conditional (stream char arg)
   (declare (ignore char arg))
   (let ((forms (read stream)))
-    (values (getf forms :cl))))
+    (values (getf forms :|cl|))))
 
 (defreadtable cloture
   (:fuze :standard :fare-quasiquote-mixin)
