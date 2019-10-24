@@ -72,12 +72,3 @@
     (symbol obj)
     (seq `(sequence ,@(convert 'list obj))))
   obj)
-
-(defun read-clojure (stream
-                     &key (eof-error-p t)
-                          eof-value
-                          recursive)
-  (let ((*readtable* (find-readtable 'cloture))
-        (*package* (find-package "user"))
-        (*read-default-float-format* 'double-float))
-    (read stream eof-error-p eof-value recursive)))
