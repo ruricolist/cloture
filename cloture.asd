@@ -10,4 +10,4 @@
                (:file "cloture")
                (:file "readtable")
                (:module "clojure"
-                :components ((:file "core.lisp")))))
+                :components ((:file "core")))))
