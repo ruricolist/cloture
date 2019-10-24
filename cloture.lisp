@@ -65,10 +65,75 @@
 (defun truthy? (x)
   (not (falsy? x)))
 
+(defun dissect-seq-pattern (pats)
+  (mvlet* ((all pats
+            (match (last pats 2)
+              ((list :|as| all)
+               (values all (butlast pats 2)))
+              (otherwise (values (string-gensym 'all) pats))))
+           (rest pats
+            (match (last pats 2)
+              ((list '|clojure.core|:& rest)
+               (values rest (butlast pats 2)))
+              (otherwise (values nil pats)))))
+    (values pats rest all)))
+
+(defun fset-seq-pattern (pats)
+  (multiple-value-bind (pats rest all)
+      (dissect-seq-pattern pats)
+    (let ((len (length pats)))
+      `(trivia:guard1 (,all :type seq)
+                      ;; Excess elements are just bound to nil.
+                      (and (typep ,all 'seq)
+                           (>= (size ,all) ,len))
+                      ,@(loop for pat in pats
+                              for i from 0
+                              collect `(lookup ,all ,i)
+                              collect pat)
+                      ,@(and rest
+                             `((convert 'list (fset:subseq ,all ,(length pats)))
+                               ,rest))))))
+
+(defpattern fset-seq (&rest pats)
+  (fset-seq-pattern pats))
+
+(defpattern clojuresque-list (&rest pats)
+  (multiple-value-bind (pats rest all)
+      (dissect-seq-pattern pats)
+    (let* ((pat
+             (if rest
+                 `(list* ,@pats ,rest)
+                 `(list ,@pats)))
+           (pat
+             (if all
+                 `(and ,all ,pat)
+                 pat)))
+      pat)))
+
+(defpattern fset-map (alist)
+  (let* ((as (assocdr :|as| alist))
+         (alist (remove :|as| alist :key #'car))
+         (it (or as (string-gensym 'it))))
+    `(guard1 ,it
+             (typep ,it 'map)
+             ,@(loop for (pat . key) in alist
+                     collect `(lookup ,it ,key)
+                     collect pat))))
+
+(defun map->alist (map)
+  (collecting
+    (do-map (k v map)
+      (collect (cons k v)))))
+
 ;;; TODO
 (defun obj->pattern (obj)
   "Convert OBJ into a Trivia destructuring pattern."
   (etypecase obj
     (symbol obj)
-    (seq `(sequence ,@(convert 'list obj))))
-  obj)
+    (seq
+     (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
+       ;; TODO vector, sequence
+       `(or (fset-seq ,@pats)
+            (clojuresque-list ,@pats))))
+    (map
+     `(fset-map ,(map->alist obj)))))

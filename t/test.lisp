@@ -1,6 +1,6 @@
 (defpackage :cloture.test
   (:use :cl :alexandria :serapeum :fiveam :cloture :named-readtables)
-  (:import-from :fset :equal? :seq)
+  (:import-from :fset :equal? :seq :convert)
   (:shadowing-import-from :fset :map))
 (in-package :cloture.test)
 
@@ -13,6 +13,9 @@
 (defun clj (string)
   (with-input-from-string (in string)
     (read-clojure in)))
+
+(defun clj! (s)
+  (eval (clj s)))
 
 (test read-vector
   (is (equal? (seq 1 2 3 :x)
@@ -41,3 +44,27 @@
 (test reader-conditional
   (is (null (clj "#?(:clj 1)")))
   (is (eql 1 (clj "#?(:cl 1 :clj 2)"))))
+
+(test destructure
+  (is (equal '(1 2 3) (clj! "(let ([x y z] [1 2 3]) (list x y z))")))
+  (is (equal '(1 2 3) (clj! "(let ([x y z] '(1 2 3)) (list x y z))")))
+
+  (is (equal '(1 2 3)
+             (convert 'list
+                      (clj! "(let ([_ _ _ :as all] [1 2 3]) all)"))))
+  (is (equal '(1 2 3)
+             (convert 'list
+                      (clj! "(let ([_ _ _ :as all] '(1 2 3)) all)"))))
+
+  (is (equal '(2 3) (clj! "(let ([_ & ys] [1 2 3]) ys)")))
+  (is (equal '(2 3) (clj! "(let ([_ & ys] '(1 2 3)) ys)")))
+
+  (is (equal '(1 2 3)
+             (convert 'list
+                      (clj! "(let ([_ & ys :as all] [1 2 3]) all)"))))
+  (is (equal '(1 2 3)
+             (convert 'list
+                      (clj! "(let ([_ & ys :as all] '(1 2 3)) all)"))))
+
+  (is (equal '(1 2 3 4 5 6)
+             (clj! "(let ([[a] [[b]] c [x y z]] [[1] [[2]] 3 [4 5 6]]) (list a b c x y z))"))))

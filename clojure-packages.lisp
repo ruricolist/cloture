@@ -24,7 +24,9 @@
 
    "cond" "cond->"
 
-   "merge"))
+   "merge"
+
+   "list" "list*"))
 
 (defpackage "user"
   (:use "clojure.core"))

@@ -5,6 +5,13 @@
 (define-symbol-macro |clojure.core|:|false| nil)
 (define-symbol-macro |clojure.core|:|nil| nil)
 
+(defmacro defun1 (name args &body body)
+  "Define NAME in both the function and value namespaces."
+  `(progn
+     (defun ,name ,args ,@body)
+     (def ,name #',name)
+     ',name))
+
 (defmacro |clojure.core|:|quote| (x)
   `(quote ,x))
 
@@ -70,3 +77,10 @@
   `(error ,expr))
 
 ;; (defmacro |clojure.core|:|try| (&body body))
+
+(defun1 |clojure.core|:|list| (&rest items)
+  items)
+
+(defun1 |clojure.core|:|list*| (&rest items)
+  ;; TODO non-lists
+  (apply #'list* items))

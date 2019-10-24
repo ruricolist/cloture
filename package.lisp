@@ -8,7 +8,8 @@
     #:with
     #:empty-map
     #:convert
-    #:seq)
+    #:seq
+    #:size)
   (:shadow :@)
   (:shadowing-import-from #:fset #:map)
   (:export #:cloture #:meta-ref
