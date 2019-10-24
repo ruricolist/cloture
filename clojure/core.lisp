@@ -51,3 +51,15 @@
 
 (defmacro |clojure.core:var| (symbol)
   `(quote ,symbol))
+
+(defmacro |clojure.core:loop| (binds &body body)
+  `(|clojure.core:let| ,binds
+                       (nlet ((%recur (data)))
+                           ,@body)))
+
+(defmacro |clojure.core:recur| ())
+
+(defmacro |clojure.core:throw| (expr)
+  `(error ,expr))
+
+(defmacro |clojure.core:try| (&body body))

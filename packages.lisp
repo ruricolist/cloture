@@ -13,7 +13,8 @@
    "monitor-enter" "monitor-exit"
    ;; "Java" interop.
    "set!" "new" "."
-   ;; Is this right?
+   ;; Needed for "throw".
+   "catch" "finally"
    "true" "false" "nil"
    "def" "defn"
    "fn"
