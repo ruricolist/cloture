@@ -18,7 +18,8 @@
   (declare (ignore char))
   (let ((meta (read stream nil nil t))
         (value (read stream nil nil t)))
-    (merge-meta value (ensure-meta meta))))
+    (merge-meta! value (ensure-meta meta))
+    value))
 
 (defun read-conditional (stream char arg)
   (declare (ignore char arg))
@@ -41,4 +42,4 @@
   (:syntax-from :standard #\Space #\,)
   ;; Reader conditionals.
   (:dispatch-macro-char #\# #\? 'read-conditional)
-  (:case :invert))
+  (:case :preserve))

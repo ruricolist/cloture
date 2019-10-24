@@ -18,7 +18,6 @@
    "true" "false" "nil"
    "def" "defn"
    "fn"
-   "let" "var"
 
    "loop" "recur"
    "throw"
@@ -26,3 +25,6 @@
    "cond" "cond->"
 
    "merge"))
+
+(defpackage "user"
+  (:use "clojure.core"))

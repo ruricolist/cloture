@@ -1,19 +1,20 @@
 (in-package #:cloture)
+(in-readtable :standard)
 
-(define-symbol-macro |clojure.core:true| t)
-(define-symbol-macro |clojure.core:false| nil)
-(define-symbol-macro |clojure.core:nil| nil)
+(define-symbol-macro |clojure.core|:|true| t)
+(define-symbol-macro |clojure.core|:|false| nil)
+(define-symbol-macro |clojure.core|:|nil| nil)
 
-(defmacro |clojure.core:quote| (x)
+(defmacro |clojure.core|:|quote| (x)
   `(quote ,x))
 
-(defmacro |clojure.core:if| (test then &optional (else |clojure.core:nil|))
+(defmacro |clojure.core|:|if| (test then &optional (else |clojure.core|:|nil|))
   `(if (truthy? ,test) ,then ,else))
 
-(defmacro |clojure.core:do| (&rest exprs)
+(defmacro |clojure.core|:|do| (&rest exprs)
   `(progn ,@exprs))
 
-(defmacro |clojure.core:def| (symbol &body body)
+(defmacro |clojure.core|:|def| (symbol &body body)
   (mvlet* ((docstring expr
             (ematch body
               ((list (and docstring (type string))
@@ -21,9 +22,9 @@
                (values docstring expr))
               ((list expr)
                (values nil expr))))
-           (dynamic? (meta-ref symbol :dynamic))
-           (private? (meta-ref symbol :private))
-           (meta-doc (meta-ref symbol :doc))
+           (dynamic? (meta-ref symbol :|dynamic|))
+           (private? (meta-ref symbol :|private|))
+           (meta-doc (meta-ref symbol :|doc|))
            (doc (or docstring meta-doc)))
     `(progn
        ,(if dynamic?
@@ -33,9 +34,15 @@
                ,@(unsplice doc)))
        ,@(unless private?
            (require-body-for-splice
-            `((export ',symbol)))))))
+            `((export ',symbol))))
+       ',symbol)))
 
-(defmacro |clojure.core:let| (bindings &body body)
+(defmacro |clojure.core|:|defn| (name &body body)
+  `(progn (defun ,name (&rest args)
+            (apply (fn ,@body) args))
+          (def ,name #',name)))
+
+(defmacro |clojure.core|:|let| (bindings &body body)
   ;; TODO destructuring
   (let* ((bindings (convert 'list bindings))
          (binds (batches bindings 2 :even t))
@@ -47,19 +54,19 @@
        (,patterns
         ,@body))))
 
-(defmacro |clojure.core:fn| ())
+(defmacro |clojure.core|:|fn| ())
 
-(defmacro |clojure.core:var| (symbol)
+(defmacro |clojure.core|:|var| (symbol)
   `(quote ,symbol))
 
-(defmacro |clojure.core:loop| (binds &body body)
-  `(|clojure.core:let| ,binds
-                       (nlet ((%recur (data)))
-                           ,@body)))
+(defmacro |clojure.core|:|loop| (binds &body body)
+  `(|clojure.core|:|let| ,binds
+                  (nlet ((%recur (data)))
+                      ,@body)))
 
-(defmacro |clojure.core:recur| ())
+(defmacro |clojure.core|:|recur| ())
 
-(defmacro |clojure.core:throw| (expr)
+(defmacro |clojure.core|:|throw| (expr)
   `(error ,expr))
 
-(defmacro |clojure.core:try| (&body body))
+;; (defmacro |clojure.core|:|try| (&body body))

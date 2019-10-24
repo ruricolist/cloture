@@ -1,4 +1,5 @@
 (in-package #:cloture)
+(in-readtable :standard)
 
 (deftype no-meta ()
   "Type for objects that don't allow metadata."
@@ -43,14 +44,15 @@
           maps
           :initial-value (empty-map)))
 
-(defun merge-meta (obj map)
+(defun merge-meta! (obj map)
   (setf (meta obj)
         (merge-maps (or (meta obj)
                         (empty-map))
                     map)))
 
 (defun meta-ref (obj key)
-  (lookup (meta obj) key))
+  (let ((map (meta obj)))
+    (and map (lookup map key))))
 
 (defun (setf meta-ref) (value obj key)
   (synchronized (obj)

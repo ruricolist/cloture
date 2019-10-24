@@ -10,4 +10,5 @@
     #:convert
     #:seq)
   (:shadow :@)
-  (:shadowing-import-from #:fset #:map))
+  (:shadowing-import-from #:fset #:map)
+  (:export #:cloture #:meta-ref))
