@@ -11,9 +11,8 @@
   (run! 'cloture))
 
 (defun clj (string)
-  (let ((*readtable* (find-readtable 'cloture))
-        (*package* (find-package "user")))
-    (read-from-string string)))
+  (with-input-from-string (in string)
+    (read-clojure in)))
 
 (test read-vector
   (is (equal? (seq 1 2 3 :x)

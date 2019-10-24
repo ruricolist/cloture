@@ -11,4 +11,5 @@
     #:seq)
   (:shadow :@)
   (:shadowing-import-from #:fset #:map)
-  (:export #:cloture #:meta-ref))
+  (:export #:cloture #:meta-ref
+           #:read-clojure))
