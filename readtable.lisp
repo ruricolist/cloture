@@ -20,6 +20,13 @@
         (value (read stream nil nil t)))
     (merge-meta value (ensure-meta meta))))
 
+(defun read-conditional (stream char arg)
+  (declare (ignore char arg))
+  (let ((forms (read stream)))
+    (values
+     (or (getf forms :cl)
+         (error "Nothing for CL here: ~a" forms)))))
+
 (defreadtable cloture
   (:fuze :standard :fare-quasiquote-mixin)
   ;; Metadata.
@@ -34,4 +41,6 @@
   (:syntax-from :fare-quasiquote-mixin #\, #\~)
   ;; , is whitespace.
   (:syntax-from :standard #\Space #\,)
+  ;; Reader conditionals.
+  (:dispatch-macro-char #\# #\? 'read-conditional)
   (:case :invert))
