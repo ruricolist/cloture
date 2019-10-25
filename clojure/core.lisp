@@ -47,7 +47,7 @@
 (defmacro |clojure.core|:|defn| (name &body body)
   `(progn (defun ,name (&rest args)
             (apply (fn ,@body) args))
-          (def ,name #',name)))
+          (define-symbol-macro ,name #',name)))
 
 (defmacro |clojure.core|:|let| (bindings &body body)
   ;; TODO destructuring
