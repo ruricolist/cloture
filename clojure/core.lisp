@@ -40,7 +40,13 @@ That's defun-1 as in Lisp-1."
 (defmacro #_do (&rest exprs)
   `(progn ,@exprs))
 
-(defmacro #_def (symbol &body body)
+;;; Here's how dynamic variables work. In Clojure `let' always
+;;; produces lexical variables, only `binding' can rebind variables.
+;;; So "dynamic" variables are defined as a symbol macro with a
+;;; backing Lisp special (the "var"). Using `let' just rebinds the
+;;; symbol macro. But `binding' expands the symbol macro.
+
+(defmacro #_def (name &body body)
   (mvlet* ((docstring expr
             (ematch body
               ((list (and docstring (type string))
@@ -48,20 +54,23 @@ That's defun-1 as in Lisp-1."
                (values docstring expr))
               ((list expr)
                (values nil expr))))
-           (dynamic? (meta-ref symbol :|dynamic|))
-           (private? (meta-ref symbol :|private|))
-           (meta-doc (meta-ref symbol :|doc|))
+           (dynamic? (meta-ref name :|dynamic|))
+           (private? (meta-ref name :|private|))
+           (meta-doc (meta-ref name :|doc|))
            (doc (or docstring meta-doc)))
     `(progn
        ,(if dynamic?
-            `(defparameter ,symbol ,expr
-               ,@(unsplice doc))
-            `(def ,symbol ,expr
+            (let ((backing-var (symbolicate '*clojure-var-for- name)))
+              `(progn
+                 (defparameter ,backing-var ,expr
+                   ,@(unsplice doc))
+                 (define-symbol-macro ,name ,backing-var)))
+            `(def ,name ,expr
                ,@(unsplice doc)))
-       ,@(unless private?
-           (require-body-for-splice
-            `((export ',symbol))))
-       ',symbol)))
+       ,@(unsplice
+          (unless private?
+            `(export ',name)))
+       ',name)))
 
 (defmacro #_defn (name &body body)
   (mvlet ((docstring body (parse-docs body)))
@@ -88,9 +97,28 @@ That's defun-1 as in Lisp-1."
            ,@body))))))
 
 (defmacro #_let (bindings &body body)
+  "Clojure let.
+Bear in mind Clojure let works like Lisp `let*' (bindings are
+nested)."
   (let* ((bindings (convert 'list bindings)))
     `(clojure-let ,bindings
        ,@body)))
+
+(defmacro #_binding (bindings &body body &environment env)
+  (let* ((bindings (convert 'list bindings))
+         (binds (batches bindings 2 :even t))
+         (symbols (mapcar #'first binds))
+         (exprs (mapcar #'second binds))
+         (vars (mapcar (partial #'lookup-var env) symbols)))
+    ;; NB Clojure `binding' works in parallel (unlike Clojure `let').
+    `(let ,(mapcar #'list vars exprs)
+       ,@body)))
+
+(defun lookup-var (env var)
+  (let ((exp (macroexpand-1 (assure symbol var) env)))
+    (when (eql exp var)
+      (error "Not a var: ~a" var))
+    (assure symbol exp)))
 
 (defmacro #_fn (&body body)
   (mvlet* ((docstr body (parse-docs body))

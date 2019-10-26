@@ -97,3 +97,14 @@
                         (recur (dec cnt) (* acc cnt)))))))
     (= (funcall fact 10)
        (factorial 10))))
+
+(let ((*package* (find-package "user")))
+  #_(def ^:dynamic *foo* 0)
+  #_(defn get-foo [] *foo*))
+
+(test binding
+  (is (= 0 #_*foo*))
+  (is (= 1 #_(let [*foo* 1] *foo*)))
+  (is (= 0 #_(let [*foo* 1] (get-foo))))
+  (is (= 1 #_(binding [*foo* 1] *foo*)))
+  (is (= 1 #_(binding [*foo* 1] (get-foo)))))
