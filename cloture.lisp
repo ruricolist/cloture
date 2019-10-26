@@ -83,15 +83,14 @@
       (dissect-seq-pattern pats)
     (let ((len (length pats)))
       `(trivia:guard1 (,all :type seq)
-                      ;; Excess elements are just bound to nil.
-                      (and (typep ,all 'seq)
-                           (>= (size ,all) ,len))
+                      ;; Missing or excess elements are just bound to nil.
+                      (typep ,all 'seq)
                       ,@(loop for pat in pats
                               for i from 0
                               collect `(lookup ,all ,i)
                               collect pat)
                       ,@(and rest
-                             `((convert 'list (fset:subseq ,all ,(length pats)))
+                             `((convert 'list (fset:subseq ,all ,len))
                                ,rest))))))
 
 (defpattern fset-seq (&rest pats)

@@ -5,8 +5,10 @@
     #:< #:>= #:<= #:+ #:- #:-
     #:quote)
   (:export
-   #:> #:< #:>= #:<= #:+ #:- #:-
-   #:& #:->
+   #:> #:< #:>= #:<= #:+ #:- #:- #:* #:/
+   #:&
+   #:-> #:->>
+
    ;; Special forms.
    "def" "if" "do" "let" "quote" "var" "fn"
    "loop" "recur" "throw" "try"
@@ -15,6 +17,8 @@
    "set!" "new" "."
    ;; Needed for "throw".
    "catch" "finally"
+
+   "if-not"
    "true" "false" "nil"
    "def" "defn"
    "fn"
@@ -26,7 +30,25 @@
 
    "merge"
 
-   "list" "list*"))
+   "list" "list*"
+
+   "ns" "in-ns"
+
+   "and" "or" "when"
+
+   "defmacro" "&env" "&form"
+
+   "meta"
+
+   "zero?" "neg?" "pos?"
+   "dec" "inc"
+
+   "apply" "str"
+
+   "contains?"
+
+
+   ))
 
 (defpackage "user"
   (:use "clojure.core"))

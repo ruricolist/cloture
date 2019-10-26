@@ -61,10 +61,40 @@
 
   (is (equal '(1 2 3)
              (convert 'list
-                      (clj! "(let ([_ & ys :as all] [1 2 3]) all)"))))
+                      (clj! "(let ([_ & _ :as all] [1 2 3]) all)"))))
   (is (equal '(1 2 3)
              (convert 'list
-                      (clj! "(let ([_ & ys :as all] '(1 2 3)) all)"))))
+                      (clj! "(let ([_ & _ :as all] '(1 2 3)) all)"))))
 
   (is (equal '(1 2 3 4 5 6)
              (clj! "(let ([[a] [[b]] c [x y z]] [[1] [[2]] 3 [4 5 6]]) (list a b c x y z))"))))
+
+(test fn
+  (let ((bar
+          (|clojure.core|:|fn| bar
+                         (#.(seq 'a 'b)
+                            (bar a b 100))
+                         (#.(seq 'a 'b 'c)
+                            (* a b c)))))
+    (is (= 3000 (funcall bar 5 6)))
+    (is (= 60 (funcall bar 5 6 2)))))
+
+(test ->
+  (is (listp (|clojure.core|:-> '((1 2) (3 4)))))
+  (is (= 2 (|clojure.core|:-> '((1 2) (3 4)) first second)))
+  (is (= 3 (|clojure.core|:-> '((1 2) (3 4)) second first))))
+
+(test ->>
+  (= 3/4 (|clojure.core|:->> 5 (+ 3) (/ 2) (- 1))))
+
+(test loop-recur
+  (let ((fact
+          (clj!
+           "(fn [n]
+            (loop [cnt n
+                       acc 1]
+                  (if (zero? cnt)
+                      acc
+                      (recur (dec cnt) (* acc cnt)))))")))
+    (= (funcall fact 10)
+       (factorial 10))))

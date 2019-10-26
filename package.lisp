@@ -12,5 +12,12 @@
     #:size)
   (:shadow :@)
   (:shadowing-import-from #:fset #:map)
-  (:export #:cloture #:meta-ref
-           #:read-clojure))
+  (:export #:cloture                    ;Readtable.
+           #:meta-ref
+           #:read-clojure
+           #:read-clojure-from-string
+           #:slurp-clojure-stream
+           #:slurp-clojure-file
+           #:load-clojure
+           #:compile-clojure
+           #:load-compile-clojure))

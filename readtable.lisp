@@ -1,5 +1,7 @@
 (in-package #:cloture)
 
+(defunit eof)
+
 (defun read-vector (stream char)
   (declare (ignore char))
   (convert 'seq (read-delimited-list #\] stream t)))
@@ -44,11 +46,51 @@
   (:dispatch-macro-char #\# #\? 'read-conditional)
   (:case :preserve))
 
+(defun call/clojure-reader (fn)
+  (let ((*readtable* (find-readtable 'cloture))
+        (*package* (find-package "user"))
+        (*read-default-float-format* 'double-float))
+    (funcall fn)))
+
+(defmacro with-clojure-reader ((&key) &body body)
+  (with-thunk (body)
+    `(call/clojure-reader ,body)))
+
 (defun read-clojure (stream
                      &key (eof-error-p t)
                           eof-value
                           recursive)
-  (let ((*readtable* (find-readtable 'cloture))
-        (*package* (find-package "user"))
-        (*read-default-float-format* 'double-float))
+  (with-clojure-reader ()
     (read stream eof-error-p eof-value recursive)))
+
+(defun read-clojure-from-string (string
+                                 &key (eof-error-p t)
+                                      eof-value
+                                      (start 0)
+                                      end)
+  (with-input-from-string (in string :start start :end end)
+    (read-clojure in :eof-error-p eof-error-p
+                     :eof-value eof-value)))
+
+(defun slurp-clojure-stream (stream)
+  (loop for form
+          = (read-clojure stream
+                          :eof-error-p nil
+                          :eof-value eof)
+        until (eql form eof)
+        collect form))
+
+(defun slurp-clojure-file (file)
+  (with-input-from-file (stream file)
+    (slurp-clojure-stream stream)))
+
+(defun load-clojure (file &rest args)
+  (with-clojure-reader ()
+    (apply #'load file args)))
+
+(defun compile-clojure (file &rest args)
+  (with-clojure-reader ()
+    (apply #'compile-file file args)))
+
+(defun compile-load-clojure (file)
+  (load (compile-clojure file)))
