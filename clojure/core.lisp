@@ -55,6 +55,7 @@ That's defun-1 as in Lisp-1."
 (define-symbol-macro #_*out* *standard-output*)
 (define-symbol-macro #_*err* *standard-error*)
 (define-symbol-macro #_*in* *standard-input*)
+(define-symbol-macro #_*ns* *package*)
 
 (defmacro #_def (name &body body)
   (mvlet* ((docstring expr
