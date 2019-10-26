@@ -333,3 +333,6 @@ nested)."
     `(fbindrec ,(loop for (name . body) in fnspecs
                       collect `(,name (#_fn ,name ,@body)))
        ,@body)))
+
+(defun1 #_gensym (&optional (prefix-string "G__"))
+  (gensym prefix-string))
