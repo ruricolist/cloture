@@ -126,3 +126,8 @@
   (is (equal? (list (seq :x 1)
                     (seq :y 2))
               #_(seq {:X 1 :Y 2}))))
+
+(test letfn
+  (is (= 1
+         #_(letfn [(first [xs] (CL:FIRST xs))]
+                  (first '(1 2 3))))))

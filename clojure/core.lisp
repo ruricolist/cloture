@@ -323,3 +323,9 @@ nested)."
 
 (defun1 #_count (col)
   (size col))
+
+(defmacro #_letfn (fnspecs &body body)
+  (let* ((fnspecs (convert 'list fnspecs)))
+    `(fbindrec ,(loop for (name . body) in fnspecs
+                      collect `(,name (#_fn ,name ,@body)))
+       ,@body)))
