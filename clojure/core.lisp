@@ -230,3 +230,7 @@ That's defun-1 as in Lisp-1."
 
 (defun-1 #_/ (&rest ns)
   (apply #'/ ns))
+
+(defmacro #_locking (x &body body)
+  `(synchronized (,x)
+     ,@body))
