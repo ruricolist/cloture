@@ -262,3 +262,23 @@ nested)."
 (defmacro #_locking (x &body body)
   `(synchronized (,x)
      ,@body))
+
+(defun seq-with (seq idx val)
+  "Like `fset:with', but IDX must be less than the length of SEQ."
+  (if (<= idx (size seq))
+      (with seq idx val)
+      (error "Idx ~a not valid for ~a" idx seq)))
+
+(defun-1 #_assoc (map key val &rest kvs)
+  (let ((with (if (typep map 'seq) #'seq-with
+                  #'fset:with)))
+    (reduce (lambda (map kv)
+              (apply with map kv))
+            (cons (list key val)
+                  (batches kvs 2 :even t))
+            :initial-value map)))
+
+(defun-1 #_dissoc (map key &rest keys)
+  (reduce #'less
+          (cons key keys)
+          :initial-value map))
