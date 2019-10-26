@@ -52,6 +52,10 @@ That's defun-1 as in Lisp-1."
 ;;; backing Lisp special (the "var"). Using `let' just rebinds the
 ;;; symbol macro. But `binding' expands the symbol macro.
 
+(define-symbol-macro #_*out* *standard-output*)
+(define-symbol-macro #_*err* *standard-error*)
+(define-symbol-macro #_*in* *standard-input*)
+
 (defmacro #_def (name &body body)
   (mvlet* ((docstring expr
             (ematch body
