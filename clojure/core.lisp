@@ -1,9 +1,11 @@
 (in-package #:cloture)
-(in-readtable :standard)
+(in-readtable clojure-shortcut)
 
-(define-symbol-macro |clojure.core|:|true| t)
-(define-symbol-macro |clojure.core|:|false| nil)
-(define-symbol-macro |clojure.core|:|nil| nil)
+;;; Note that there are many special cases here that could be compiled more efficiently or macro-expanded more legibly. For now simplicity & uniformity is the goal. In the future, maybe, when there is more code to test against, optimization might be worthwile. Not yet.
+
+(define-symbol-macro #_true t)
+(define-symbol-macro #_false nil)
+(define-symbol-macro #_nil nil)
 
 (eval-always
   (defun parse-docs (body)
@@ -18,26 +20,26 @@
      (define-symbol-macro ,name #',name)
      ',name))
 
-(defun1 |clojure.core|:|meta| (x)
+(defun1 #_meta (x)
   (meta x))
 
-(defun1 |clojure.core|:|zero?| (n) (zerop n))
-(defun1 |clojure.core|:|neg?| (n) (minusp n))
-(defun1 |clojure.core|:|pos?| (n) (plusp n))
+(defun1 #_zero? (n) (zerop n))
+(defun1 #_neg? (n) (minusp n))
+(defun1 #_pos? (n) (plusp n))
 
-(defmacro |clojure.core|:|quote| (x)
+(defmacro #_quote (x)
   `(quote ,x))
 
-(defmacro |clojure.core|:|if| (test then &optional (else |clojure.core|:|nil|))
+(defmacro #_if (test then &optional (else #_nil))
   `(if (truthy? ,test) ,then ,else))
 
-(defmacro |clojure.core|:|if-not| (test then &optional (else |clojure.core|:|nil|))
+(defmacro #_if-not (test then &optional (else #_nil))
   `(if (falsy? ,test) ,then ,else))
 
-(defmacro |clojure.core|:|do| (&rest exprs)
+(defmacro #_do (&rest exprs)
   `(progn ,@exprs))
 
-(defmacro |clojure.core|:|def| (symbol &body body)
+(defmacro #_def (symbol &body body)
   (mvlet* ((docstring expr
             (ematch body
               ((list (and docstring (type string))
@@ -60,12 +62,12 @@
             `((export ',symbol))))
        ',symbol)))
 
-(defmacro |clojure.core|:|defn| (name &body body)
+(defmacro #_defn (name &body body)
   (mvlet ((docstring body (parse-docs body)))
     `(progn (defalias ,name
-              (|clojure.core|:|fn| ,name ,@body)
+              (#_fn ,name ,@body)
               ,@(unsplice docstring))
-            (|clojure.core|:|def| ,name #',name))))
+            (#_def ,name #',name))))
 
 (defmacro clojure-let1 (pattern expr &body body)
   `(ematch ,expr
@@ -73,7 +75,7 @@
 
 (defmacro clojure-let (bindings &body body)
   (match bindings
-    ((list) `(|clojure.core|:|do| ,@body))
+    ((list) `(#_do ,@body))
     ((list* (and pattern (type symbol)) expr bindings)
      `(let ((,pattern ,expr))
         (clojure-let ,bindings
@@ -84,12 +86,12 @@
          (clojure-let ,bindings
            ,@body))))))
 
-(defmacro |clojure.core|:|let| (bindings &body body)
+(defmacro #_let (bindings &body body)
   (let* ((bindings (convert 'list bindings)))
     `(clojure-let ,bindings
        ,@body)))
 
-(defmacro |clojure.core|:|fn| (&body body)
+(defmacro #_fn (&body body)
   (mvlet* ((docstr body (parse-docs body))
            (name
             (and (symbolp (car body))
@@ -114,10 +116,10 @@
            ,@(unsplice docstr)
            ,expr))))
 
-(defmacro |clojure.core|:|var| (symbol)
+(defmacro #_var (symbol)
   `(quote ,symbol))
 
-(defmacro |clojure.core|:|loop| (binds &body body)
+(defmacro #_loop (binds &body body)
   (let* ((binds (convert 'list binds))
          (binds (batches binds 2 :even t))
          (exprs (mapcar #'second binds))
@@ -132,15 +134,15 @@
   (declare (ignore args))
   (error "Cannot use `recur' outside `loop'."))
 
-(defmacro |clojure.core|:|recur| (&rest args)
+(defmacro #_recur (&rest args)
   `(%recur (list ,@args)))
 
-;; (defmacro |clojure.core|:|try| (&body body))
+;; (defmacro #_try (&body body))
 
-(defun1 |clojure.core|:|list| (&rest items)
+(defun1 #_list (&rest items)
   items)
 
-(defun1 |clojure.core|:|list*| (&rest items)
+(defun1 #_list* (&rest items)
   ;; TODO non-lists
   (cond ((null items))
         ((single items) (first items))
@@ -149,7 +151,7 @@
           (fset:concat (fset:reverse items)
                        (reverse (butlast items)))))))
 
-(defmacro |clojure.core|:|ns| (name &body refs)
+(defmacro #_ns (name &body refs)
   (mvlet ((docstr body (parse-docs refs)))
     (declare (ignore body))             ;TODO
     `(progn
@@ -158,50 +160,47 @@
          ,@(unsplice docstr))
        (in-package ,(string name)))))
 
-(defmacro |clojure.core|:|in-ns| (name)
+(defmacro #_in-ns (name)
   `(in-package ,(string name)))
 
-(defmacro |clojure.core|:|defmacro| (name &body body)
+(defmacro #_defmacro (name &body body)
   (mvlet ((docstr body (parse-docs body))
           (forms (string-gensym 'forms)))
-    `(defmacro ,name (&whole |clojure.core|:|&form|
+    `(defmacro ,name (&whole #_&form
                       &body ,forms
-                      &environment |clojure.core|:|&env|)
+                      &environment #_&env)
        ,@(unsplice docstr)
-       (declare (ignorable |clojure.core|:|&form| |clojure.core|:|&env|))
-       (apply (|clojure.core|:|fn| ,@body) ,forms))))
+       (declare (ignorable #_&form #_&env))
+       (apply (#_fn ,@body) ,forms))))
 
-(defmacro |clojure.core|:|and| (&rest forms)
-  (if (null forms)
-      |clojure.core|:|true|
+(defmacro #_and (&rest forms)
+  (if (null forms) #_true
       (with-unique-names (val)
         `(let ((,val ,(first forms)))
-           (|clojure.core|:|if-not| ,val
-                          ,val
-                          (|clojure.core|:|and| ,@(rest forms)))))))
+           (#_if-not ,val
+                     ,val
+                     (#_and ,@(rest forms)))))))
 
-(defmacro |clojure.core|:|or| (&rest forms)
-  (if (null forms)
-      |clojure.core|:|nil|
+(defmacro #_or (&rest forms)
+  (if (null forms) #_nil
       (with-unique-names (val)
         `(let ((,val ,(first forms)))
-           (|clojure.core|:|if| ,val
-                          ,val
-                          (|clojure.core|:|or| ,@(rest forms)))))))
+           (#_if ,val ,val
+                 (#_or ,@(rest forms)))))))
 
-(defmacro |clojure.core|:|when| (test &body body)
-  `(|clojure.core|:|if| ,test (|clojure.core|:|do| ,@body)))
+(defmacro #_when (test &body body)
+  `(#_if ,test (#_do ,@body)))
 
-(defun1 |clojure.core|:|apply| (fn &rest args)
+(defun1 #_apply (fn &rest args)
   (apply #'apply fn args))
 
-(defun1 |clojure.core|:|str| (&rest args)
+(defun1 #_str (&rest args)
   (apply #'string+ args))
 
-(defun1 |clojure.core|:|throw| (arg)
+(defun1 #_throw (arg)
   (error arg))
 
-(defmacro |clojure.core|:-> (x &rest steps)
+(defmacro #_-> (x &rest steps)
   (reduce (lambda (x step)
             (list* (first step)
                    x
@@ -210,23 +209,23 @@
           :key #'ensure-list
           :initial-value x))
 
-(defmacro |clojure.core|:->> (x &rest steps)
+(defmacro #_->> (x &rest steps)
   (reduce (flip #'append1)
           steps
           :key #'ensure-list
           :initial-value x))
 
-(defun1 |clojure.core|:|contains?| (col x)
+(defun1 #_contains? (col x)
   (fset:contains? col x))
 
-(defun1 |clojure.core|:|inc| (n)
+(defun1 #_inc (n)
   (1+ n))
 
-(defun1 |clojure.core|:|dec| (n)
+(defun1 #_dec (n)
   (1- n))
 
-(defun1 |clojure.core|:* (&rest ns)
+(defun1 #_* (&rest ns)
   (apply #'* ns))
 
-(defun1 |clojure.core|:/ (&rest ns)
+(defun1 #_/ (&rest ns)
   (apply #'/ ns))

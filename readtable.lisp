@@ -46,6 +46,10 @@
   (:dispatch-macro-char #\# #\? 'read-conditional)
   (:case :preserve))
 
+(defreadtable clojure-shortcut
+  (:merge :standard)
+  (:dispatch-macro-char #\# #\_ 'subread-clojure))
+
 (defun call/clojure-reader (fn)
   (let ((*readtable* (find-readtable 'cloture))
         (*package* (find-package "user"))
@@ -62,6 +66,11 @@
                           recursive)
   (with-clojure-reader ()
     (read stream eof-error-p eof-value recursive)))
+
+(defun subread-clojure (stream char arg)
+  (declare (ignore char arg))
+  (let ((*package* (find-package "user")))
+    (read-clojure stream :recursive t)))
 
 (defun read-clojure-from-string (string
                                  &key (eof-error-p t)
