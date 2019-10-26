@@ -1,17 +1,21 @@
 (defpackage #:cloture
   (:use #:cl #:alexandria #:serapeum #:named-readtables #:trivia)
   (:import-from #:fset
+    #:empty?
     #:lookup
     #:less
     #:do-map
     #:do-seq
+    #:do-set
     #:with
     #:empty-map
     #:convert
     #:seq
     #:size)
+  (:shadowing-import-from #:fset
+    #:map
+    #:set)
   (:shadow :@)
-  (:shadowing-import-from #:fset #:map)
   (:export #:cloture                    ;Readtable.
            #:meta-ref
            #:read-clojure

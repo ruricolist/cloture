@@ -1,7 +1,7 @@
 (defpackage :cloture.test
   (:use :cl :alexandria :serapeum :fiveam :cloture :named-readtables)
   (:import-from :fset :equal? :seq :convert)
-  (:shadowing-import-from :fset :map))
+  (:shadowing-import-from :fset :map :set))
 (in-package :cloture.test)
 (in-readtable clojure-shortcut)
 
@@ -113,3 +113,6 @@
   (is (eql* (macroexpand-1 '#_*foo*)
             #_(var *foo*)
             #_#'*foo*)))
+
+(test set
+  (is (typep #_#{1 2 3} 'set)))

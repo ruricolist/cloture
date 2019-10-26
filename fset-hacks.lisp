@@ -11,3 +11,8 @@
             (do-map (k v map)
               (collect (list `(quote ,k)
                              `(quote ,v)))))))
+
+(defmethod make-load-form ((set set) &optional env)
+  (declare (ignore env))
+  `(set ,@(mapcar (op `(quote ,_))
+                  (convert 'list set))))

@@ -19,6 +19,10 @@
             pairs
             :initial-value (empty-map))))
 
+(defun read-set (stream char arg)
+  (declare (ignore char arg))
+  (convert 'set (read-delimited-list #\} stream t)))
+
 (defun read-meta (stream char)
   (declare (ignore char))
   (let ((meta (rec-read stream))
@@ -46,6 +50,8 @@
   ;; Reading maps.
   (:macro-char #\{ 'read-map)
   (:syntax-from :standard #\) #\})
+  ;; Reading sets.
+  (:dispatch-macro-char #\# #\{ 'read-set)
   ;; ~ instead of ,.
   (:syntax-from :fare-quasiquote-mixin #\, #\~)
   ;; , is whitespace.
