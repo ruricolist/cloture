@@ -20,4 +20,5 @@
            #:slurp-clojure-file
            #:load-clojure
            #:compile-clojure
-           #:load-compile-clojure))
+           #:load-compile-clojure
+           #:clojure-shortcut))
