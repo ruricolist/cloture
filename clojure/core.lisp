@@ -1,7 +1,7 @@
 (in-package #:cloture)
 (in-readtable clojure-shortcut)
 
-;;; Note that there are many special cases here that could be compiled more efficiently or macro-expanded more legibly. For now simplicity & uniformity is the goal. In the future, maybe, when there is more code to test against, optimization might be worthwile. Not yet.
+;;; Note that there are many special cases here that could be compiled more efficiently or inlined, or macro-expanded more legibly. For now simplicity & uniformity is the goal. In the future, maybe, when there is more code to test against, optimization might be worthwile. Not yet.
 
 (define-symbol-macro #_true t)
 (define-symbol-macro #_false nil)
@@ -18,6 +18,12 @@
 That's defun-1 as in Lisp-1."
   `(progn
      (defun ,name ,args ,@body)
+     (define-symbol-macro ,name #',name)
+     ',name))
+
+(defmacro defgeneric-1 (name args &body body)
+  `(progn
+     (defgeneric ,name ,args ,@body)
      (define-symbol-macro ,name #',name)
      ',name))
 
@@ -295,3 +301,25 @@ nested)."
      `(#_if ,test ,expr #_nil))
     ((list* test expr clauses)
      `(#_if ,test ,expr (#_cond ,@clauses)))))
+
+(defgeneric-1 #_seq (coll)
+  (:method ((list list))
+    (or list #_nil))
+  (:method ((seq sequence))
+    (if (emptyp seq) #_nil seq))
+  (:method ((seq seq))
+    (if (empty? seq) #_nil
+        seq))
+  (:method ((map map))
+    (if (empty? map) #_nil
+        (collecting
+          (do-map (k v map)
+            (collect (seq k v))))))
+  (:method ((set set))
+    (if (empty? set) #_nil
+        (collecting
+          (do-set (x set)
+            (collect x))))))
+
+(defun1 #_count (col)
+  (size col))

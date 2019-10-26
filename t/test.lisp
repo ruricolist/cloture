@@ -116,3 +116,13 @@
 
 (test set
   (is (typep #_#{1 2 3} 'set)))
+
+(test seq
+  (is (eql #_nil #_(seq '())))
+  (is (eql #_nil #_(seq {})))
+  (is (eql #_nil #_(seq #{})))
+  (is (eql #_nil #_(seq [])))
+  (is (set-equal '(1 2 3) #_(seq #{1 2 3})))
+  (is (equal? (list (seq :x 1)
+                    (seq :y 2))
+              #_(seq {:X 1 :Y 2}))))
