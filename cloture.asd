@@ -7,6 +7,7 @@
   :in-order-to ((test-op (test-op "cloture/test")))
   :serial t
   :components ((:file "package")
+               (:file "fset-hacks")
                (:file "clojure-packages")
                (:file "cloture")
                (:file "readtable")
