@@ -8,6 +8,7 @@
   :serial t
   :components ((:file "package")
                (:file "fset-hacks")
+               (:static-file "core-syms.txt")
                (:file "clojure-packages")
                (:file "cloture")
                (:file "readtable")
