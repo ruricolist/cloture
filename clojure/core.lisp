@@ -282,3 +282,8 @@ nested)."
   (reduce #'less
           (cons key keys)
           :initial-value map))
+
+(defun-1 #_alter-meta! (obj f &rest args)
+  (synchronized (obj)
+    (setf (meta obj)
+          (apply f (meta obj) args))))
