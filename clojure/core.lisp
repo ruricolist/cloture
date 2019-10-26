@@ -287,3 +287,11 @@ nested)."
   (synchronized (obj)
     (setf (meta obj)
           (apply f (meta obj) args))))
+
+(defmacro #_cond (&rest clauses)
+  (ematch clauses
+    ((list) #_nil)
+    ((list test expr)
+     `(#_if ,test ,expr #_nil))
+    ((list* test expr clauses)
+     `(#_if ,test ,expr (#_cond ,@clauses)))))
