@@ -40,6 +40,13 @@
   (let ((sym (rec-read stream)))
     `(|clojure.core|:|var| ,sym)))
 
+(def qq-reader
+  (get-macro-character #\` (find-readtable :fare-quasiquote)))
+
+(defun quasiquote (stream char)
+  ;; TODO handle autogensyms
+  (funcall qq-reader stream char))
+
 (defreadtable cloture
   (:fuze :standard :fare-quasiquote-mixin)
   ;; Metadata.
@@ -52,6 +59,7 @@
   (:syntax-from :standard #\) #\})
   ;; Reading sets.
   (:dispatch-macro-char #\# #\{ 'read-set)
+  (:macro-char #\` 'quasiquote)
   ;; ~ instead of ,.
   (:syntax-from :fare-quasiquote-mixin #\, #\~)
   ;; , is whitespace.

@@ -130,4 +130,10 @@
 (test letfn
   (is (= 1
          #_(letfn [(first [xs] (CL:FIRST xs))]
-                  (first '(1 2 3))))))
+             (first '(1 2 3))))))
+
+;; (test autogensym
+;;   (destructuring-bind (x1 x2)
+;;       #_`(~x# ~x#)
+;;     (is (null (symbol-package x1)))
+;;     (is (eql x1 x2))))
