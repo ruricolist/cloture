@@ -25,4 +25,7 @@
            #:load-clojure
            #:compile-clojure
            #:load-compile-clojure
-           #:clojure-shortcut))
+           #:clojure-shortcut
+           #:clj-file
+           #:cljc-file
+           #:cljs-file))

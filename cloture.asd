@@ -12,6 +12,8 @@
                (:file "clojure-packages")
                (:file "cloture")
                (:file "readtable")
+               (:file "files")
+               (:file "asdf")
                (:module "clojure"
                 :components ((:file "core")))))
 

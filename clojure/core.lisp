@@ -82,13 +82,6 @@ That's defun-1 as in Lisp-1."
             `(export ',name)))
        ',name)))
 
-(defmacro #_defn (name &body body)
-  (mvlet ((docstring body (parse-docs body)))
-    `(progn (defalias ,name
-              (#_fn ,name ,@body)
-              ,@(unsplice docstring))
-            (#_def ,name #',name))))
-
 (defmacro clojure-let1 (pattern expr &body body)
   `(ematch ,expr
      (,pattern ,@body)))
@@ -132,6 +125,13 @@ nested)."
 
 (defmacro #_var (symbol &environment env)
   `(quote ,(var symbol env)))
+
+(defmacro #_defn (name &body body)
+  (mvlet ((docstring body (parse-docs body)))
+    `(progn (defalias ,name
+              (#_fn ,name ,@body)
+              ,@(unsplice docstring))
+            (#_def ,name #',name))))
 
 (defmacro #_fn (&body body)
   (mvlet* ((docstr body (parse-docs body))
@@ -336,3 +336,7 @@ nested)."
 
 (defun1 #_gensym (&optional (prefix-string "G__"))
   (gensym prefix-string))
+
+(defun1 #_get (map key &optional (not-found #_nil))
+  (multiple-value-bind (val val?) (lookup map key)
+    (if val? val not-found)))
