@@ -13,19 +13,20 @@
         (values (first body) (rest body))
         (values nil body))))
 
-(defmacro defun1 (name args &body body)
-  "Define NAME in both the function and value namespaces."
+(defmacro defun-1 (name args &body body)
+  "Define NAME in both the function and value namespaces.
+That's defun-1 as in Lisp-1."
   `(progn
      (defun ,name ,args ,@body)
      (define-symbol-macro ,name #',name)
      ',name))
 
-(defun1 #_meta (x)
+(defun-1 #_meta (x)
   (meta x))
 
-(defun1 #_zero? (n) (zerop n))
-(defun1 #_neg? (n) (minusp n))
-(defun1 #_pos? (n) (plusp n))
+(defun-1 #_zero? (n) (zerop n))
+(defun-1 #_neg? (n) (minusp n))
+(defun-1 #_pos? (n) (plusp n))
 
 (defmacro #_quote (x)
   `(quote ,x))
@@ -139,10 +140,10 @@
 
 ;; (defmacro #_try (&body body))
 
-(defun1 #_list (&rest items)
+(defun-1 #_list (&rest items)
   items)
 
-(defun1 #_list* (&rest items)
+(defun-1 #_list* (&rest items)
   ;; TODO non-lists
   (cond ((null items))
         ((single items) (first items))
@@ -191,13 +192,13 @@
 (defmacro #_when (test &body body)
   `(#_if ,test (#_do ,@body)))
 
-(defun1 #_apply (fn &rest args)
+(defun-1 #_apply (fn &rest args)
   (apply #'apply fn args))
 
-(defun1 #_str (&rest args)
+(defun-1 #_str (&rest args)
   (apply #'string+ args))
 
-(defun1 #_throw (arg)
+(defun-1 #_throw (arg)
   (error arg))
 
 (defmacro #_-> (x &rest steps)
@@ -215,17 +216,17 @@
           :key #'ensure-list
           :initial-value x))
 
-(defun1 #_contains? (col x)
+(defun-1 #_contains? (col x)
   (fset:contains? col x))
 
-(defun1 #_inc (n)
+(defun-1 #_inc (n)
   (1+ n))
 
-(defun1 #_dec (n)
+(defun-1 #_dec (n)
   (1- n))
 
-(defun1 #_* (&rest ns)
+(defun-1 #_* (&rest ns)
   (apply #'* ns))
 
-(defun1 #_/ (&rest ns)
+(defun-1 #_/ (&rest ns)
   (apply #'/ ns))
