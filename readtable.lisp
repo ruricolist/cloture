@@ -2,6 +2,9 @@
 
 (defunit eof)
 
+(defun rec-read (stream)
+  (read stream t nil t))
+
 (defun read-vector (stream char)
   (declare (ignore char))
   (convert 'seq (read-delimited-list #\] stream t)))
@@ -18,15 +21,20 @@
 
 (defun read-meta (stream char)
   (declare (ignore char))
-  (let ((meta (read stream nil nil t))
-        (value (read stream nil nil t)))
+  (let ((meta (rec-read stream))
+        (value (rec-read stream)))
     (merge-meta! value (ensure-meta meta))
     value))
 
 (defun read-conditional (stream char arg)
   (declare (ignore char arg))
-  (let ((forms (read stream)))
+  (let ((forms (rec-read stream)))
     (values (getf forms :|cl|))))
+
+(defun read-var (stream char arg)
+  (declare (ignore char arg))
+  (let ((sym (rec-read stream)))
+    `(|clojure.core|:|var| ,sym)))
 
 (defreadtable cloture
   (:fuze :standard :fare-quasiquote-mixin)
@@ -44,6 +52,8 @@
   (:syntax-from :standard #\Space #\,)
   ;; Reader conditionals.
   (:dispatch-macro-char #\# #\? 'read-conditional)
+  ;; Dereference vars.
+  (:dispatch-macro-char #\# #\' 'read-var)
   (:case :preserve))
 
 (defreadtable clojure-shortcut

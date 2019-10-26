@@ -108,3 +108,8 @@
   (is (= 0 #_(let [*foo* 1] (get-foo))))
   (is (= 1 #_(binding [*foo* 1] *foo*)))
   (is (= 1 #_(binding [*foo* 1] (get-foo)))))
+
+(test var
+  (is (eql* (macroexpand-1 '#_*foo*)
+            #_(var *foo*)
+            #_#'*foo*)))

@@ -109,16 +109,19 @@ nested)."
          (binds (batches bindings 2 :even t))
          (symbols (mapcar #'first binds))
          (exprs (mapcar #'second binds))
-         (vars (mapcar (partial #'lookup-var env) symbols)))
+         (vars (mapcar (op (var _ env)) symbols)))
     ;; NB Clojure `binding' works in parallel (unlike Clojure `let').
     `(let ,(mapcar #'list vars exprs)
        ,@body)))
 
-(defun lookup-var (env var)
+(defun var (var &optional env)
   (let ((exp (macroexpand-1 (assure symbol var) env)))
     (when (eql exp var)
       (error "Not a var: ~a" var))
     (assure symbol exp)))
+
+(defmacro #_var (symbol &environment env)
+  `(quote ,(var symbol env)))
 
 (defmacro #_fn (&body body)
   (mvlet* ((docstr body (parse-docs body))
@@ -144,9 +147,6 @@ nested)."
         `(lambda (&rest ,args)
            ,@(unsplice docstr)
            ,expr))))
-
-(defmacro #_var (symbol)
-  `(quote ,symbol))
 
 (defmacro #_loop (binds &body body)
   (let* ((binds (convert 'list binds))
