@@ -79,13 +79,22 @@
 
 (test fn
   (let ((bar
-          (#_fn bar
-                (#.(seq 'a 'b)
-                   (bar a b 100))
-                (#.(seq 'a 'b 'c)
-                   (* a b c)))))
+          #_(fn bar
+              ([a b]
+               (bar a b 100))
+              ([a b c]
+               (* a b c)))))
     (is (= 3000 (funcall bar 5 6)))
     (is (= 60 (funcall bar 5 6 2)))))
+
+(let ((bar
+        #_(fn bar
+            ([a b]
+             (bar a b 100))
+            ([a b c]
+             (* a b c)))))
+  (= 3000 (funcall bar 5 6))
+  (= 60 (funcall bar 5 6 2)))
 
 (test ->
   (is (listp (#_-> '((1 2) (3 4)))))

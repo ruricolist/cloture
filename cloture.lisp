@@ -66,7 +66,8 @@
   (not (falsy? x)))
 
 (defun dissect-seq-pattern (pats)
-  (mvlet* ((all pats
+  (mvlet* ((pats (convert 'list pats))
+           (all pats
             (match (last pats 2)
               ((list :|as| all)
                (values all (butlast pats 2)))
@@ -76,22 +77,21 @@
               ((list '|clojure.core|:& rest)
                (values rest (butlast pats 2)))
               (otherwise (values nil pats)))))
-    (values pats rest all)))
+    (values pats rest all (length pats))))
 
 (defun fset-seq-pattern (pats)
-  (multiple-value-bind (pats rest all)
+  (multiple-value-bind (pats rest all len)
       (dissect-seq-pattern pats)
-    (let ((len (length pats)))
-      `(trivia:guard1 (,all :type seq)
-                      ;; Missing or excess elements are just bound to nil.
-                      (typep ,all 'seq)
-                      ,@(loop for pat in pats
-                              for i from 0
-                              collect `(lookup ,all ,i)
-                              collect pat)
-                      ,@(and rest
-                             `((convert 'list (fset:subseq ,all ,len))
-                               ,rest))))))
+    `(trivia:guard1 (,all :type seq)
+                    ;; Missing or excess elements are just bound to nil.
+                    (typep ,all 'seq)
+                    ,@(loop for pat in pats
+                            for i from 0
+                            collect `(lookup ,all ,i)
+                            collect pat)
+                    ,@(and rest
+                           `((convert 'list (fset:subseq ,all ,len))
+                             ,rest)))))
 
 (defpattern fset-seq (&rest pats)
   (fset-seq-pattern pats))
@@ -109,18 +109,22 @@
                  pat)))
       pat)))
 
+(defun safe-elt (seq i)
+  (if (>= i (length seq)) nil
+      (elt seq i)))
+
 (defpattern clojuresque-sequence (&rest pats)
-  (multiple-value-bind (pats rest all)
+  (multiple-value-bind (pats rest all len)
       (dissect-seq-pattern pats)
-    (let* ((pat
-             (if rest
-                 (error "Rest on Lisp sequences not supported.")
-                 `(sequence ,@pats)))
-           (pat
-             (if all
-                 `(and ,all ,pat)
-                 pat)))
-      pat)))
+    `(trivia:guard1 (,all :type sequence)
+                    (typep ,all 'sequence)
+                    ,@(loop for pat in pats
+                            for i from 0
+                            collect `(safe-elt ,all ,i)
+                            collect pat)
+                    ,@(and rest
+                           `((drop ,len ,all)
+                             ,rest)))))
 
 (defpattern fset-map (alist)
   (let* ((as (assocdr :|as| alist))
@@ -146,7 +150,7 @@
      (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
        ;; TODO vector, sequence
        `(or (fset-seq ,@pats)
-            (clojuresque-sequence ,@pats)
-            (clojuresque-list ,@pats))))
+            (clojuresque-list ,@pats)
+            (clojuresque-sequence ,@pats))))
     (map
      `(fset-map ,(map->alist obj)))))

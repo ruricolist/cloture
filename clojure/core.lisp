@@ -16,7 +16,10 @@
   (defun parse-docs (body)
     (if (stringp (first body))
         (values (first body) (rest body))
-        (values nil body))))
+        (values nil body)))
+
+  (defun car+cdr (list)
+    (values (car list) (cdr list))))
 
 (defmacro defun-1 (name args &body body)
   "Define NAME in both the function and value namespaces.
@@ -149,13 +152,21 @@ nested)."
             (ematch body
               ((list* (and params (type seq))
                       exprs)
-               `(clojure-let (,params ,args)
-                  ,@exprs))
+               (return-from #_fn
+                 `(#_fn (,params ,@exprs))))
               ((and clauses (type list))
                `(ematch ,args
-                  ,@(loop for (params . exprs) in clauses
-                          collect `(,(obj->pattern params)
-                                    ,@exprs)))))))
+                  ,@(collecting
+                      (dolist (clause clauses)
+                        (mvlet* ((params exprs (car+cdr clause))
+                                 (pats rest all (dissect-seq-pattern params)))
+                          (when (symbol-package all)
+                            (error "No :as in fn."))
+                          (collect
+                              `(,(if rest
+                                     `(list* ,@pats ,rest)
+                                     `(list ,@pats))
+                                ,@exprs))))))))))
     (if name
         `(named-lambda ,name (&rest ,args)
            ,@(unsplice docstr)
