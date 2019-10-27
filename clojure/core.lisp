@@ -357,3 +357,11 @@ nested)."
 (defun1 #_get (map key &optional (not-found #_nil))
   (multiple-value-bind (val val?) (lookup map key)
     (if val? val not-found)))
+
+(defun1 #_constantly (x)
+  (constantly x))
+
+(defun1 #_alter-var-root (root f &rest args)
+  (synchronized (root)
+    (setf (symbol-value root)
+          (apply f (symbol-value root) args))))
