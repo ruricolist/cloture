@@ -12,7 +12,3 @@
 (defmethod asdf:perform :around ((o asdf:compile-op) (c clj-file))
   (with-clojure-reader ()
     (call-next-method)))
-
-(defmethod asdf:perform :around ((o asdf:load-op) (c clj-file))
-  (with-keywords-fbound ()
-    (call-next-method)))

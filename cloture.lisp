@@ -34,7 +34,7 @@
     (keyword (map (x t)))
     ;; TODO What should tags be? Strings or symbols?
     (symbol (map (:tag x)))
-    (string (map (:tag (read x))))))
+    (string (map (:tag x)))))
 
 (defun merge-maps (&rest maps)
   (reduce (lambda (m1 m2)

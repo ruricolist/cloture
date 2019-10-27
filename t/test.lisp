@@ -125,9 +125,11 @@
     (= (funcall fact 10)
        (factorial 10))))
 
+;;; You need `private' to prevent package variance on SBCL.
 (let ((*package* (find-package "user")))
-  #_(def ^:dynamic *foo* 0)
-  #_(defn get-foo [] *foo*))
+  #_(def ^{:dynamic true :private true} *foo* 0))
+(let ((*package* (find-package "user")))
+  #_(defn ^:private get-foo [] *foo*))
 
 (test binding
   (is (= 0 #_*foo*))

@@ -342,7 +342,7 @@ nested)."
           (do-set (x set)
             (collect x))))))
 
-(defun1 #_count (col)
+(defun-1 #_count (col)
   (size col))
 
 (defmacro #_letfn (fnspecs &body body)
@@ -351,17 +351,18 @@ nested)."
                       collect `(,name (#_fn ,name ,@body)))
        ,@body)))
 
-(defun1 #_gensym (&optional (prefix-string "G__"))
+(defun-1 #_gensym (&optional (prefix-string "G__"))
   (gensym prefix-string))
 
-(defun1 #_get (map key &optional (not-found #_nil))
-  (multiple-value-bind (val val?) (lookup map key)
+(defun-1 #_get (map key &optional (not-found #_nil))
+  (multiple-value-bind (val val?)
+      (lookup map key)
     (if val? val not-found)))
 
-(defun1 #_constantly (x)
+(defun-1 #_constantly (x)
   (constantly x))
 
-(defun1 #_alter-var-root (root f &rest args)
+(defun-1 #_alter-var-root (root f &rest args)
   (synchronized (root)
     (setf (symbol-value root)
           (apply f (symbol-value root) args))))

@@ -4,7 +4,9 @@
   (:import-from #:cl
     #:< #:>= #:<= #:+ #:- #:-
     #:quote)
-  (:export . #.(serapeum:lines (alexandria:read-file-into-string (asdf:system-relative-pathname "cloture" "core-syms.txt")))))
+  (:export . #.(append
+                (serapeum:lines (alexandria:read-file-into-string (asdf:system-relative-pathname "cloture" "core-syms.txt")))
+                '("&" "var"))))
 
 (defpackage "user"
   (:use "clojure.core"))
