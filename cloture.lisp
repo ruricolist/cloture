@@ -97,6 +97,9 @@
   (fset-seq-pattern pats))
 
 (defpattern clojuresque-list (&rest pats)
+  ;; NB This only works for lists with at least as many pats as are
+  ;; present in PATS. They still get destructured, but as sequences
+  ;; rather than lists, so less efficiently.
   (multiple-value-bind (pats rest all)
       (dissect-seq-pattern pats)
     (let* ((pat
