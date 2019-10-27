@@ -109,6 +109,19 @@
                  pat)))
       pat)))
 
+(defpattern clojuresque-sequence (&rest pats)
+  (multiple-value-bind (pats rest all)
+      (dissect-seq-pattern pats)
+    (let* ((pat
+             (if rest
+                 (error "Rest on Lisp sequences not supported.")
+                 `(sequence ,@pats)))
+           (pat
+             (if all
+                 `(and ,all ,pat)
+                 pat)))
+      pat)))
+
 (defpattern fset-map (alist)
   (let* ((as (assocdr :|as| alist))
          (alist (remove :|as| alist :key #'car))
@@ -133,6 +146,7 @@
      (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
        ;; TODO vector, sequence
        `(or (fset-seq ,@pats)
+            (clojuresque-sequence ,@pats)
             (clojuresque-list ,@pats))))
     (map
      `(fset-map ,(map->alist obj)))))

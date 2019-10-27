@@ -69,6 +69,14 @@
              #_(let ([[a] [[b]] c [x y z]] [[1] [[2]] 3 [4 5 6]])
                  (list a b c x y z)))))
 
+(test destructure-lisp-vector
+  (is (equalp #(1 2 3 4 5)
+              #_(let [[_ _ _ _ _ :as all] (CL:VECTOR 1 2 3 4 5)]
+                  all)))
+  (is (equal '(1 2 3 4 5)
+             #_(let [[a b c d e] (CL:VECTOR 1 2 3 4 5)]
+                 (list a b c d e)))))
+
 (test fn
   (let ((bar
           (#_fn bar
