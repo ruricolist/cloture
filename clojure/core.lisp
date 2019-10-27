@@ -3,6 +3,11 @@
 
 ;;; Note that there are many special cases here that could be compiled more efficiently or inlined, or macro-expanded more legibly. For now simplicity & uniformity is the goal. In the future, maybe, when there is more code to test against, optimization might be worthwile. Not yet.
 
+(defconst special-forms
+  '#_(quote
+      if do def let binding var
+      loop recur throw try))
+
 (define-symbol-macro #_true t)
 (define-symbol-macro #_false nil)
 (define-symbol-macro #_nil nil)
