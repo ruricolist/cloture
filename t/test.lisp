@@ -36,12 +36,14 @@
   (is (null #_#?(:clj 1)))
   (is (eql 1 #_#?(:cl 1 :clj 2))))
 
-(test destructure
+(test destructure-simple
   (is (equal '(1 2 3) #_(let ([x y z] [1 2 3])
                           (list x y z))))
-  (is (equal '(1 2 3) #_(let ([x y z] '(1 2 3))
-                          (list x y z))))
 
+  (is (equal '(1 2 3) #_(let ([x y z] '(1 2 3))
+                          (list x y z)))))
+
+(test destructure-as
   (is (equal '(1 2 3)
              (convert 'list
                       #_(let ([_ _ _ :as all] [1 2 3])
@@ -49,13 +51,15 @@
   (is (equal '(1 2 3)
              (convert 'list
                       #_(let ([_ _ _ :as all] '(1 2 3))
-                          all))))
+                          all)))))
 
+(test destructure-rest
   (is (equal '(2 3) #_(let ([_ & ys] [1 2 3])
                         ys)))
   (is (equal '(2 3) #_(let ([_ & ys] '(1 2 3))
-                        ys)))
+                        ys))))
 
+(test destructure-rest-and-as
   (is (equal '(1 2 3)
              (convert 'list
                       #_(let ([_ & _ :as all] [1 2 3])
@@ -63,11 +67,17 @@
   (is (equal '(1 2 3)
              (convert 'list
                       #_(let ([_ & _ :as all] '(1 2 3))
-                          all))))
+                          all)))))
 
+(test destructure-nested
   (is (equal '(1 2 3 4 5 6)
-             #_(let ([[a] [[b]] c [x y z]] [[1] [[2]] 3 [4 5 6]])
+             #_(let [[[a] [[b]] c [x y z]] [[1] [[2]] 3 [4 5 6]]]
                  (list a b c x y z)))))
+
+(test destructure-short
+  (is (equal '(nil nil nil)
+             #_(let [[x y z] '()]
+                 (list x y z)))))
 
 (test destructure-lisp-vector
   (is (equalp #(1 2 3 4 5)
