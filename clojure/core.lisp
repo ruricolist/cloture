@@ -365,3 +365,10 @@ nested)."
   (synchronized (root)
     (setf (symbol-value root)
           (apply f (symbol-value root) args))))
+
+(defvar *assert* t)
+(define-symbol-macro #_*assert* *assert*)
+
+(defmacro #_assert (test &optional message)
+  `(when *assert*
+     (assert ,test () ,@(unsplice message))))
