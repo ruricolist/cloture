@@ -155,3 +155,11 @@
             (clojuresque-sequence ,@pats))))
     (map
      `(fset-map ,(map->alist obj)))))
+
+(defun fbind-keywords (keywords)
+  (dolist (keyword (ensure-list keywords))
+    (assert (keywordp keyword))
+    (unless (fboundp keyword)
+      (setf (symbol-function keyword)
+            (lambda (map)
+              (|clojure.core|:|get| map keyword))))))
