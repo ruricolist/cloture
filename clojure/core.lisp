@@ -65,6 +65,8 @@ That's defun-1 as in Lisp-1."
 (define-symbol-macro #_*in* *standard-input*)
 (define-symbol-macro #_*ns* *package*)
 
+(defconst clojure-var-prefix '*clojure-var-)
+
 (defmacro #_def (name &body body)
   (mvlet* ((docstring expr
             (ematch body
@@ -79,11 +81,11 @@ That's defun-1 as in Lisp-1."
            (doc (or docstring meta-doc)))
     `(progn
        ,(if dynamic?
-            (let ((backing-var (symbolicate '*clojure-var-for- name)))
+            (let ((backing-var (symbolicate clojure-var-prefix name)))
               `(progn
+                 (define-symbol-macro ,name ,backing-var)
                  (defparameter ,backing-var ,expr
-                   ,@(unsplice doc))
-                 (define-symbol-macro ,name ,backing-var)))
+                   ,@(unsplice doc))))
             `(def ,name ,expr
                ,@(unsplice doc)))
        ,@(unsplice
@@ -128,9 +130,11 @@ nested)."
 
 (defun var (var &optional env)
   (let ((exp (macroexpand-1 (assure symbol var) env)))
-    (when (eql exp var)
+    (when (or (eql exp var)
+              (not (symbolp exp))
+              (not (string^= clojure-var-prefix exp)))
       (error "Not a var: ~a" var))
-    (assure symbol exp)))
+    exp))
 
 (defmacro #_var (symbol &environment env)
   `(quote ,(var symbol env)))
@@ -367,9 +371,9 @@ nested)."
     (setf (symbol-value root)
           (apply f (symbol-value root) args))))
 
-(defvar *assert* t)
-(define-symbol-macro #_*assert* *assert*)
+(defvar *clojure-var-assert* t)
+(define-symbol-macro #_*assert* *clojure-var-assert*)
 
 (defmacro #_assert (test &optional message)
-  `(when *assert*
+  `(when #_*assert*
      (assert ,test () ,@(unsplice message))))
