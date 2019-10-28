@@ -1,14 +1,14 @@
 (in-package #:cloture)
 
-(defclass clj-file (asdf:cl-source-file)
+(defclass clj (asdf:cl-source-file)
   ((type :initform "clj")))
 
-(defclass cljc-file (clj-file)
+(defclass cljc (clj)
   ((type :initform "cljc")))
 
-(defclass cljs-file (clj-file)
+(defclass cljs (clj)
   ((type :initform "cljs")))
 
-(defmethod asdf:perform :around ((o asdf:compile-op) (c clj-file))
+(defmethod asdf:perform :around ((o asdf:compile-op) (c clj))
   (with-clojure-reader ()
     (call-next-method)))
