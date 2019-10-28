@@ -2,6 +2,7 @@
   (:use #:cl #:alexandria #:serapeum #:named-readtables #:trivia)
   (:local-nicknames (#:nick #:trivial-package-local-nicknames))
   (:import-from #:fset
+    #:equal?
     #:empty?
     #:lookup
     #:less

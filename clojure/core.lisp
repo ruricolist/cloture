@@ -457,3 +457,40 @@ nested)."
 (defmacro #_assert (test &optional message)
   `(when #_*assert*
      (assert ,test () ,@(unsplice message))))
+
+(defun-1 #_special-symbol? (s)
+  (true (memq s special-forms)))
+
+(defun-1 #_unchecked-add-int (x y)
+  (+ x y))
+
+(defun-1 #_unchecked-multiply-int (x y)
+  (- x y))
+
+(defmacro #_declare (&rest args)
+  `(progn
+     ,@(loop for arg in args
+             collect `(progn
+                        (defalias ,arg (constantly #_nil))
+                        (#_def arg #_nil)))))
+
+(defun-1 #_hash (x)
+  (murmurhash:murmurhash x))
+
+(defun-1 #_= (&rest args)
+  (match args
+    ((list) t)
+    ((list _) t)
+    ((list x y) (equal? x y))
+    (otherwise (every #'equal? args (rest args)))))
+
+(defun-1 #_not= (&rest args)
+  (not (apply #'#_= args)))
+
+(defun-1 #_== (&rest args)
+  (apply #'= args))
+
+(defun-1 #_pop (seq)
+  (etypecase seq
+    (list (rest seq))
+    (seq (fset:subseq seq 0 (1- (size seq))))))
