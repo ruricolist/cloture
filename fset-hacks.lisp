@@ -16,3 +16,13 @@
   (declare (ignore env))
   `(set ,@(mapcar (op `(quote ,_))
                   (convert 'list set))))
+
+(defpattern seq (&rest pats)
+  (with-unique-names (it)
+    `(guard1 (,it :type seq)
+             (typep ,it 'seq)
+             (size ,it) ,(length pats)
+             ,@(loop for pat in pats
+                     for i from 0
+                     collect `(lookup ,it ,i)
+                     collect pat))))
