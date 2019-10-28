@@ -33,7 +33,12 @@
 (defun read-conditional (stream char arg)
   (declare (ignore char arg))
   (let ((forms (rec-read stream)))
-    (values (getf forms :|cl|))))
+    (values
+     (let* ((missing "missing")
+            (cl (getf forms :|cl| missing)))
+       (if (eql cl missing)
+           (getf forms :|default|)
+           cl)))))
 
 (defun read-var (stream char arg)
   (declare (ignore char arg))
