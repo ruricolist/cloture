@@ -211,14 +211,94 @@ nested)."
           (fset:concat (fset:reverse items)
                        (reverse (butlast items)))))))
 
+(defun-1 #_refer-clojure (&rest args)
+  (apply #'#_refer args))
+
+(defun-1 #_refer (ns &key exclude only rename)
+  (let ((p (find-package ns)))
+    (if (nor exclude only) (use-package p)
+        (let* ((exports (package-exports p))
+               (exports
+                 (if only
+                     (intersection only exports :test #'string=)
+                     exports))
+               (exports
+                 (if exclude
+                     (set-difference exports exclude :test #'string=)
+                     exports)))
+          (import exports)
+          (when rename
+            (do-map (from to rename)
+              (let ((from (find-external-symbol from p :error t))
+                    (to (intern (string to))))
+                (eval `(progn
+                         (defmacro to (&body body)
+                           (cons ',from body))
+                         (define-symbol-macro ,to ,from))))))))))
+
+(defun-1 #_require (&rest args)
+  "Implements Clojure require (and use, because)."
+  (flet ((expect-package (lib)
+           (loop
+             (when (find-package lib)
+               (return))
+             (cerror "Try again"
+                     "No such package as ~a"))))
+    (dolist (arg args)
+      (nlet rec ((prefix "")
+                 (arg arg))
+        (match arg
+          ((and libspec (type symbol))
+           (expect-package (string+ prefix libspec)))
+          ((and libspec (type seq))
+           (ematch (convert 'list libspec)
+             ((lambda-list lib &key as refer exclude only rename)
+              (when (and (or exclude only rename) refer)
+                (error "Invalid: ~a" libspec))
+              (let ((lib (string+ prefix lib)))
+                (expect-package lib)
+                (when as
+                  (nick:add-package-local-nickname as lib))
+                (when refer
+                  (match refer
+                    (:all (#_refer lib))
+                    (otherwise
+                     (#_refer lib :only (convert 'list refer)))))
+                (when (or exclude only rename)
+                  (#_refer lib :only only
+                               :exclude exclude
+                               :rename rename))))))
+          ((list* prefix libspecs)
+           (dolist (libspec libspecs)
+             (rec prefix libspec))))))))
+
+(defun-1 #_use (&rest args)
+  (apply #'#_require args))
+
 (defmacro #_ns (name &body refs)
-  (mvlet ((docstr body (parse-docs refs)))
-    (declare (ignore body))             ;TODO
-    `(progn
+  (mvlet ((name (string name))
+          (docstr refs (parse-docs refs)))
+    `(eval-always
        (defpackage ,(string name)
-         (:use "clojure.core")
          ,@(unsplice docstr))
-       (in-package ,(string name)))))
+       (in-package ,(string name))
+       ,@(unsplice
+          (unless (find :|refer-clojure| refs :key #'car)
+            `(use-package "clojure.core")))
+       ,@(loop for ref in refs
+               collect (ematch ref
+                         ;; TODO
+                         (())
+                         ((list* :|gen-class| _))
+                         ((list* :|import| _))
+                         ((list* :|load| _))
+                         ((list* :|use| args)
+                          `(#_use ,@args))
+                         ((list* :|require| args)
+                          `(#_require ,@args))
+                         ((list* :|refer-clojure| args)
+                          `(#_refer-clojure ,@args))))
+       (find-package ,name))))
 
 (defmacro #_in-ns (name)
   `(in-package ,(string name)))

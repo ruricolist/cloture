@@ -3,7 +3,9 @@
                "cl-arrows"
                "fset"
                "named-readtables"
-               "fare-quasiquote-readtable")
+               "fare-quasiquote-readtable"
+               "trivial-package-local-nicknames"
+               "cl-murmurhash")
   :in-order-to ((test-op (test-op "cloture/test")))
   :serial t
   :components ((:file "package")

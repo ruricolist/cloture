@@ -1,5 +1,6 @@
 (defpackage #:cloture
   (:use #:cl #:alexandria #:serapeum #:named-readtables #:trivia)
+  (:local-nicknames (#:nick #:trivial-package-local-nicknames))
   (:import-from #:fset
     #:empty?
     #:lookup
