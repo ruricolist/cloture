@@ -392,6 +392,33 @@ nested)."
 (defgeneric-1 #_extends? (protocol atype))
 (defgeneric-1 #_satisfies? (protocol x))
 
+(defun check-protocol (protocol-name fn-names)
+  ;; TODO Are protocols supposed to be exhaustive?
+  (let* ((protocol (symbol-protocol protocol-name))
+         (protocol-functions (protocol-functions protocol)))
+    (assert (subsetp fn-names protocol-functions))))
+
+(defmacro #_extend-type (type &body specs)
+  (let ((specs (split-specs specs)))
+    `(progn
+       ,@(loop for (p . methods) in specs
+               for fn-names = (mapcar #'first methods)
+               do (check-protocol p fn-names)
+               collect `(defmethods ,type
+                            (:method #_extends? ((x ,type)) t)
+                          ,@(loop for (fn-name arg-seq . body) in methods
+                                  for lambda-list = (seq->lambda-list arg-seq)
+                                  for this = (first lambda-list)
+                                  collect `(:method ,fn-name ((,this ,type)
+                                                              ,@(rest lambda-list))
+                                             ,@body)))))))
+
+(defmacro #_extend-protocol (p &body specs)
+  (let ((specs (split-specs specs)))
+    `(progn
+       ,@(loop for (type . methods) in specs
+               collect `(#_extend-type ,type ,p ,@methods)))))
+
 (defun split-specs (specs)
   "Split the common Clojure syntax of a symbol (protocol, type) and a list of protocol/interface implementations."
   (runs specs :test (lambda (x y) (declare (ignore x))
