@@ -357,11 +357,11 @@ nested)."
           :key #'ensure-list
           :initial-value x))
 
-(defconstructor clojure-protocol
+(defconstructor protocol
   (name symbol)
   (functions list))
 
-(define-namespace clojure-protocol clojure-protocol)
+(define-namespace protocol protocol)
 
 (defmacro #_defprotocol (name &body specs)
   (mvlet* ((doc specs (parse-docs specs))
@@ -378,16 +378,16 @@ nested)."
                      (collect (list name lambda-list docs)))))))))
     `(progn
        (eval-always
-         (setf (symbol-clojure-protocol ',name)
+         (setf (symbol-protocol ',name)
                (protocol ',name ',sigs))
          ,@(unsplice
             (when doc
-              `(setf (documentation ',name 'clojure-protocol)
+              `(setf (documentation ',name 'protocol)
                      ,doc))))
        ,@(loop for (name lambda-list docs) in sigs
                collect `(defgeneric-1 ,name ,lambda-list
                           ,@(unsplice (and docs `(:documentation ,docs)))))
-       (#_def ,name (symbol-clojure-protocol ',name)))))
+       (#_def ,name (symbol-protocol ',name)))))
 
 (defgeneric-1 #_extends? (protocol atype))
 (defgeneric-1 #_satisfies? (protocol x))
