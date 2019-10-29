@@ -83,6 +83,8 @@ That's defun-1 as in Lisp-1."
        ,(if dynamic?
             (let ((backing-var (symbolicate clojure-var-prefix name)))
               `(progn
+                 (eval-always
+                   (setf (meta-ref ',name :|dynamic|) t))
                  (define-symbol-macro ,name ,backing-var)
                  (defparameter ,backing-var ,expr
                    ,@(unsplice doc))))
@@ -128,12 +130,12 @@ nested)."
     `(let ,(mapcar #'list vars exprs)
        ,@body)))
 
-(defun var (var &optional env)
-  (let ((exp (macroexpand-1 (assure symbol var) env)))
-    (when (or (eql exp var)
+(defun var (sym &optional env)
+  (let ((exp (macroexpand-1 (assure symbol sym) env)))
+    (when (or (eql exp sym)
               (not (symbolp exp))
-              (not (string^= clojure-var-prefix exp)))
-      (error "Not a var: ~a" var))
+              (not (meta-ref sym :|dynamic|)))
+      (error "Not a var: ~a" sym))
     exp))
 
 (defmacro #_var (symbol &environment env)
