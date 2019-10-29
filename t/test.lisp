@@ -161,6 +161,9 @@
          #_(letfn [(first [xs] (CL:FIRST xs))]
              (first '(1 2 3))))))
 
+(test read-nothing
+  (is (equal '(1 2) '#_(1 2 #_3))))
+
 ;; (test autogensym
 ;;   (destructuring-bind (x1 x2)
 ;;       #_`(~x# ~x#)

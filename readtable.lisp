@@ -48,12 +48,20 @@
 (def qq-reader
   (get-macro-character #\` (find-readtable :fare-quasiquote)))
 
+(defun read-nothing (stream char arg)
+  (declare (ignore char arg))
+  (let ((*read-suppress* t))
+    (rec-read stream)
+    (values)))
+
 (defun quasiquote (stream char)
   ;; TODO handle autogensyms
   (funcall qq-reader stream char))
 
 (defreadtable cloture
   (:fuze :standard :fare-quasiquote-mixin)
+  ;; Supress.
+  (:dispatch-macro-char #\# #\_ 'read-nothing)
   ;; Metadata.
   (:macro-char #\^ 'read-meta)
   ;; Reading vectors.
