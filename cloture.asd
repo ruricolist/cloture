@@ -5,7 +5,8 @@
                "named-readtables"
                "fare-quasiquote-readtable"
                "trivial-package-local-nicknames"
-               "cl-murmurhash")
+               "cl-murmurhash"
+               "lisp-namespace")
   :in-order-to ((test-op (test-op "cloture/test")))
   :serial t
   :components ((:file "package")

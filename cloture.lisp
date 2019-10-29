@@ -79,6 +79,15 @@
               (otherwise (values nil pats)))))
     (values pats rest all (length pats))))
 
+(defun seq->lambda-list (seq)
+  (multiple-value-bind (pats rest all)
+      (dissect-seq-pattern (convert 'list seq))
+    (assert (not (symbol-package all)))
+    (assert (every #'symbolp pats))
+    (assert (symbolp rest))
+    (append pats
+            (and rest (list '|clojure.core|:&)))))
+
 (defun fset-seq-pattern (pats)
   (multiple-value-bind (pats rest all len)
       (dissect-seq-pattern pats)

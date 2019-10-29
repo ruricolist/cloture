@@ -355,6 +355,46 @@ nested)."
           :key #'ensure-list
           :initial-value x))
 
+(defconstructor clojure-protocol
+  (name symbol)
+  (functions list))
+
+(define-namespace clojure-protocol protocol)
+
+(defmacro #_defprotocol (name &body specs)
+  (mvlet* ((doc specs (parse-docs specs))
+           (sigs
+            (collecting
+              (dolist (spec specs)
+                (ematch spec
+                  ((lambda-list name
+                                (and args (type seq))
+                                &optional docs)
+                   (let ((lambda-list (seq->lambda-list args)))
+                     (unless lambda-list
+                       (error "Protocol function cannot be nullary."))
+                     (collect (list name lambda-list docs)))))))))
+    `(progn
+       (eval-always
+         (setf (symbol-clojure-protocol ',name)
+               (protocol ',name ',sigs))
+         ,@(unsplice
+            (when doc
+              `(setf (documentation ',name 'clojure-protocol)
+                     ,doc))))
+       ,@(loop for (name lambda-list docs) in sigs
+               collect `(defgeneric-1 ,name ,lambda-list
+                          ,@(unsplice (and docs `(:documentation ,docs)))))
+       (#_def ,name (symbol-clojure-protocol ',name)))))
+
+(defgeneric-1 #_extends? (protocol atype))
+(defgeneric-1 #_satisfies? (protocol x))
+
+(defun split-specs (specs)
+  "Split the common Clojure syntax of a symbol (protocol, type) and a list of protocol/interface implementations."
+  (runs specs :test (lambda (x y) (declare (ignore x))
+                      (not (symbolp y)))))
+
 (defun-1 #_contains? (col x)
   (fset:contains? col x))
 

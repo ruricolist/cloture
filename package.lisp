@@ -14,6 +14,8 @@
     #:convert
     #:seq
     #:size)
+  (:import-from #:lisp-namespace
+    #:define-namespace)
   (:shadowing-import-from #:fset
     #:map
     #:set)
