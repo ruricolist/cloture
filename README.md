@@ -2,7 +2,11 @@
 
 Cloture is a library to let you load Clojure files as if they were Common Lisp. It is not a complete Clojure implementation; it just  automates the parts that can be easily automated. The idea is to allow Common Lisp ports of Clojure libraries to be forks, rather than complete rewrites, so future improvements can be merged from upstream.
 
-Maybe once this would have seemed impossible, but if Clojure can be implemented in JavaScript it can certainly be implemented in Common Lisp.
+Maybe once this would have seemed ridiculous, but if Clojure can be implemented in JavaScript it can certainly be implemented in Common Lisp.
+
+## Reader conditionals
+
+In reader conditionals in `.cljc` files, Cloture looks for a `:cl` key.
 
 ## License
 
