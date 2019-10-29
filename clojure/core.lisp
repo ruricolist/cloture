@@ -359,7 +359,7 @@ nested)."
   (name symbol)
   (functions list))
 
-(define-namespace clojure-protocol protocol)
+(define-namespace clojure-protocol clojure-protocol)
 
 (defmacro #_defprotocol (name &body specs)
   (mvlet* ((doc specs (parse-docs specs))
