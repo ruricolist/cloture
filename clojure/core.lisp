@@ -494,3 +494,7 @@ nested)."
   (etypecase seq
     (list (rest seq))
     (seq (fset:subseq seq 0 (1- (size seq))))))
+
+(defmacro #_comment (&body body)
+  (declare (ignore body))
+  (values))
