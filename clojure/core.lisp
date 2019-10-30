@@ -79,7 +79,7 @@ That's defun-1 as in Lisp-1."
             `(export ',name ,(package-name (symbol-package name)))))
        ',name)))
 
-(defmacro expose-to-clojure (clj cl)
+(defmacro expose-to-clojure-1 (clj cl)
   "Export a Lisp special variable as a Clojure dynamic binding."
   `(progn
      (eval-always
@@ -87,19 +87,28 @@ That's defun-1 as in Lisp-1."
      (define-symbol-macro ,clj ,cl)
      ',clj))
 
-(expose-to-clojure #_*out* *standard-output*)
-(expose-to-clojure #_*err* *standard-error*)
-(expose-to-clojure #_*in* *standard-input*)
-(expose-to-clojure #_*ns* *package*)
+(defmacro expose-to-clojure (&body pairs)
+  (let ((pairs (batches pairs 2 :even t)))
+    `(progn
+       ,@(loop for (clj cl) in pairs
+               collect `(expose-to-clojure-1 ,clj ,cl)))))
 
-(expose-to-clojure #_*1 *)
-(expose-to-clojure #_*2 **)
-(expose-to-clojure #_*3 ***)
+(expose-to-clojure
+  #_*out* *standard-output*
+  #_*err* *standard-error*
+  #_*in* *standard-input*
+  #_*ns* *package*)
 
-(expose-to-clojure #_*print-length* *print-length*)
-(expose-to-clojure #_*print-level* *print-level*)
-(expose-to-clojure #_*print-readably* *print-readably*)
-(expose-to-clojure #_*read-eval* *read-eval*)
+(expose-to-clojure
+  #_*1 *
+  #_*2 **
+  #_*3 ***)
+
+(expose-to-clojure
+  #_*print-length* *print-length*
+  #_*print-level* *print-level*
+  #_*print-readably* *print-readably*
+  #_*read-eval* *read-eval*)
 
 (defmacro clojure-let1 (pattern expr &body body)
   `(ematch ,expr
