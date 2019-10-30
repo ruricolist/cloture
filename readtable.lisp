@@ -115,13 +115,18 @@
        (find-external-symbol symbol-name package :error t)))
     (otherwise symbol)))
 
+(defun fixup-symbols (tree)
+  (leaf-map (lambda (x)
+              (if (symbolp x)
+                  (resolve-slash-symbol x)
+                  x))
+            tree))
+
 (defun subread-clojure (stream char arg)
   (declare (ignore char arg))
   (let* ((*package* (find-package "user"))
          (form (read-clojure stream :recursive t)))
-    (if (symbolp form)                  ;XXX
-        (resolve-slash-symbol form)
-        form)))
+    (fixup-symbols form)))
 
 (defun read-clojure-from-string (string
                                  &key (eof-error-p t)
