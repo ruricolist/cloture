@@ -76,7 +76,7 @@ That's defun-1 as in Lisp-1."
                ,@(unsplice doc)))
        ,@(unsplice
           (unless private?
-            `(export ',name)))
+            `(export ',name ,(package-name (symbol-package name)))))
        ',name)))
 
 (defmacro expose-to-clojure (clj cl)
