@@ -12,15 +12,6 @@
 (define-symbol-macro #_false nil)
 (define-symbol-macro #_nil nil)
 
-(eval-always
-  (defun parse-docs (body)
-    (if (stringp (first body))
-        (values (first body) (rest body))
-        (values nil body)))
-
-  (defun car+cdr (list)
-    (values (car list) (cdr list))))
-
 (defmacro defun-1 (name args &body body)
   "Define NAME in both the function and value namespaces.
 That's defun-1 as in Lisp-1."
@@ -60,20 +51,6 @@ That's defun-1 as in Lisp-1."
 ;;; backing Lisp special (the "var"). Using `let' just rebinds the
 ;;; symbol macro. But `binding' expands the symbol macro.
 
-(expose-to-clojure #_*out* *standard-output*)
-(expose-to-clojure #_*err* *standard-error*)
-(expose-to-clojure #_*in* *standard-input*)
-(expose-to-clojure #_*ns* *package*)
-
-(expose-to-clojure #_*1 *)
-(expose-to-clojure #_*2 **)
-(expose-to-clojure #_*3 ***)
-
-(expose-to-clojure #_*print-length* *print-length*)
-(expose-to-clojure #_*print-level* *print-level*)
-(expose-to-clojure #_*print-readably* *print-readably*)
-(expose-to-clojure #_*read-eval* *read-eval*)
-
 (defconst clojure-var-prefix '*clojure-var-)
 
 (defmacro #_def (name &body body)
@@ -110,6 +87,20 @@ That's defun-1 as in Lisp-1."
      (define-symbol-macro ,clj ,cl)
      ',clj))
 
+(expose-to-clojure #_*out* *standard-output*)
+(expose-to-clojure #_*err* *standard-error*)
+(expose-to-clojure #_*in* *standard-input*)
+(expose-to-clojure #_*ns* *package*)
+
+(expose-to-clojure #_*1 *)
+(expose-to-clojure #_*2 **)
+(expose-to-clojure #_*3 ***)
+
+(expose-to-clojure #_*print-length* *print-length*)
+(expose-to-clojure #_*print-level* *print-level*)
+(expose-to-clojure #_*print-readably* *print-readably*)
+(expose-to-clojure #_*read-eval* *read-eval*)
+
 (defmacro clojure-let1 (pattern expr &body body)
   `(ematch ,expr
      (,pattern ,@body)))
@@ -144,14 +135,6 @@ nested)."
     ;; NB Clojure `binding' works in parallel (unlike Clojure `let').
     `(let ,(mapcar #'list vars exprs)
        ,@body)))
-
-(defun var (sym &optional env)
-  (let ((exp (macroexpand-1 (assure symbol sym) env)))
-    (when (or (eql exp sym)
-              (not (symbolp exp))
-              (not (meta-ref sym :|dynamic|)))
-      (error "Not a var: ~a" sym))
-    exp))
 
 (defmacro #_var (symbol &environment env)
   `(quote ,(var symbol env)))
@@ -407,18 +390,11 @@ nested)."
 (defgeneric-1 #_extends? (protocol atype))
 (defgeneric-1 #_satisfies? (protocol x))
 
-(defun check-protocol (protocol-name fn-names)
-  ;; TODO Are protocols supposed to be exhaustive?
-  (let* ((protocol (symbol-protocol protocol-name))
-         (protocol-functions (protocol-functions protocol)))
-    (assert (subsetp fn-names protocol-functions))))
-
 (defmacro #_extend-type (type &body specs)
   (let ((specs (split-specs specs)))
     `(progn
        ,@(loop for (p . methods) in specs
-               for fn-names = (mapcar #'first methods)
-               do (check-protocol p fn-names)
+               do (check-protocol p methods)
                collect `(defmethods ,type
                             (:method #_extends? ((x ,type)) t)
                           ,@(loop for (fn-name arg-seq . body) in methods
@@ -434,10 +410,38 @@ nested)."
        ,@(loop for (type . methods) in specs
                collect `(#_extend-type ,type ,p ,@methods)))))
 
-(defun split-specs (specs)
-  "Split the common Clojure syntax of a symbol (protocol, type) and a list of protocol/interface implementations."
-  (runs specs :test (lambda (x y) (declare (ignore x))
-                      (not (symbolp y)))))
+(defclass clojure-class ()
+  ())
+
+(defmacro #_deftype (type fields &body opts+specs)
+  (mvlet* ((fields (convert 'list fields))
+           (opts specs (parse-leading-keywords opts+specs))
+           (specs (split-specs specs))
+           (constructor-name
+            (intern (string+ type ".")
+                    (symbol-package type))))
+    (declare (ignore opts))
+    `(progn
+       (defclass ,type (clojure-class)
+         (,@(loop for field in fields
+                  collect `(,field :initarg ,field))))
+       (defun-1 ,constructor-name ,fields
+         (make-instance ',type
+                        ,@(loop for field in fields
+                                append `(',field ,field))))
+       (defmethod print-object ((self ,type) stream)
+         (print-unreadable-object (self stream :type t)
+           (with-slots ,fields self
+             (format stream "~{~a~^ ~}"
+                     (list ,@fields)))))
+       ,@(loop for (protocol-name . methods) in specs
+               do (check-protocol protocol-name methods)
+               append (loop for (fn-name arg-seq . body) in methods
+                            for lambda-list = (seq->lambda-list arg-seq)
+                            for this = (first lambda-list)
+                            collect `(defmethod ,fn-name ((,this ,type) ,@(rest lambda-list))
+                                       (with-slots ,fields ,this
+                                         ,@body)))))))
 
 (defun-1 #_contains? (col x)
   (fset:contains? col x))

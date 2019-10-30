@@ -179,3 +179,33 @@
       (setf (symbol-function keyword)
             (lambda (map)
               (|clojure.core|:|get| map keyword))))))
+
+;;; Macro helpers.
+
+(defun parse-docs (body)
+  (if (stringp (first body))
+      (values (first body) (rest body))
+      (values nil body)))
+
+(defun car+cdr (list)
+  (values (car list) (cdr list)))
+
+(defun var (sym &optional env)
+  (let ((exp (macroexpand-1 (assure symbol sym) env)))
+    (when (or (eql exp sym)
+              (not (symbolp exp))
+              (not (meta-ref sym :|dynamic|)))
+      (error "Not a var: ~a" sym))
+    exp))
+
+(defun check-protocol (protocol-name fns)
+  ;; TODO Are protocols supposed to be exhaustive?
+  (let* ((protocol (symbol-protocol protocol-name))
+         (protocol-functions (protocol-functions protocol))
+         (fn-names (mapcar #'ensure-car fns)))
+    (assert (subsetp fn-names protocol-functions))))
+
+(defun split-specs (specs)
+  "Split the common Clojure syntax of a symbol (protocol, type) and a list of protocol/interface implementations."
+  (runs specs :test (lambda (x y) (declare (ignore x))
+                      (not (symbolp y)))))
