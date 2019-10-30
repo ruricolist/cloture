@@ -1,6 +1,7 @@
 (defpackage #:cloture
   (:use #:cl #:alexandria #:serapeum #:named-readtables #:trivia)
   (:local-nicknames (#:nick #:trivial-package-local-nicknames))
+  (:import-from #:trivia.ppcre #:ppcre)
   (:import-from #:fset
     #:equal?
     #:empty?
@@ -32,4 +33,8 @@
            #:clojure-shortcut
            #:clj
            #:cljc
-           #:cljs))
+           #:cljs
+
+           #:defun-1
+           #:expose-to-clojure
+           #:defgeneric-1))

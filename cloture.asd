@@ -1,5 +1,6 @@
 (defsystem "cloture"
   :depends-on ("serapeum"
+               "trivia.ppcre"
                "cl-arrows"
                "fset"
                "named-readtables"
@@ -13,6 +14,7 @@
   :components ((:file "package")
                (:file "fset-hacks")
                (:static-file "core-syms.txt")
+               (:static-file "pprint-syms.txt")
                (:file "clojure-packages")
                (:file "cloture")
                (:file "readtable")

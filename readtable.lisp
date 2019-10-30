@@ -104,10 +104,24 @@
   (with-clojure-reader ()
     (read stream eof-error-p eof-value recursive)))
 
+(defun resolve-slash-symbol (symbol)
+  (match (symbol-name symbol)
+    ((and symbol (type keyword))
+     symbol)
+    ((ppcre "(.*?)/(.*)" package-name symbol-name)
+     (let* ((package
+              (or (find-package package-name)
+                  (error "No such package as ~s" package-name))))
+       (find-external-symbol symbol-name package :error t)))
+    (otherwise symbol)))
+
 (defun subread-clojure (stream char arg)
   (declare (ignore char arg))
-  (let ((*package* (find-package "user")))
-    (read-clojure stream :recursive t)))
+  (let* ((*package* (find-package "user"))
+         (form (read-clojure stream :recursive t)))
+    (if (symbolp form)                  ;XXX
+        (resolve-slash-symbol form)
+        form)))
 
 (defun read-clojure-from-string (string
                                  &key (eof-error-p t)
