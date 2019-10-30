@@ -207,5 +207,6 @@
 
 (defun split-specs (specs)
   "Split the common Clojure syntax of a symbol (protocol, type) and a list of protocol/interface implementations."
-  (runs specs :test (lambda (x y) (declare (ignore x))
-                      (not (symbolp y)))))
+  (if (emptyp specs) nil
+      (runs specs :test (lambda (x y) (declare (ignore x))
+                          (not (symbolp y))))))
