@@ -56,7 +56,11 @@
 
 (defun (setf meta-ref) (value obj key)
   (synchronized (obj)
-    (withf (meta obj) key value)))
+    (let ((meta
+            (or (meta obj)
+                (empty-map))))
+      (setf (meta obj)
+            (with meta key value)))))
 
 (defun falsy? (x)
   ;; TODO false value?

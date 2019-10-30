@@ -60,10 +60,19 @@ That's defun-1 as in Lisp-1."
 ;;; backing Lisp special (the "var"). Using `let' just rebinds the
 ;;; symbol macro. But `binding' expands the symbol macro.
 
-(define-symbol-macro #_*out* *standard-output*)
-(define-symbol-macro #_*err* *standard-error*)
-(define-symbol-macro #_*in* *standard-input*)
-(define-symbol-macro #_*ns* *package*)
+(expose-to-clojure #_*out* *standard-output*)
+(expose-to-clojure #_*err* *standard-error*)
+(expose-to-clojure #_*in* *standard-input*)
+(expose-to-clojure #_*ns* *package*)
+
+(expose-to-clojure #_*1 *)
+(expose-to-clojure #_*2 **)
+(expose-to-clojure #_*3 ***)
+
+(expose-to-clojure #_*print-length* *print-length*)
+(expose-to-clojure #_*print-level* *print-level*)
+(expose-to-clojure #_*print-readably* *print-readably*)
+(expose-to-clojure #_*read-eval* *read-eval*)
 
 (defconst clojure-var-prefix '*clojure-var-)
 
@@ -83,9 +92,7 @@ That's defun-1 as in Lisp-1."
        ,(if dynamic?
             (let ((backing-var (symbolicate clojure-var-prefix name)))
               `(progn
-                 (eval-always
-                   (setf (meta-ref ',name :|dynamic|) t))
-                 (define-symbol-macro ,name ,backing-var)
+                 (expose-to-clojure ,name ,backing-var)
                  (defparameter ,backing-var ,expr
                    ,@(unsplice doc))))
             `(def ,name ,expr
@@ -94,6 +101,14 @@ That's defun-1 as in Lisp-1."
           (unless private?
             `(export ',name)))
        ',name)))
+
+(defmacro expose-to-clojure (clj cl)
+  "Export a Lisp special variable as a Clojure dynamic binding."
+  `(progn
+     (eval-always
+       (setf (meta-ref ',clj :|dynamic|) t))
+     (define-symbol-macro ,clj ,cl)
+     ',clj))
 
 (defmacro clojure-let1 (pattern expr &body body)
   `(ematch ,expr
@@ -520,11 +535,11 @@ nested)."
     (setf (symbol-value root)
           (apply f (symbol-value root) args))))
 
-(defvar *clojure-var-assert* t)
-(define-symbol-macro #_*assert* *clojure-var-assert*)
+(defvar *assert* t)
+(expose-to-clojure #_*assert* *assert*)
 
 (defmacro #_assert (test &optional message)
-  `(when #_*assert*
+  `(when *assert*
      (assert ,test () ,@(unsplice message))))
 
 (defun-1 #_special-symbol? (s)
