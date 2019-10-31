@@ -116,6 +116,7 @@
     (otherwise symbol)))
 
 (defun fixup-symbols (tree)
+  ;; TODO descend into maps, vectors, etc.
   (leaf-map (lambda (x)
               (if (symbolp x)
                   (resolve-slash-symbol x)
