@@ -8,10 +8,6 @@
       if do def let binding var
       loop recur throw try))
 
-(define-symbol-macro #_true t)
-(define-symbol-macro #_false nil)
-(define-symbol-macro #_nil nil)
-
 (defmacro defun-1 (name args &body body)
   "Define NAME in both the function and value namespaces.
 That's defun-1 as in Lisp-1."
@@ -25,6 +21,15 @@ That's defun-1 as in Lisp-1."
      (defgeneric ,name ,args ,@body)
      (define-symbol-macro ,name #',name)
      ',name))
+
+(defun-1 #_nil? (x)
+  (eql x #_nil))
+
+(defun-1 #_false? (x)
+  (eql x #_false))
+
+(defun-1 #_true? (x)
+  (eql x #_true))
 
 (defun-1 #_meta (x)
   (meta x))
@@ -339,6 +344,9 @@ nested)."
 
 (defmacro #_when (test &body body)
   `(#_if ,test (#_do ,@body)))
+
+(defmacro #_when-not (test &body body)
+  `(#_if-not ,test (#_do ,@body)))
 
 (defun-1 #_apply (fn &rest args)
   (apply #'apply fn args))

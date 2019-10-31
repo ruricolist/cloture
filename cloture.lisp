@@ -5,6 +5,11 @@
   "Type for objects that don't allow metadata."
   '(or string number keyword boolean))
 
+(defunit |clojure.core|:|true|)
+(defunit |clojure.core|:|false|)
+;;; Lisp nil is reserved for the empty list.
+(defunit |clojure.core|:|nil|)
+
 (define-modify-macro withf (&rest item-or-tuple) with)
 (define-modify-macro lessf (&rest item-or-tuple) less)
 
@@ -64,7 +69,8 @@
 
 (defun falsy? (x)
   ;; TODO false value?
-  (null x))
+  (or (eql x |clojure.core|:|false|)
+      (eql x |clojure.core|:|nil|)))
 
 (defun truthy? (x)
   (not (falsy? x)))
