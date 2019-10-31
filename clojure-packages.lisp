@@ -8,7 +8,31 @@
                 (serapeum:lines
                  (alexandria:read-file-into-string
                   (asdf:system-relative-pathname "cloture" "core-syms.txt")))
-                '("&" "var"))))
+                '("&" "var" "true" "false" "nil"
+                  "invoke" "equiv"
+                  "IAssociative"
+                  "ICollection"
+                  "IComparable"
+                  "ICounted"
+                  "IEmptyableCollection"
+                  "IEquiv"
+                  "IFn"
+                  "IHash"
+                  "IIndexable"
+                  "IIndexed"
+                  "IIterable"
+                  "IKVReduce"
+                  "ILookup"
+                  "IMeta"
+                  "INext"
+                  "IReduce"
+                  "IReversible"
+                  "ISeq"
+                  "ISeqable"
+                  "ISequential"
+                  "ISorted"
+                  "IWithMeta"
+                  "Object"))))
 
 (defpackage "clojure.pprint"
   (:use "clojure.core")

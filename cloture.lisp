@@ -198,12 +198,18 @@
       (error "Not a var: ~a" sym))
     exp))
 
+(defconstructor protocol
+  (name symbol)
+  (functions list))
+
+(define-namespace protocol protocol)
+
 (defun check-protocol (protocol-name fns)
   ;; TODO Are protocols supposed to be exhaustive?
   (let* ((protocol (symbol-protocol protocol-name))
-         (protocol-functions (protocol-functions protocol))
+         (protocol-fn-names (mapcar #'ensure-car (protocol-functions protocol)))
          (fn-names (mapcar #'ensure-car fns)))
-    (assert (subsetp fn-names protocol-functions))))
+    (assert (subsetp fn-names protocol-fn-names))))
 
 (defun split-specs (specs)
   "Split the common Clojure syntax of a symbol (protocol, type) and a list of protocol/interface implementations."

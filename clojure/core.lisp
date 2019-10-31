@@ -364,25 +364,8 @@ nested)."
           :key #'ensure-list
           :initial-value x))
 
-(defconstructor protocol
-  (name symbol)
-  (functions list))
-
-(define-namespace protocol protocol)
-
-(defmacro #_defprotocol (name &body specs)
-  (mvlet* ((doc specs (parse-docs specs))
-           (sigs
-            (collecting
-              (dolist (spec specs)
-                (ematch spec
-                  ((lambda-list name
-                                (and args (type seq))
-                                &optional docs)
-                   (let ((lambda-list (seq->lambda-list args)))
-                     (unless lambda-list
-                       (error "Protocol function cannot be nullary."))
-                     (collect (list name lambda-list docs)))))))))
+(defmacro defprotocol (name &body specs)
+  (mvlet ((doc sigs (parse-docs specs)))
     `(progn
        (eval-always
          (setf (symbol-protocol ',name)
@@ -392,26 +375,96 @@ nested)."
               `(setf (documentation ',name 'protocol)
                      ,doc))))
        ,@(loop for (name lambda-list docs) in sigs
+               do (unless lambda-list
+                    (error "Protocol function cannot be nullary."))
                collect `(defgeneric-1 ,name ,lambda-list
                           ,@(unsplice (and docs `(:documentation ,docs)))))
-       (#_def ,name (symbol-protocol ',name)))))
+       (define-symbol-macro ,name (symbol-protocol ',name)))))
 
-(defgeneric-1 #_extends? (protocol atype))
+(defmacro #_defprotocol (name &body specs)
+  (mvlet* ((docs specs (parse-docs specs))
+           (sigs
+            (collecting
+              (dolist (spec specs)
+                (ematch spec
+                  ((lambda-list name
+                                (and args (type seq))
+                                &optional docs)
+                   (let ((lambda-list (seq->lambda-list args)))
+                     (collect (list name lambda-list docs)))))))))
+    `(defprotocol ,name
+       ,@(unsplice docs)
+       ,@sigs)))
+
+(defprotocol #_ISeq
+  (#_first (seq))
+  (#_rest (seq)))
+
+(defprotocol #_IFn
+  (#_invoke (x &rest args)))
+
+(defprotocol #_ISeqable
+  (#_seq (x)))
+
+(defprotocol #_IHash
+  (#_hash (x)))
+
+(defprotocol #_ILookup
+  (#_lookup (obj key &optional not-found)))
+
+(defprotocol #_IEquiv
+  (#_equiv (self other)))
+
+(defprotocol #_ICounted
+  (#_count (col)))
+
+(defprotocol #_IReversible
+  (#_rseq (col)))
+
+(defprotocol #_ISequential)
+
+(defprotocol #_IAssociative
+  (#_contains? (coll k))
+  (#_assoc (coll k v)))
+
+(defprotocol #_IComparable
+  (#_compare (x y)))
+
+(defgeneric extends? (protocol-name type))
+
+(defgeneric-1 #_extends? (protocol atype)
+  (:method ((protocol protocol) atype)
+    (extends? (protocol-name protocol) atype)))
 (defgeneric-1 #_satisfies? (protocol x))
 
-(defmacro #_extend-type (type &body specs)
+(defmacro extend-type (type &body specs)
   (let ((specs (split-specs specs)))
     `(progn
        ,@(loop for (p . methods) in specs
                do (check-protocol p methods)
-               collect `(defmethods ,type
-                            (:method #_extends? ((x ,type)) t)
-                          ,@(loop for (fn-name arg-seq . body) in methods
-                                  for lambda-list = (seq->lambda-list arg-seq)
+               collect `(progn
+                          (defmethod extends? ((protocol (eql ,p)) (x ,type))
+                            t)
+                          ,@(loop for (fn-name lambda-list . body) in methods
                                   for this = (first lambda-list)
-                                  collect `(:method ,fn-name ((,this ,type)
-                                                              ,@(rest lambda-list))
+                                  collect `(defmethod ,fn-name ((,this ,type)
+                                                                ,@(rest lambda-list))
                                              ,@body)))))))
+
+(defmacro #_extend-type (type &body specs)
+  (let ((specs (split-specs specs)))
+    `(extend-type ,type
+       ,@(loop for (p . methods) in specs
+               append (cons p
+                            (loop for (fn-name arg-seq . body) in methods
+                                  for lambda-list = (seq->lambda-list arg-seq)
+                                  collect (list* fn-name lambda-list body)))))))
+
+(defmacro extend-protocol (p &body specs)
+  (let ((specs (split-specs specs)))
+    `(progn
+       ,@(loop for (type . methods) in specs
+               collect `(extend-type ,type ,p ,@methods)))))
 
 (defmacro #_extend-protocol (p &body specs)
   (let ((specs (split-specs specs)))
@@ -452,8 +505,98 @@ nested)."
                                        (with-slots ,fields ,this
                                          ,@body)))))))
 
-(defun-1 #_contains? (col x)
-  (fset:contains? col x))
+(extend-type t
+  #_IComparable
+  (#_compare
+   (x y)
+   (ecase (fset:compare x y)
+     (:greater 1)
+     (:less -1)
+     (:equal 0))))
+
+(extend-protocol #_IFn
+  function
+  (#_invoke (fn &rest args) (apply fn args)))
+
+(extend-protocol #_IHash
+  t                                     ;Cheating?
+  (#_hash (x) (murmurhash:murmurhash x)))
+
+(extend-protocol #_ILookup
+  map
+  (#_lookup (map key &optional (not-found #_nil))
+            (multiple-value-bind (val val?)
+                (fset:lookup map key)
+              (if val? val not-found)))
+  hash-table
+  (#_lookup (table key &optional (not-found #_nil))
+            (gethash table key not-found)))
+
+(extend-protocol #_IEquiv
+  t
+  (#_equiv (self other) (equal? self other)))
+
+(extend-protocol #_ICounted
+  #_nil (#_count (x) 0)
+  sequence (#_count (x) (length x))
+  seq (#_count (x) (size x))
+  map (#_count (x) (size x))
+  hash-table (#_count (x) (hash-table-count x)))
+
+(defun-1 #_counted? (x)
+  (extends? x #_ICounted))
+
+(extend-type #_nil
+  #_ISeq
+  (#_first (x) #_nil)
+  (#_rest (x) nil)
+  #_ISeqable
+  (#_seq (x) #_nil))
+
+(extend-type null
+  #_ISeq
+  (#_first (x) #_nil)
+  (#_rest (x) nil)
+  #_ISeqable
+  (#_seq (x) #_nil))
+
+(extend-type cons
+  #_ISeq
+  (#_first (x) (car x))
+  (#_rest (x) (cdr x))
+  #_ISeqable
+  (#_seq (x) x))
+
+;; Vectors (and strings).
+(extend-type vector
+  #_ISeq
+  (#_first (x) (if (emptyp x) #_nil (aref x 0)))
+  (#_rest (x) (if (emptyp x) () (nsubseq x 1)))
+  #_ISeqable
+  (#_seq (x) (if (emptyp x) #_nil x)))
+
+(extend-type sequence
+  #_ISeq
+  (#_first (x) (if (emptyp x) #_nil (elt x 0)))
+  (#_rest (x) (if (emptyp x) () (subseq x 1)))
+  #_ISeqable
+  (#_seq (seq) (if (emptyp seq) #_nil seq)))
+
+(extend-type fset:seq
+  #_ISeq
+  (#_first (x) (if (empty? x) #_nil (fset:first x)))
+  (#_rest (x) (if (empty? x) () (fset:subseq x 1)))
+  #_ISeqable
+  (#_seq (seq) (if (empty? seq) #_nil seq)))
+
+(defmacro #_new (class-name &rest args)
+  `(make-instance ',class-name ,@args))
+
+(defun-1 #_instance? (x class)
+  (typep x class))
+
+(defun-1 #_type (x)
+  (type-of x))
 
 (defun-1 #_inc (n)
   (1+ n))
@@ -477,15 +620,6 @@ nested)."
       (with seq idx val)
       (error "Idx ~a not valid for ~a" idx seq)))
 
-(defun-1 #_assoc (map key val &rest kvs)
-  (let ((with (if (typep map 'seq) #'seq-with
-                  #'fset:with)))
-    (reduce (lambda (map kv)
-              (apply with map kv))
-            (cons (list key val)
-                  (batches kvs 2 :even t))
-            :initial-value map)))
-
 (defun-1 #_dissoc (map key &rest keys)
   (reduce #'less
           (cons key keys)
@@ -504,27 +638,19 @@ nested)."
     ((list* test expr clauses)
      `(#_if ,test ,expr (#_cond ,@clauses)))))
 
-(defgeneric-1 #_seq (coll)
-  (:method ((list list))
-    (or list #_nil))
-  (:method ((seq sequence))
-    (if (emptyp seq) #_nil seq))
-  (:method ((seq seq))
-    (if (empty? seq) #_nil
-        seq))
-  (:method ((map map))
-    (if (empty? map) #_nil
-        (collecting
-          (do-map (k v map)
-            (collect (seq k v))))))
-  (:method ((set set))
-    (if (empty? set) #_nil
-        (collecting
-          (do-set (x set)
-            (collect x))))))
-
-(defun-1 #_count (col)
-  (size col))
+(extend-protocol #_ISeqable
+  map
+  (#_seq (map)
+         (if (empty? map) #_nil
+             (collecting
+               (do-map (k v map)
+                 (collect (seq k v))))))
+  set
+  (#_seq (set)
+         (if (empty? set) #_nil
+             (collecting
+               (do-set (x set)
+                 (collect x))))))
 
 (defmacro #_letfn (fnspecs &body body)
   (let* ((fnspecs (convert 'list fnspecs)))
@@ -570,9 +696,6 @@ nested)."
              collect `(progn
                         (defalias ,arg (constantly #_nil))
                         (#_def arg #_nil)))))
-
-(defun-1 #_hash (x)
-  (murmurhash:murmurhash x))
 
 (defun-1 #_= (&rest args)
   (match args
