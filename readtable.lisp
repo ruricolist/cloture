@@ -108,7 +108,7 @@
   (match (symbol-name symbol)
     ((and symbol (type keyword))
      symbol)
-    ((ppcre "(.*?)/(.*)" package-name symbol-name)
+    ((ppcre "(.+?)/(.+)" package-name symbol-name)
      (let* ((package
               (or (find-package package-name)
                   (error "No such package as ~s" package-name))))
