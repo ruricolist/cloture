@@ -35,10 +35,17 @@
                   "Object"))))
 
 (defpackage "clojure.pprint"
-  (:use "clojure.core")
+  (:use)
   (:export . #.(serapeum:lines
                 (alexandria:read-file-into-string
                  (asdf:system-relative-pathname "cloture" "pprint-syms.txt")))))
 
+(defpackage "clojure.string"
+  (:use))
+
 (defpackage "user"
   (:use "clojure.core"))
+
+(defpackage #:cloture.impl
+  (:documentation "Package used for the Clojure shortcut reader macro.")
+  (:use "clojure.core" "clojure.pprint" "clojure.string"))

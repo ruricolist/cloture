@@ -125,7 +125,7 @@
 
 (defun subread-clojure (stream char arg)
   (declare (ignore char arg))
-  (let* ((*package* (find-package "user"))
+  (let* ((*package* (find-package :cloture.impl))
          (form (read-clojure stream :recursive t)))
     (fixup-symbols form)))
 

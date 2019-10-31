@@ -20,7 +20,8 @@
                (:file "readtable")
                (:file "asdf")
                (:module "clojure"
-                :components ((:file "core")))))
+                :components ((:file "core")
+                             (:file "pprint")))))
 
 (defsystem "cloture/test"
   :depends-on ("cloture" "fiveam")
