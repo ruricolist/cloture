@@ -31,9 +31,6 @@ That's defun-1 as in Lisp-1."
 (defun-1 #_true? (x)
   (eql x #_true))
 
-(defun-1 #_meta (x)
-  (meta x))
-
 (defun-1 #_zero? (n) (zerop n))
 (defun-1 #_neg? (n) (minusp n))
 (defun-1 #_pos? (n) (plusp n))
@@ -213,23 +210,28 @@ nested)."
 
 ;; (defmacro #_try (&body body))
 
-(defun-1 #_list (&rest items)
-  items)
+(defmacro alias-from (from to)
+  `(progn
+     (defmacro ,to (&body body)
+       (cons ',from body))
+     (define-symbol-macro ,to ,from)))
 
-(defun-1 #_list* (&rest items)
-  ;; TODO non-lists
-  (cond ((null items))
-        ((single items) (first items))
-        (t
-         (fset:reverse
-          (fset:concat (fset:reverse items)
-                       (reverse (butlast items)))))))
+(defun qualify-symbol (ns symbol)
+  (intern (string+ ns "/" symbol)))
 
 (defun-1 #_refer-clojure (&rest args)
-  (apply #'#_refer args))
+  (apply #'#_refer :|clojure.core| args))
+
+(defun setup-qualified-names (p &optional prefix)
+  (let* ((package (find-package p))
+         (prefix (or prefix (package-name package))))
+    (dolist (export (package-exports package))
+      (let ((qname (qualify-symbol prefix export)))
+        (eval `(alias-from ,export ,qname))))))
 
 (defun-1 #_refer (ns &key exclude only rename)
   (let ((p (find-package ns)))
+    (setup-qualified-names p)
     (if (nor exclude only) (use-package p)
         (let* ((exports (package-exports p))
                (exports
@@ -245,10 +247,7 @@ nested)."
             (do-map (from to rename)
               (let ((from (find-external-symbol from p :error t))
                     (to (intern (string to))))
-                (eval `(progn
-                         (defmacro to (&body body)
-                           (cons ',from body))
-                         (define-symbol-macro ,to ,from))))))))))
+                (eval `(alias-from ,from ,to)))))))))
 
 (defun-1 #_require (&rest args)
   "Implements Clojure require (and use, because)."
@@ -263,7 +262,9 @@ nested)."
                  (arg arg))
         (match arg
           ((and libspec (type symbol))
-           (expect-package (string+ prefix libspec)))
+           (let ((name (string+ prefix libspec)))
+             (expect-package name)
+             (setup-qualified-names name)))
           ((and libspec (type seq))
            (ematch (convert 'list libspec)
              ((lambda-list lib &key as refer exclude only rename)
@@ -271,8 +272,7 @@ nested)."
                 (error "Invalid: ~a" libspec))
               (let ((lib (string+ prefix lib)))
                 (expect-package lib)
-                (when as
-                  (nick:add-package-local-nickname as lib))
+                (setup-qualified-names lib as)
                 (when refer
                   (match refer
                     (:all (#_refer lib))
@@ -298,7 +298,7 @@ nested)."
        (in-package ,(string name))
        ,@(unsplice
           (unless (find :|refer-clojure| refs :key #'car)
-            `(use-package "clojure.core")))
+            `(#_refer :|clojure.core|)))
        ,@(loop for ref in refs
                collect (ematch ref
                          ;; TODO
@@ -311,7 +311,9 @@ nested)."
                          ((list* :|require| args)
                           `(#_require ,@args))
                          ((list* :|refer-clojure| args)
-                          `(#_refer-clojure ,@args))))
+                          `(#_refer-clojure ,@args))
+                         ((list* :|refer-cl| args)
+                          `(#_refer-cl ,@args))))
        (find-package ,name))))
 
 (defmacro #_in-ns (name)
@@ -350,9 +352,6 @@ nested)."
 
 (defun-1 #_apply (fn &rest args)
   (apply #'apply fn args))
-
-(defun-1 #_str (&rest args)
-  (apply #'string+ args))
 
 (defun-1 #_throw (arg)
   (error arg))
@@ -404,9 +403,21 @@ nested)."
        ,@(unsplice docs)
        ,@sigs)))
 
+(defprotocol #_Object
+  (#_toString (o)))
+
+(defprotocol #_IEquiv
+  (#_equiv (self other)))
+
+(defprotocol #_ICollection
+  (#_conj (coll x)))
+
 (defprotocol #_ISeq
   (#_first (seq))
   (#_rest (seq)))
+
+(defprotocol #_INext
+  (#_next (seq)))
 
 (defprotocol #_IFn
   (#_invoke (x &rest args)))
@@ -414,14 +425,14 @@ nested)."
 (defprotocol #_ISeqable
   (#_seq (x)))
 
+(defprotocol #_IEmptyableCollection
+  (#_empty (coll) "Create an empty collection."))
+
 (defprotocol #_IHash
   (#_hash (x)))
 
 (defprotocol #_ILookup
   (#_lookup (obj key &optional not-found)))
-
-(defprotocol #_IEquiv
-  (#_equiv (self other)))
 
 (defprotocol #_ICounted
   (#_count (col)))
@@ -437,6 +448,12 @@ nested)."
 
 (defprotocol #_IComparable
   (#_compare (x y)))
+
+(defprotocol #_IMeta
+  (#_meta (x)))
+
+(defprotocol #_IWithMeta
+  (#_with-meta (o meta)))
 
 (defgeneric extends? (protocol-name type))
 
@@ -514,20 +531,32 @@ nested)."
                                          ,@body)))))))
 
 (extend-type t
+  #_Object
+  (#_toString (x) (princ-to-string x)))
+
+(defun-1 #_str (&rest args)
+  (with-output-to-string (s)
+    (dolist (arg args)
+      (unless (#_nil? arg)
+        (write-string (#_toString arg) s)))))
+
+(extend-type t
   #_IComparable
   (#_compare
    (x y)
    (ecase (fset:compare x y)
      (:greater 1)
      (:less -1)
-     (:equal 0))))
+     (:equal 0)))
+  #_INext
+  (#_next (x) (#_seq (#_rest x))))
 
 (extend-protocol #_IFn
   function
   (#_invoke (fn &rest args) (apply fn args)))
 
 (extend-protocol #_IHash
-  t                                     ;Cheating?
+  t
   (#_hash (x) (murmurhash:murmurhash x)))
 
 (extend-protocol #_ILookup
@@ -544,6 +573,14 @@ nested)."
   t
   (#_equiv (self other) (equal? self other)))
 
+(extend-protocol #_IMeta
+  t
+  (#_meta (x) (meta x)))
+
+(extend-protocol #_IWithMeta
+  t
+  (#_with-meta (o meta) (with-meta o meta)))
+
 (extend-protocol #_ICounted
   #_nil (#_count (x) 0)
   sequence (#_count (x) (length x))
@@ -559,21 +596,33 @@ nested)."
   (#_first (x) #_nil)
   (#_rest (x) nil)
   #_ISeqable
-  (#_seq (x) #_nil))
+  (#_seq (x) #_nil)
+  #_IEmptyableCollection
+  (#_empty (x) #_nil)
+  #_ICollection
+  (#_conj (coll x) (list x)))
 
 (extend-type null
   #_ISeq
   (#_first (x) #_nil)
   (#_rest (x) nil)
   #_ISeqable
-  (#_seq (x) #_nil))
+  (#_seq (x) #_nil)
+  #_IEmptyableCollection
+  (#_empty (x) nil)
+  #_ICollection
+  (#_conj (coll x) (list x)))
 
 (extend-type cons
   #_ISeq
   (#_first (x) (car x))
   (#_rest (x) (cdr x))
   #_ISeqable
-  (#_seq (x) x))
+  (#_seq (x) x)
+  #_IEmptyableCollection
+  (#_empty (x) nil)
+  #_ICollection
+  (#_conj (coll x) (cons x coll)))
 
 ;; Vectors (and strings).
 (extend-type vector
@@ -581,21 +630,53 @@ nested)."
   (#_first (x) (if (emptyp x) #_nil (aref x 0)))
   (#_rest (x) (if (emptyp x) () (nsubseq x 1)))
   #_ISeqable
-  (#_seq (x) (if (emptyp x) #_nil x)))
+  (#_seq (x) (if (emptyp x) #_nil x))
+  #_IEmptyableCollection
+  (#_empty (x) #()))
 
 (extend-type sequence
   #_ISeq
   (#_first (x) (if (emptyp x) #_nil (elt x 0)))
   (#_rest (x) (if (emptyp x) () (subseq x 1)))
   #_ISeqable
-  (#_seq (seq) (if (emptyp seq) #_nil seq)))
+  (#_seq (seq) (if (emptyp seq) #_nil seq))
+  #_IEmptyableCollection
+  (#_empty (x) (subseq x 0 0)))
 
 (extend-type fset:seq
   #_ISeq
   (#_first (x) (if (empty? x) #_nil (fset:first x)))
   (#_rest (x) (if (empty? x) () (fset:subseq x 1)))
   #_ISeqable
-  (#_seq (seq) (if (empty? seq) #_nil seq)))
+  (#_seq (seq) (if (empty? seq) #_nil seq))
+  #_IEmptyableCollection
+  (#_empty (seq) (fset:empty-seq))
+  #_ICollection
+  (#_conj (seq x) (fset:with-last seq x)))
+
+(extend-type map
+  #_ISeqable
+  (#_seq (map)
+         (if (empty? map) #_nil
+             (collecting
+               (do-map (k v map)
+                 (collect (seq k v))))))
+  #_IEmptyableCollection
+  (#_empty (map) (fset:empty-map))
+  #_ICollection
+  (#_conj (map x) (apply #'fset:with map (convert 'list (#_seq x)))))
+
+(extend-type set
+  #_ISeqable
+  (#_seq (set)
+         (if (empty? set) #_nil
+             (collecting
+               (do-set (x set)
+                 (collect x)))))
+  #_IEmptyableCollection
+  (#_empty (set) (fset:empty-set))
+  #_ICollection
+  (#_conj (set x) (with set x)))
 
 (defmacro #_new (class-name &rest args)
   `(make-instance ',class-name ,@args))
@@ -645,20 +726,6 @@ nested)."
      `(#_if ,test ,expr #_nil))
     ((list* test expr clauses)
      `(#_if ,test ,expr (#_cond ,@clauses)))))
-
-(extend-protocol #_ISeqable
-  map
-  (#_seq (map)
-         (if (empty? map) #_nil
-             (collecting
-               (do-map (k v map)
-                 (collect (seq k v))))))
-  set
-  (#_seq (set)
-         (if (empty? set) #_nil
-             (collecting
-               (do-set (x set)
-                 (collect x))))))
 
 (defmacro #_letfn (fnspecs &body body)
   (let* ((fnspecs (convert 'list fnspecs)))
@@ -726,3 +793,15 @@ nested)."
 (defmacro #_comment (&body body)
   (declare (ignore body))
   (values))
+
+(defun-1 #_list (&rest items)
+  items)
+
+(defun-1 #_list* (&rest items)
+  ;; TODO non-lists
+  (cond ((null items))
+        ((single items) (first items))
+        (t
+         (fset:reverse
+          (fset:concat (fset:reverse items)
+                       (reverse (butlast items)))))))
