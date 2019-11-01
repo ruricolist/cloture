@@ -849,3 +849,18 @@ nested)."
                  (fset:reverse
                   (fset:concat (fset:reverse items)
                                (reverse (butlast items)))))))))
+
+;;; Not inlining these would be criminal.
+(declaim (inline #_bit-and #_bit-or #_bit-xor #_bit-not #_bit-flip #_bit-set #_bit-shift-right #_bit-shift-left #_bit-and-not #_bit-clear #_bit-test #_unsigned-bit-shift-right))
+
+(defun-1 #_bit-and (x y &rest more)
+  (apply #'logand x y more))
+
+(defun-1 #_bit-or (x y &rest more)
+  (apply #'logior x y more))
+
+(defun-1 #_bit-xor (x y &rest more)
+  (apply #'logxor x y more))
+
+(defun-1 #_bit-not (x)
+  (lognot x))
