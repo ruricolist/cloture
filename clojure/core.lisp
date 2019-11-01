@@ -419,8 +419,19 @@ nested)."
 (defprotocol #_INext
   (#_next (seq)))
 
+(defprotocol #_IIndexed
+  (#_nth (seq n &optional not-found)))
+
+(defprotocol #_Fn)
+
+(defun #_fn? (x)
+  (extends? '#_Fn x))
+
 (defprotocol #_IFn
   (#_invoke (x &rest args)))
+
+(defun #_ifn? (x)
+  (extends? '#_IFn x))
 
 (defprotocol #_ISeqable
   (#_seq (x)))
@@ -551,8 +562,9 @@ nested)."
   #_INext
   (#_next (x) (#_seq (#_rest x))))
 
-(extend-protocol #_IFn
-  function
+(extend-type function
+  #_Fn
+  #_IFn
   (#_invoke (fn &rest args) (apply fn args)))
 
 (extend-protocol #_IHash
@@ -624,7 +636,7 @@ nested)."
   #_ICollection
   (#_conj (coll x) (cons x coll)))
 
-;; Vectors (and strings).
+;; A Lisp vector (or a string).
 (extend-type vector
   #_ISeq
   (#_first (x) (if (emptyp x) #_nil (aref x 0)))
@@ -632,7 +644,15 @@ nested)."
   #_ISeqable
   (#_seq (x) (if (emptyp x) #_nil x))
   #_IEmptyableCollection
-  (#_empty (x) #()))
+  (#_empty (x) #())
+  #_IReversible
+  (#_rseq (x) (reverse x))
+  #_IIndexed
+  (#_nth (v n &optional (not-found nil not-found-supplied?))
+         (if (and (>= n (length v))
+                  not-found-supplied?)
+             not-found
+             (aref v n))))
 
 (extend-type sequence
   #_ISeq
@@ -641,7 +661,17 @@ nested)."
   #_ISeqable
   (#_seq (seq) (if (emptyp seq) #_nil seq))
   #_IEmptyableCollection
-  (#_empty (x) (subseq x 0 0)))
+  (#_empty (x) (subseq x 0 0))
+  #_IFn
+  (#_invoke (x &rest args) (elt x (only-elt args)))
+  #_IReversible
+  (#_rseq (x) (reverse x))
+  #_IIndexed
+  (#_nth (v n &optional (not-found nil not-found-supplied?))
+         (if (and (>= n (length v))
+                  not-found-supplied?)
+             not-found
+             (elt v n))))
 
 (extend-type fset:seq
   #_ISeq
@@ -652,7 +682,17 @@ nested)."
   #_IEmptyableCollection
   (#_empty (seq) (fset:empty-seq))
   #_ICollection
-  (#_conj (seq x) (fset:with-last seq x)))
+  (#_conj (seq x) (fset:with-last seq x))
+  #_IFn
+  (#_invoke (x &rest args) (fset:lookup x (only-elt args)))
+  #_IReversible
+  (#_rseq (x) (fset:reverse x))
+  #_IIndexed
+  (#_nth (v n &optional (not-found nil not-found-supplied?))
+         (if (and (>= n (size v))
+                  not-found-supplied?)
+             not-found
+             (fset:lookup v n))))
 
 (extend-type map
   #_ISeqable
@@ -664,7 +704,9 @@ nested)."
   #_IEmptyableCollection
   (#_empty (map) (fset:empty-map))
   #_ICollection
-  (#_conj (map x) (apply #'fset:with map (convert 'list (#_seq x)))))
+  (#_conj (map x) (apply #'fset:with map (convert 'list (#_seq x))))
+  #_IFn
+  (#_invoke (x &rest args) (fset:lookup x (only-elt args))))
 
 (extend-type set
   #_ISeqable
@@ -801,7 +843,9 @@ nested)."
   ;; TODO non-lists
   (cond ((null items))
         ((single items) (first items))
-        (t
-         (fset:reverse
-          (fset:concat (fset:reverse items)
-                       (reverse (butlast items)))))))
+        (t (let ((last1 (lastcar items)))
+             (if (listp last1)
+                 (apply #'list* items)
+                 (fset:reverse
+                  (fset:concat (fset:reverse items)
+                               (reverse (butlast items)))))))))

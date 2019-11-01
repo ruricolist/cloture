@@ -31,6 +31,7 @@
                   "ISeqable"
                   "ISequential"
                   "ISorted"
+                  "IStack"
                   "IWithMeta"
                   "Object"))))
 
