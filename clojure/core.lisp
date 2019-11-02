@@ -3,6 +3,8 @@
 
 ;;; Note that there are many special cases here that could be compiled more efficiently or inlined, or macro-expanded more legibly. For now simplicity & uniformity is the goal. In the future, maybe, when there is more code to test against, optimization might be worthwile. Not yet.
 
+;;; TODO make Lisp lambda lists and Clojure arg vectors congruent when possible.
+
 (defconst special-forms
   '#_(quote
       if do def let binding var
@@ -413,11 +415,15 @@ nested)."
             (collecting
               (dolist (spec specs)
                 (ematch spec
-                  ((lambda-list name
-                                (and args (type seq))
-                                &optional docs)
-                   (let ((lambda-list (seq->lambda-list args)))
-                     (collect (list name lambda-list docs)))))))))
+                  ((list* name sigs)
+                   (receive (sigs docs)
+                       (if (stringp (lastcar sigs))
+                           (let ((docs (lastcar sigs))
+                                 (sigs (butlast sigs)))
+                             (values sigs docs))
+                           (values sigs nil))
+                     (assert (notany #'fset:empty? sigs))
+                     (collect (list name '(x &rest args) docs)))))))))
     `(defprotocol ,name
        ,@(unsplice docs)
        ,@sigs)))
@@ -514,13 +520,14 @@ nested)."
                                              ,@body)))))))
 
 (defmacro #_extend-type (type &body specs)
-  (let ((specs (split-specs specs)))
-    `(extend-type ,type
-       ,@(loop for (p . methods) in specs
-               append (cons p
-                            (loop for (fn-name arg-seq . body) in methods
-                                  for lambda-list = (seq->lambda-list arg-seq)
-                                  collect (list* fn-name lambda-list body)))))))
+  (with-unique-names (this args)
+    (let ((specs (split-specs specs)))
+      `(extend-type ,type
+         ,@(loop for (p . methods) in specs
+                 append (cons p
+                              (loop for (fn-name . body) in methods
+                                    collect `(,fn-name (,this &rest ,args)
+                                                       (apply (fn ,@body) ,this ,args)))))))))
 
 (defmacro extend-protocol (p &body specs)
   (let ((specs (split-specs specs)))
