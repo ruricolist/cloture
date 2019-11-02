@@ -89,7 +89,6 @@
 
 (defun call/clojure-reader (fn)
   (let ((*readtable* (find-readtable 'cloture))
-        (*package* (find-package "user"))
         (*read-default-float-format* 'double-float))
     (funcall fn)))
 

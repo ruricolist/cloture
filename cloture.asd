@@ -8,7 +8,8 @@
                "trivial-package-local-nicknames"
                "cl-murmurhash"
                "lisp-namespace"
-               "cl-ppcre")
+               "cl-ppcre"
+               "fiveam")
   :in-order-to ((test-op (test-op "cloture/test")))
   :serial t
   :components ((:file "package")
@@ -21,7 +22,8 @@
                (:file "asdf")
                (:module "clojure"
                 :components ((:file "core")
-                             (:file "pprint")))))
+                             (:file "pprint")
+                             (:file "template")))))
 
 (defsystem "cloture/test"
   :depends-on ("cloture" "fiveam")

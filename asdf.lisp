@@ -10,5 +10,6 @@
   ((type :initform "cljs")))
 
 (defmethod asdf:perform :around ((o asdf:compile-op) (c clj))
-  (with-clojure-reader ()
-    (call-next-method)))
+  (let ((*package* (find-package "user")))
+    (with-clojure-reader ()
+      (call-next-method))))

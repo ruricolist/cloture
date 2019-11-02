@@ -121,11 +121,12 @@ That's defun-1 as in Lisp-1."
   #_*read-eval* *read-eval*)
 
 (defmacro with-syms-fbound (syms &body body)
-  (with-unique-names (args)
-    `(macrolet ,(loop for sym in syms
-                      collect `(,sym (&rest ,args)
-                                     (list* 'funcall ',sym ,args)))
-       ,@body)))
+  (let ((syms (remove '_ syms :test #'string=)))
+    (with-unique-names (args)
+      `(macrolet ,(loop for sym in syms
+                        collect `(,sym (&rest ,args)
+                                       (list* 'funcall ',sym ,args)))
+         ,@body))))
 
 (defmacro clojure-let (bindings &body body)
   (match bindings

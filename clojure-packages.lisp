@@ -9,6 +9,7 @@
                  (alexandria:read-file-into-string
                   (asdf:system-relative-pathname "cloture" "core-syms.txt")))
                 '("&" "var" "true" "false" "nil"
+                  "quote" "if" "do" "def" "recur" "throw" "try"
                   "invoke" "equiv"
                   "IAssociative"
                   "ICollection"
@@ -42,11 +43,27 @@
                  (asdf:system-relative-pathname "cloture" "pprint-syms.txt")))))
 
 (defpackage "clojure.string"
-  (:use))
+  (:use)
+  (:export "starts-with?" "ends-with?"))
+
+(defpackage "clojure.test"
+  (:use)
+  (:export #:is #:thrown? #:thrown-with-msg #:testing
+           #:with-test #:deftest #:run-tests #:run-all-tests
+           #:*load-tests* #:use-fixtures))
+
+(defpackage "clojure.template"
+  (:use)
+  (:export "apply-template" "do-template"))
 
 (defpackage "user"
   (:use "clojure.core"))
 
 (defpackage #:cloture.impl
   (:documentation "Package used for the Clojure shortcut reader macro.")
-  (:use "clojure.core" "clojure.pprint" "clojure.string"))
+  (:use
+    "clojure.core"
+    "clojure.pprint"
+    "clojure.string"
+    "clojure.test"
+    "clojure.template"))
