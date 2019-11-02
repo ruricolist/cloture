@@ -132,7 +132,7 @@
 (test binding
   (is (= 0 #_foo*))
   (is (= 1 #_(let [foo* 1] foo*)))
-  (is (= 0 #_(let [foo* 1] (get-foo))))
+  (is (= 0 #_(let [foo* 1] foo* (get-foo))))
   (is (= 1 #_(binding [foo* 1] foo*)))
   (is (= 1 #_(binding [foo* 1] (get-foo)))))
 
@@ -156,11 +156,26 @@
 
 (test letfn
   (is (= 1
-         #_(letfn [(first [xs] (CL:FIRST xs))]
-             (first '(1 2 3))))))
+         #_(letfn [(fst [xs] (CL:FIRST xs))]
+             (fst '(1 2 3)))))
+  (is (= 1
+         (funcall
+          #_(letfn [(fst [xs] (CL:FIRST xs))]
+              fst)
+          '(1 2 3)))))
 
 (test read-nothing
   (is (equal '(1 2) '#_(1 2 #_3))))
+
+#_(def ^:private hello (fn hello [] "hello"))
+#_(def ^{:private true :dynamic true} *hello* (fn hello [] "hello"))
+
+(test lisp-1
+  (is (equal "hello" #_(hello)))
+  (is (equal "goodbye" #_(let [hello (constantly "goodbye")]
+                           (hello))))
+  (is (equal "goodbye" #_(let [[hello] (list (constantly "goodbye"))]
+                           (hello)))))
 
 ;; (test autogensym
 ;;   (destructuring-bind (x1 x2)

@@ -55,7 +55,8 @@ That's defun-1 as in Lisp-1."
 
 (defconst clojure-var-prefix '*clojure-var-)
 
-(defmacro #_def (name &body body)
+(defmacro defprivate (name &body body)
+  "Define a (private) var."
   (mvlet* ((docstring expr
             (ematch body
               ((list (and docstring (type string))
@@ -64,7 +65,6 @@ That's defun-1 as in Lisp-1."
               ((list expr)
                (values nil expr))))
            (dynamic? (meta-ref name :|dynamic|))
-           (private? (meta-ref name :|private|))
            (meta-doc (meta-ref name :|doc|))
            (doc (or docstring meta-doc)))
     `(progn
@@ -76,6 +76,14 @@ That's defun-1 as in Lisp-1."
                    ,@(unsplice doc))))
             `(def ,name ,expr
                ,@(unsplice doc)))
+       (defun ,name (&rest args)
+         (apply ,name args))
+       ',name)))
+
+(defmacro #_def (name &body body)
+  (mvlet* ((private? (meta-ref name :|private|)))
+    `(progn
+       (defprivate ,name ,@body)
        ,@(unsplice
           (unless private?
             `(export ',name ,(package-name (symbol-package name)))))
@@ -112,22 +120,30 @@ That's defun-1 as in Lisp-1."
   #_*print-readably* *print-readably*
   #_*read-eval* *read-eval*)
 
-(defmacro clojure-let1 (pattern expr &body body)
-  `(ematch ,expr
-     (,pattern ,@body)))
+(defmacro with-syms-fbound (syms &body body)
+  (with-unique-names (args)
+    `(macrolet ,(loop for sym in syms
+                      collect `(,sym (&rest ,args)
+                                     (list* 'funcall ',sym ,args)))
+       ,@body)))
 
 (defmacro clojure-let (bindings &body body)
   (match bindings
     ((list) `(#_do ,@body))
     ((list* (and pattern (type symbol)) expr bindings)
      `(let ((,pattern ,expr))
-        (clojure-let ,bindings
-          ,@body)))
+        (with-syms-fbound (,pattern)
+          (clojure-let ,bindings
+            ,@body))))
     ((list* pattern expr bindings)
-     `(ematch ,expr
-        (,(obj->pattern pattern)
-         (clojure-let ,bindings
-           ,@body))))))
+     ;; TODO bind in function namespace
+     (multiple-value-bind (pattern syms)
+         (obj->pattern pattern)
+       `(ematch ,expr
+          (,pattern
+           (with-syms-fbound ,syms
+             (clojure-let ,bindings
+               ,@body))))))))
 
 (defmacro #_let (bindings &body body)
   "Clojure let.
@@ -151,11 +167,12 @@ nested)."
   `(quote ,(var symbol env)))
 
 (defmacro #_defn (name &body body)
-  (mvlet ((docstring body (parse-docs body)))
-    `(progn (defalias ,name
-              (#_fn ,name ,@body)
-              ,@(unsplice docstring))
-            (#_def ,name #',name))))
+  (mvlet ((docs body (parse-docs body)))
+    `(#_def ,name ,@(unsplice docs) (#_fn ,name ,@body))))
+
+(defmacro #_defn- (name &body body)
+  (mvlet ((docs body (parse-docs body)))
+    `(defprivate ,name ,@(unsplice docs) ,@body)))
 
 (defmacro #_fn (&body body)
   (mvlet* ((docstr body (parse-docs body))
@@ -191,15 +208,16 @@ nested)."
            ,expr))))
 
 (defmacro #_loop (binds &body body)
-  (let* ((binds (convert 'list binds))
-         (binds (batches binds 2 :even t))
-         (exprs (mapcar #'second binds))
-         (pats (mapcar (compose #'obj->pattern #'first) binds)))
+  (mvlet* ((binds (convert 'list binds))
+           (binds (batches binds 2 :even t))
+           (exprs (mapcar #'second binds))
+           (pats syms (mapcar (compose #'obj->pattern #'first) binds)))
     (with-unique-names (args)
       `(nlet %recur ((,args (list ,@exprs)))
          (ematch ,args
            ((list ,@pats)
-            ,@body))))))
+            (with-syms-fbound ,syms
+              ,@body)))))))
 
 (defmacro %recur (&rest args)
   (declare (ignore args))
@@ -773,7 +791,9 @@ nested)."
   (let* ((fnspecs (convert 'list fnspecs)))
     `(fbindrec ,(loop for (name . body) in fnspecs
                       collect `(,name (#_fn ,name ,@body)))
-       ,@body)))
+       (symbol-macrolet ,(loop for (name . nil) in fnspecs
+                               collect `(,name #',name))
+         ,@body))))
 
 (defun-1 #_gensym (&optional (prefix-string "G__"))
   (gensym prefix-string))

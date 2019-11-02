@@ -165,18 +165,31 @@
 
 ;;; TODO
 (defun obj->pattern (obj)
-  "Convert OBJ into a Trivia destructuring pattern."
-  (etypecase obj
-    (symbol obj)
-    (seq
-     (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
-       ;; TODO vector, sequence
-       `(or (fset-seq ,@pats)
-            (clojuresque-list ,@pats)
-            ;; NB this matches lists with too few arguments.
-            (clojuresque-sequence ,@pats))))
-    (map
-     `(fset-map ,(map->alist obj)))))
+  "Convert OBJ into a Trivia destructuring pattern.
+Also return (as a second value) a list of all the symbols bound."
+  (let ((syms (queue)))
+    (labels ((map->alist (map)
+               (collecting
+                 (do-map (k v map)
+                   (enq v syms)
+                   (collect (cons k v)))))
+             (obj->pattern (obj)
+               (etypecase obj
+                 (keyword obj)
+                 (symbol
+                  (enq obj syms)
+                  obj)
+                 (seq
+                  (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
+                    ;; TODO vector, sequence
+                    `(or (fset-seq ,@pats)
+                         (clojuresque-list ,@pats)
+                         ;; NB this matches lists with too few arguments.
+                         (clojuresque-sequence ,@pats))))
+                 (map
+                  `(fset-map ,(map->alist obj))))))
+      (values (obj->pattern obj)
+              (qlist syms)))))
 
 (defun fbind-keywords (keywords)
   (dolist (keyword (ensure-list keywords))
