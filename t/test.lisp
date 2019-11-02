@@ -177,6 +177,12 @@
   (is (equal "goodbye" #_(let [[hello] (list (constantly "goodbye"))]
                            (hello)))))
 
+(test pop
+  (is (equal? (seq 1 2) (#_pop (seq 1 2 3))))
+  (is (equal? (seq 1) (#_pop (seq 1 2))))
+  (is (equal? (seq) (#_pop (seq 1))))
+  (signals error (#_pop (seq))))
+
 ;; (test autogensym
 ;;   (destructuring-bind (x1 x2)
 ;;       #_`(~x# ~x#)

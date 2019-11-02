@@ -472,8 +472,11 @@ nested)."
 (defprotocol #_ISequential)
 
 (defprotocol #_IAssociative
-  (#_contains? (coll k))
+  (#_contains-key? (coll k))
   (#_assoc (coll k v)))
+
+(defprotocol #_IKVReduce
+  (#_kv-reduce (coll f init)))
 
 (defprotocol #_IComparable
   (#_compare (x y)))
@@ -483,6 +486,10 @@ nested)."
 
 (defprotocol #_IWithMeta
   (#_with-meta (o meta)))
+
+(defprotocol #_IStack
+  (#_peek (s))
+  (#_pop (s)))
 
 (defgeneric extends? (protocol-name type))
 
@@ -641,7 +648,10 @@ nested)."
   #_IEmptyableCollection
   (#_empty (x) nil)
   #_ICollection
-  (#_conj (coll x) (list x)))
+  (#_conj (coll x) (list x))
+  #_IStack
+  (#_peek (c) #_nil)
+  (#_pop (c) (error "Pop on empty seq!")))
 
 (extend-type cons
   #_ISeq
@@ -652,7 +662,10 @@ nested)."
   #_IEmptyableCollection
   (#_empty (x) nil)
   #_ICollection
-  (#_conj (coll x) (cons x coll)))
+  (#_conj (coll x) (cons x coll))
+  #_IStack
+  (#_peek (c) (car c))
+  (#_pop (c) (cdr c)))
 
 ;; A Lisp vector (or a string).
 (extend-type vector
@@ -710,7 +723,25 @@ nested)."
          (if (and (>= n (size v))
                   not-found-supplied?)
              not-found
-             (fset:lookup v n))))
+             (fset:lookup v n)))
+  #_IStack
+  (#_peek (c) (if (empty? c) #_nil
+                  (lookup c (1- (size c)))))
+  (#_pop (c) (if (empty? c) (error "Empty seq")
+                 (fset:subseq c 0 (1- (size c)))))
+  #_IAssociative
+  (#_contains-key? (seq idx) (< -1 idx (size seq)))
+  (#_assoc (seq idx value)
+           (if (< idx (size seq))
+               (with seq idx value)
+               (error "Bad index for ~a" seq)))
+  #_IKVReduce
+  (#_kv-reduce (seq f init)
+               (if (empty? seq) seq
+                   (let ((k 0))
+                     (do-seq (v seq)
+                       (setf init (funcall f init (finc k) v)))
+                     init))))
 
 (extend-type map
   #_ISeqable
@@ -724,7 +755,17 @@ nested)."
   #_ICollection
   (#_conj (map x) (apply #'fset:with map (convert 'list (#_seq x))))
   #_IFn
-  (#_invoke (x &rest args) (fset:lookup x (only-elt args))))
+  (#_invoke (x &rest args) (lookup x (only-elt args)))
+  #_IAssociative
+  (#_contains-key? (map key) (fset:contains? map key))
+  (#_assoc (map key value) (with map key value))
+  #_IKVReduce
+  (#_kv-reduce (map f init)
+               (if (empty? map) map
+                   (progn
+                     (do-map (k v map)
+                       (setf init (funcall f init k v)))
+                     init))))
 
 (extend-type set
   #_ISeqable
@@ -846,11 +887,6 @@ nested)."
 
 (defun-1 #_== (&rest args)
   (apply #'= args))
-
-(defun-1 #_pop (seq)
-  (etypecase seq
-    (list (rest seq))
-    (seq (fset:subseq seq 0 (1- (size seq))))))
 
 (defmacro #_comment (&body body)
   (declare (ignore body))
