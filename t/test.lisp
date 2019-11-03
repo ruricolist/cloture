@@ -183,6 +183,16 @@
   (is (equal? (seq) (#_pop (seq 1))))
   (signals error (#_pop (seq))))
 
+(test re-find
+  (is #_(nil? (re-find #"sss" "Loch Ness")))
+  (is #_(= "ss" (re-find #"s+" "dress")))
+  (is #_(= ["success" "ucces" "s"] (re-find #"s+(.*)(s+)" "success"))))
+
+(test re-matches
+  (is #_(nil? (re-matches #"abc" "zzzabcxxx")))
+  (is #_(= "abc" (re-matches #"abc" "abc")))
+  (is #_(= ["abcxyz" "xyz"] (re-matches #"abc(.*)" "abcxyz"))))
+
 ;; (test autogensym
 ;;   (destructuring-bind (x1 x2)
 ;;       #_`(~x# ~x#)

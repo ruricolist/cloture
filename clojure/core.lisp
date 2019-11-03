@@ -928,3 +928,44 @@ nested)."
 
 (defun-1 #_bit-not (x)
   (lognot x))
+
+(defun-1 #_re-find (re str)
+  (ematch (multiple-value-list (ppcre:scan re str))
+    ((list nil) #_nil)
+    ((list start end (and _ (satisfies emptyp)) _)
+     (subseq str start end))
+    ((list start end starts ends)
+     (convert 'seq
+              (cons (subseq str start end)
+                    (cl:map 'list
+                            (lambda (start end)
+                              (subseq str start end))
+                            starts ends))))))
+
+(define-compiler-macro #_re-find (&whole call re str)
+  (typecase re
+    (regex
+     (let ((re (regex-string re)))
+       `(#_re-find (load-time-value (ppcre:create-scanner ,re))
+                   ,str)))
+    (otherwise call)))
+
+(defun-1 #_re-matches (re str)
+  (ematch (multiple-value-list (ppcre:scan-to-strings re str))
+    ((list nil) #_nil)
+    ((list string (and _ (satisfies emptyp)))
+     string)
+    ((list string groups)
+     (convert 'seq (cons string (coerce 'list groups))))))
+
+(define-compiler-macro #_re-matches (&whole call re str)
+  (typecase re
+    (regex
+     (let* ((re (regex-string re))
+            (re (string+ "^" re "$")))
+       `(#_re-find (load-time-value (ppcre:create-scanner ,re))
+                   ,str)))
+    (otherwise call)))
+
+(defun-1 #_re-pattern (s)
+  (ppcre:create-scanner (assure string s)))

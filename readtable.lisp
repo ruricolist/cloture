@@ -54,11 +54,14 @@
     (rec-read stream)
     (values)))
 
+(defconstructor regex
+  (string string))
+
 (defun read-regex (stream char arg)
   (declare (ignore arg))
   (unread-char char stream)
-  (let ((string (rec-read stream)))
-    `(load-time-value (ppcre:create-scanner ,string))))
+  (let ((string (assure string (rec-read stream))))
+    (regex string)))
 
 (defun quasiquote (stream char)
   ;; TODO handle autogensyms
