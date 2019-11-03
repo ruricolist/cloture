@@ -24,7 +24,7 @@
 
 (defun (setf meta) (value object)
   (when (typep object 'no-meta)
-    (error "~a cannot have metadata." object))
+    (error (clojure-error "~a cannot have metadata." object)))
   (synchronized (object)
     (setf (href *meta* object)
           (assure map value))))
@@ -214,7 +214,7 @@ Also return (as a second value) a list of all the symbols bound."
     (when (or (eql exp sym)
               (not (symbolp exp))
               (not (meta-ref sym :|dynamic|)))
-      (error "Not a var: ~a" sym))
+      (error (clojure-error "Not a var: ~a" sym)))
     exp))
 
 (defconstructor protocol

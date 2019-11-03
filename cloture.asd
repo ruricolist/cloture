@@ -17,6 +17,7 @@
                (:static-file "core-syms.txt")
                (:static-file "pprint-syms.txt")
                (:file "clojure-packages")
+               (:file "errors")
                (:file "cloture")
                (:file "readtable")
                (:file "asdf")

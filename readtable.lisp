@@ -110,7 +110,7 @@
     ((ppcre "(.+?)/(.+)" package-name symbol-name)
      (let* ((package
               (or (find-package package-name)
-                  (error "No such package as ~s" package-name))))
+                  (error (clojure-reader-error "No such package as ~s" package-name)))))
        (find-external-symbol symbol-name package :error t)))
     (otherwise symbol)))
 

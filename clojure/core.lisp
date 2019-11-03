@@ -196,7 +196,7 @@ nested)."
                         (mvlet* ((params exprs (car+cdr clause))
                                  (pats rest all (dissect-seq-pattern params)))
                           (when (symbol-package all)
-                            (error "No :as in fn."))
+                            (error (clojure-error "No :as in fn.")))
                           (collect
                               `(,(if rest
                                      `(list* ,@pats ,rest)
@@ -224,7 +224,7 @@ nested)."
 
 (defmacro %recur (&rest args)
   (declare (ignore args))
-  (error "Cannot use `recur' outside `loop'."))
+  (error (clojure-syntax-error "Cannot use `recur' outside `loop'.")))
 
 (defmacro #_recur (&rest args)
   `(%recur (list ,@args)))
@@ -290,7 +290,7 @@ nested)."
            (ematch (convert 'list libspec)
              ((lambda-list lib &key as refer exclude only rename)
               (when (and (or exclude only rename) refer)
-                (error "Invalid: ~a" libspec))
+                (error (clojure-error "Invalid: ~a" libspec)))
               (let ((lib (string+ prefix lib)))
                 (expect-package lib)
                 (setup-qualified-names lib as)
@@ -404,7 +404,7 @@ nested)."
                      ,doc))))
        ,@(loop for (name lambda-list docs) in sigs
                do (unless lambda-list
-                    (error "Protocol function cannot be nullary."))
+                    (error (clojure-syntax-error "Protocol function cannot be nullary.")))
                collect `(defgeneric-1 ,name ,lambda-list
                           ,@(unsplice (and docs `(:documentation ,docs)))))
        (define-symbol-macro ,name (symbol-protocol ',name)))))
@@ -659,7 +659,7 @@ nested)."
   (#_conj (coll x) (list x))
   #_IStack
   (#_peek (c) #_nil)
-  (#_pop (c) (error "Pop on empty seq!")))
+  (#_pop (c) (error (clojure-program-error "Pop on empty seq!"))))
 
 (extend-type cons
   #_ISeq
@@ -735,14 +735,14 @@ nested)."
   #_IStack
   (#_peek (c) (if (empty? c) #_nil
                   (lookup c (1- (size c)))))
-  (#_pop (c) (if (empty? c) (error "Empty seq")
+  (#_pop (c) (if (empty? c) (error (clojure-program-error "Empty seq"))
                  (fset:subseq c 0 (1- (size c)))))
   #_IAssociative
   (#_contains-key? (seq idx) (< -1 idx (size seq)))
   (#_assoc (seq idx value)
            (if (< idx (size seq))
                (with seq idx value)
-               (error "Bad index for ~a" seq)))
+               (error (clojure-program-error "Bad index for ~a" seq))))
   #_IKVReduce
   (#_kv-reduce (seq f init)
                (if (empty? seq) seq
@@ -816,7 +816,7 @@ nested)."
   "Like `fset:with', but IDX must be less than the length of SEQ."
   (if (<= idx (size seq))
       (with seq idx val)
-      (error "Idx ~a not valid for ~a" idx seq)))
+      (error (clojure-program-error "Idx ~a not valid for ~a" idx seq))))
 
 (defun-1 #_dissoc (map key &rest keys)
   (reduce #'less
