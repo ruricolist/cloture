@@ -54,6 +54,12 @@
     (rec-read stream)
     (values)))
 
+(defun read-regex (stream char arg)
+  (declare (ignore arg))
+  (unread-char char stream)
+  (let ((string (rec-read stream)))
+    `(load-time-value (ppcre:create-scanner ,string))))
+
 (defun quasiquote (stream char)
   ;; TODO handle autogensyms
   (funcall qq-reader stream char))
@@ -64,6 +70,8 @@
   (:dispatch-macro-char #\# #\_ 'read-nothing)
   ;; Metadata.
   (:macro-char #\^ 'read-meta)
+  ;; Reading regexes.
+  (:dispatch-macro-char #\# #\" 'read-regex)
   ;; Reading vectors.
   (:macro-char #\[ 'read-vector)
   (:syntax-from :standard #\) #\])
