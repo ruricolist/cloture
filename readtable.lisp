@@ -30,6 +30,11 @@
     (merge-meta! value (ensure-meta meta))
     value))
 
+(defun read-var (stream char arg)
+  (declare (ignore char arg))
+  (let ((sym (rec-read stream)))
+    `(|clojure.core|:|var| ,sym)))
+
 (defun read-conditional (stream char arg)
   (declare (ignore char arg))
   (let ((forms (rec-read stream)))
@@ -39,11 +44,6 @@
        (if (eql cl missing)
            (getf forms :|default|)
            cl)))))
-
-(defun read-var (stream char arg)
-  (declare (ignore char arg))
-  (let ((sym (rec-read stream)))
-    `(|clojure.core|:|var| ,sym)))
 
 (defun read-nothing (stream char arg)
   (declare (ignore char arg))
@@ -68,9 +68,6 @@
   (:macro-char #\^ 'read-meta)
   ;; Reading regexes.
   (:dispatch-macro-char #\# #\" 'read-regex)
-  ;; Reading vectors.
-  (:macro-char #\[ 'read-vector)
-  (:syntax-from :standard #\) #\])
   ;; Reading maps.
   (:macro-char #\{ 'read-map)
   (:syntax-from :standard #\) #\})

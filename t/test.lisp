@@ -193,6 +193,13 @@
   (is #_(= "abc" (re-matches #"abc" "abc")))
   (is #_(= ["abcxyz" "xyz"] (re-matches #"abc(.*)" "abcxyz"))))
 
+(test qq-seq
+  #_(let [body '(x)]
+      (5AM:IS
+       (= `(let [x 1]
+             ~@body)
+          '(let [x 1] x)))))
+
 ;; (test autogensym
 ;;   (destructuring-bind (x1 x2)
 ;;       #_`(~x# ~x#)
