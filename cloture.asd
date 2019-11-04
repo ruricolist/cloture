@@ -4,7 +4,7 @@
                "cl-arrows"
                "fset"
                "named-readtables"
-               "fare-quasiquote-readtable"
+               "fare-utils"
                "trivial-package-local-nicknames"
                "cl-murmurhash"
                "lisp-namespace"
@@ -19,6 +19,7 @@
                (:file "clojure-packages")
                (:file "errors")
                (:file "cloture")
+               (:file "quasiquote")
                (:file "readtable")
                (:file "asdf")
                (:module "clojure"
