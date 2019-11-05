@@ -199,8 +199,9 @@
        (= `(let [x 1]
              ~@body)
           '(let [x 1] x))))
-  #_(5AM:IS
-     (= '[:x 1] `[,:x 1])))
+  #_(let [x :x]
+      (5AM:IS
+       (= '[:x 1] `[,x 1]))))
 
 (test qq-map
   #_(let [form :form]
