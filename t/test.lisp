@@ -214,6 +214,10 @@
       (5AM:IS
        (= '#{:x} `#{,x}))))
 
+(test no-nest-anons
+  (signals error
+    (read-clojure-from-string "#(#())")))
+
 ;; (test autogensym
 ;;   (destructuring-bind (x1 x2)
 ;;       #_`(~x# ~x#)

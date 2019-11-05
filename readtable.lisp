@@ -42,6 +42,17 @@
   (let ((string (assure string (rec-read stream))))
     (regex string)))
 
+(defvar *in-anon* nil)
+
+(defun read-anon (stream char arg)
+  (declare (ignore char arg))
+  (if *in-anon*
+      (error (clojure-error "Anonymous function literals cannot be nested."))
+      (let* ((*in-anon* t)
+             (forms (read-delimited-list #\) stream t)))
+        (declare (ignore forms))
+        (error "Anonymous function literal not yet implemented."))))
+
 (defreadtable cloture
   (:fuze :standard cloture.qq:quasiquote-mixin)
   ;; Supress.
@@ -62,6 +73,8 @@
   (:dispatch-macro-char #\# #\? 'read-conditional)
   ;; Dereference vars.
   (:dispatch-macro-char #\# #\' 'read-var)
+  ;; Anonymous function.
+  (:dispatch-macro-char #\# #\( 'read-anon)
   (:case :preserve))
 
 (defreadtable clojure-shortcut
