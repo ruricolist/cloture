@@ -5,7 +5,8 @@
 
 (defpackage :cloture.qq
   (:use :uiop :fare-utils :cl)
-  (:import-from :fset :seq :convert)
+  (:import-from :fset :seq :convert :empty-map :empty-seq)
+  (:shadowing-import-from :fset :map)
   (:shadow #:list #:list* #:cons #:append #:nconc #:quote)
   (:shadow #:kwote #:quotep #:n-vector #:make-vector)
   (:export #:quasiquote-expand #:quasiquote #:unquote #:unquote-splicing
@@ -37,6 +38,13 @@
 ;; These supporting functions don't have a standard name
 (defsubst make-vector (l) (coerce l 'simple-vector))
 (defsubst make-seq (l) (convert 'seq l))
+(defsubst make-map (l)
+  (let ((pairs (serapeum:batches l 2 :even t)))
+    (reduce (lambda (map pair)
+              (destructuring-bind (key value) pair
+                (fset:with map key value)))
+            pairs
+            :initial-value (empty-map))))
 (defun n-vector (n contents)
   (if (null n) (make-vector contents)
       (let ((a (make-array n :element-type t)))
@@ -52,6 +60,10 @@
 (defun n-seq (n contents)
   (declare (ignore n))
   (make-seq contents))
+
+(defun n-map (n contents)
+  (declare (ignore n))
+  (make-map contents))
 
 ;;; These functions build the forms that build the data structures.
 (make-single-arg-form quote kwote)
@@ -95,7 +107,8 @@
       (k-append-p x)
       (k-nconc-p x)
       (k-n-vector-p x)
-      (k-n-seq-p x)))
+      (k-n-seq-p x)
+      (k-n-map-p x)))
 
 (defun k-n-vector (n l)
   (cond
@@ -117,10 +130,23 @@
     (n (list 'n-seq n l))
     (t (list 'make-seq l))))
 
+(defun k-n-map (n l)
+  (cond
+    ((null l)
+     (k-literal (fset:empty-map)))
+    ((quotep l)
+     (k-literal (n-map n (single-arg l))))
+    (n (list 'n-map n l))
+    (t (list 'make-map l))))
+
 (defun k-n-vector-p (x) (and (consp x) (member (first x) '(make-vector n-vector))))
 (defun k-n-seq-p (x)
   (and (consp x)
        (member (first x) '(make-seq n-seq))))
+
+(defun k-n-map-p (x)
+  (and (consp x)
+       (member (first x) '(make-map n-map))))
 
 (defun valid-k-n-vector-p (x)
   (or (and (length=n-p x 3) (eq (first x) 'n-vector)
@@ -141,12 +167,27 @@
            #+quasiquote-strict-append
            (quasiquote-form-p (second x)))))
 
+(defun valid-k-n-map-p (x)
+  (or (and (length=n-p x 3)
+           (eq (first x) 'n-map)
+           (typep (second x) `(or null (integer 0 ,array-rank-limit)))
+           #+quasiquote-strict-append
+           (quasiquote-form-p (third x)))
+      (and (length=n-p x 2) (eq (first x) 'make-map)
+           #+quasiquote-strict-append
+           (quasiquote-form-p (second x)))))
+
 (defun k-n-vector-n (x)
   (and (valid-k-n-vector-p x) (eq (first x) 'n-vector) (second x)))
 
 (defun k-n-seq-n (x)
   (and (valid-k-n-seq-p x)
        (eq (first x) 'n-seq)
+       (second x)))
+
+(defun k-n-map-n (x)
+  (and (valid-k-n-map-p x)
+       (eq (first x) 'n-map)
        (second x)))
 
 (defun k-n-vector-contents (x)
@@ -160,6 +201,12 @@
        (ecase (first x)
          ((make-seq) (second x))
          ((n-seq) (third x)))))
+
+(defun k-n-map-contents (x)
+  (and (valid-k-n-map-p x)
+       (ecase (first x)
+         ((make-map) (second x))
+         ((n-map) (third x)))))
 
 (defun properly-ended-list-p (x)
   (and (listp x) (null (cdr (last x)))))
@@ -203,6 +250,8 @@ When combining backquoted expressions, tokens are used for simplifications."
     ((k-n-vector-p x)
      (values (car x) (cdr x)))
     ((k-n-seq-p x)
+     (values (car x) (cdr x)))
+    ((k-n-map-p x)
      (values (car x) (cdr x)))
     ((consp x)
      (multiple-value-bind (atop a) (quasiquote-expand-0 (car x))
@@ -308,7 +357,11 @@ of the result of the top operation applied to the expression"
         (apply 'k-list* x))))
     (t
      (cons (ecase top
-             ((list cons append nconc make-vector n-vector make-seq n-seq) top))
+             ((list cons append nconc
+                    make-vector n-vector
+                    make-seq n-seq
+                    make-map n-map)
+              top))
            x))))
 
 ;; Note: it would be a *very bad* idea to use quasiquote:quote
@@ -355,12 +408,18 @@ of the result of the top operation applied to the expression"
                              (read-preserving-whitespace stream t nil t)))))))
 
 (defun read-seq (stream n)
-  ;; http://www.lisp.org/HyperSpec/Body/sec_2-4-8-3.html
   (if (= *quasiquote-level* 0)
       (n-seq n (read-delimited-list #\] stream t))
       (make-unquote
        (k-n-seq n (quasiquote-expand
                    (read-delimited-list #\] stream t))))))
+
+(defun read-map (stream n)
+  (if (= *quasiquote-level* 0)
+      (n-map n (read-delimited-list #\} stream t))
+      (make-unquote
+       (k-n-map n (quasiquote-expand
+                   (read-delimited-list #\} stream t))))))
 
 (defun read-read-time-backquote (stream char)
   (declare (ignore char))
@@ -406,4 +465,5 @@ of the result of the top operation applied to the expression"
     (:dispatch-macro-char #\# #\( 'read-hash-paren)
     (:dispatch-macro-char #\# #\. 'read-hash-dot)
     (:macro-char #\[ 'read-seq)
+    (:macro-char #\{ 'read-map)
     (:syntax-from :standard #\) #\])))

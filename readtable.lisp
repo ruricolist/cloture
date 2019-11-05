@@ -5,20 +5,6 @@
 (defun rec-read (stream)
   (read stream t nil t))
 
-(defun read-vector (stream char)
-  (declare (ignore char))
-  (convert 'seq (read-delimited-list #\] stream t)))
-
-(defun read-map (stream char)
-  (declare (ignore char))
-  (let* ((data (read-delimited-list #\} stream t))
-         (pairs (batches data 2 :even t)))
-    (reduce (lambda (map pair)
-              (destructuring-bind (key value) pair
-                (with map key value)))
-            pairs
-            :initial-value (empty-map))))
-
 (defun read-set (stream char arg)
   (declare (ignore char arg))
   (convert 'set (read-delimited-list #\} stream t)))
@@ -68,9 +54,10 @@
   (:macro-char #\^ 'read-meta)
   ;; Reading regexes.
   (:dispatch-macro-char #\# #\" 'read-regex)
-  ;; Reading maps.
-  (:macro-char #\{ 'read-map)
+  ;; Reading maps and sets.
   (:syntax-from :standard #\) #\})
+  ;; Reading seqs.
+  (:syntax-from :standard #\) #\])
   ;; Reading sets.
   (:dispatch-macro-char #\# #\{ 'read-set)
   ;; ~ instead of ,.

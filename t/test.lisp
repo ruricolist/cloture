@@ -200,6 +200,11 @@
              ~@body)
           '(let [x 1] x)))))
 
+(test qq-map
+  #_(let [form :form]
+      (= {:expected :form}
+         `{:expected '~form})))
+
 ;; (test autogensym
 ;;   (destructuring-bind (x1 x2)
 ;;       #_`(~x# ~x#)
