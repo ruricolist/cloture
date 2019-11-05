@@ -198,16 +198,20 @@
       (5AM:IS
        (= `(let [x 1]
              ~@body)
-          '(let [x 1] x)))))
+          '(let [x 1] x))))
+  #_(5AM:IS
+     (= '[:x 1] `[,:x 1])))
 
 (test qq-map
   #_(let [form :form]
-      (= {:expected :form}
-         `{:expected '~form})))
+      (5AM:IS
+       (= '{:expected :form}
+          `{:expected '~form}))))
 
 (test qq-set
   #_(let [x :x]
-      (= #{:x} `#{,x})))
+      (5AM:IS
+       (= '#{:x} `#{,x}))))
 
 ;; (test autogensym
 ;;   (destructuring-bind (x1 x2)
