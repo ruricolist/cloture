@@ -5,10 +5,6 @@
 (defun rec-read (stream)
   (read stream t nil t))
 
-(defun read-set (stream char arg)
-  (declare (ignore char arg))
-  (convert 'set (read-delimited-list #\} stream t)))
-
 (defun read-meta (stream char)
   (declare (ignore char))
   (let ((meta (rec-read stream))
@@ -58,8 +54,6 @@
   (:syntax-from :standard #\) #\})
   ;; Reading seqs.
   (:syntax-from :standard #\) #\])
-  ;; Reading sets.
-  (:dispatch-macro-char #\# #\{ 'read-set)
   ;; ~ instead of ,.
   (:syntax-from 'cloture.qq:quasiquote-mixin #\, #\~)
   ;; , is whitespace.

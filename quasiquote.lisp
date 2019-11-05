@@ -5,8 +5,9 @@
 
 (defpackage :cloture.qq
   (:use :uiop :fare-utils :cl)
-  (:import-from :fset :seq :convert :empty-map :empty-seq)
-  (:shadowing-import-from :fset :map)
+  (:import-from :fset
+    :seq :convert :empty-map :empty-seq :empty-set)
+  (:shadowing-import-from :fset :map :set)
   (:shadow #:list #:list* #:cons #:append #:nconc #:quote)
   (:shadow #:kwote #:quotep #:n-vector #:make-vector)
   (:export #:quasiquote-expand #:quasiquote #:unquote #:unquote-splicing
@@ -45,6 +46,7 @@
                 (fset:with map key value)))
             pairs
             :initial-value (empty-map))))
+(defsubst make-set (l) (convert 'set l))
 (defun n-vector (n contents)
   (if (null n) (make-vector contents)
       (let ((a (make-array n :element-type t)))
@@ -60,6 +62,10 @@
 (defun n-seq (n contents)
   (declare (ignore n))
   (make-seq contents))
+
+(defun n-set (n contents)
+  (declare (ignore n))
+  (make-set contents))
 
 (defun n-map (n contents)
   (declare (ignore n))
@@ -108,6 +114,7 @@
       (k-nconc-p x)
       (k-n-vector-p x)
       (k-n-seq-p x)
+      (k-n-set-p x)
       (k-n-map-p x)))
 
 (defun k-n-vector (n l)
@@ -130,10 +137,19 @@
     (n (list 'n-seq n l))
     (t (list 'make-seq l))))
 
+(defun k-n-set (n l)
+  (cond
+    ((null l)
+     (k-literal (empty-set)))
+    ((quotep l)
+     (k-literal (n-set n (single-arg l))))
+    (n (list 'n-set n l))
+    (t (list 'make-set l))))
+
 (defun k-n-map (n l)
   (cond
     ((null l)
-     (k-literal (fset:empty-map)))
+     (k-literal (empty-map)))
     ((quotep l)
      (k-literal (n-map n (single-arg l))))
     (n (list 'n-map n l))
@@ -143,6 +159,10 @@
 (defun k-n-seq-p (x)
   (and (consp x)
        (member (first x) '(make-seq n-seq))))
+
+(defun k-n-set-p (x)
+  (and (consp x)
+       (member (first x) '(make-set n-set))))
 
 (defun k-n-map-p (x)
   (and (consp x)
@@ -167,6 +187,16 @@
            #+quasiquote-strict-append
            (quasiquote-form-p (second x)))))
 
+(defun valid-k-n-set-p (x)
+  (or (and (length=n-p x 3)
+           (eq (first x) 'n-set)
+           (typep (second x) `(or null (integer 0 ,array-rank-limit)))
+           #+quasiquote-strict-append
+           (quasiquote-form-p (third x)))
+      (and (length=n-p x 2) (eq (first x) 'make-set)
+           #+quasiquote-strict-append
+           (quasiquote-form-p (second x)))))
+
 (defun valid-k-n-map-p (x)
   (or (and (length=n-p x 3)
            (eq (first x) 'n-map)
@@ -185,6 +215,11 @@
        (eq (first x) 'n-seq)
        (second x)))
 
+(defun k-n-set-n (x)
+  (and (valid-k-n-set-p x)
+       (eq (first x) 'n-set)
+       (second x)))
+
 (defun k-n-map-n (x)
   (and (valid-k-n-map-p x)
        (eq (first x) 'n-map)
@@ -201,6 +236,12 @@
        (ecase (first x)
          ((make-seq) (second x))
          ((n-seq) (third x)))))
+
+(defun k-n-set-contents (x)
+  (and (valid-k-n-set-p x)
+       (ecase (first x)
+         ((make-set) (second x))
+         ((n-set) (third x)))))
 
 (defun k-n-map-contents (x)
   (and (valid-k-n-map-p x)
@@ -250,6 +291,8 @@ When combining backquoted expressions, tokens are used for simplifications."
     ((k-n-vector-p x)
      (values (car x) (cdr x)))
     ((k-n-seq-p x)
+     (values (car x) (cdr x)))
+    ((k-n-set-p x)
      (values (car x) (cdr x)))
     ((k-n-map-p x)
      (values (car x) (cdr x)))
@@ -360,6 +403,7 @@ of the result of the top operation applied to the expression"
              ((list cons append nconc
                     make-vector n-vector
                     make-seq n-seq
+                    make-set n-set
                     make-map n-map)
               top))
            x))))
@@ -421,6 +465,14 @@ of the result of the top operation applied to the expression"
        (k-n-map n (quasiquote-expand
                    (read-delimited-list #\} stream t))))))
 
+(defun read-set (stream char n)
+  (declare (ignore char))
+  (if (= *quasiquote-level* 0)
+      (n-set n (read-delimited-list #\} stream t))
+      (make-unquote
+       (k-n-set n (quasiquote-expand
+                   (read-delimited-list #\} stream t))))))
+
 (defun read-read-time-backquote (stream char)
   (declare (ignore char))
   (values (macroexpand-1 (read-quasiquote stream))))
@@ -466,4 +518,5 @@ of the result of the top operation applied to the expression"
     (:dispatch-macro-char #\# #\. 'read-hash-dot)
     (:macro-char #\[ 'read-seq)
     (:macro-char #\{ 'read-map)
+    (:dispatch-macro-char #\# #\{ 'read-set)
     (:syntax-from :standard #\) #\])))

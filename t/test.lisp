@@ -205,6 +205,10 @@
       (= {:expected :form}
          `{:expected '~form})))
 
+(test qq-set
+  #_(let [x :x]
+      (= #{:x} `#{,x})))
+
 ;; (test autogensym
 ;;   (destructuring-bind (x1 x2)
 ;;       #_`(~x# ~x#)
