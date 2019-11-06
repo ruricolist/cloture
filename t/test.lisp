@@ -199,8 +199,11 @@
        (= `(let [x 1]
              ~@body)
           '(let [x 1] x))))
+  #_(let [x :x]
+      (5AM:IS
+       (= [:x] `[~x])))
   #_(5AM:IS
-     (= '[:x 1] `[,:x 1])))
+     (= '[:x 1] `[~:x 1])))
 
 (test qq-map
   #_(let [form :form]
@@ -211,7 +214,7 @@
 (test qq-set
   #_(let [x :x]
       (5AM:IS
-       (= '#{:x} `#{,x}))))
+       (= '#{:x} `#{~x}))))
 
 ;; (test autogensym
 ;;   (destructuring-bind (x1 x2)
