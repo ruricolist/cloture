@@ -40,6 +40,9 @@ That's defun-1 as in Lisp-1."
 (defmacro #_quote (x)
   `(quote ,x))
 
+(defun-1 #_eval (x)
+  (eval x))
+
 (defmacro #_if (test then &optional (else #_nil))
   `(if (truthy? ,test) ,then ,else))
 
