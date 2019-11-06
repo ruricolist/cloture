@@ -37,4 +37,8 @@
 
            #:defun-1
            #:expose-to-clojure
-           #:defgeneric-1))
+           #:defgeneric-1
+
+           #:clojurize
+
+           #:%set #:%map #:%seq))

@@ -42,8 +42,14 @@
   (let ((string (assure string (rec-read stream))))
     (regex string)))
 
+(defun read-quote (stream char)
+  (declare (ignore char))
+  `(|clojure.core|:|quote| ,(rec-read stream)))
+
 (defreadtable cloture
   (:fuze :standard cloture.qq:quasiquote-mixin)
+  ;; Clojure quote.
+  (:macro-char #\' 'read-quote)
   ;; Supress.
   (:dispatch-macro-char #\# #\_ 'read-nothing)
   ;; Metadata.

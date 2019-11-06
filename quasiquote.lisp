@@ -7,6 +7,7 @@
   (:use :uiop :fare-utils :cl)
   (:import-from :fset
     :seq :convert :empty-map :empty-seq :empty-set)
+  (:import-from :cloture :clojurize :%seq :%set :%map)
   (:shadowing-import-from :fset :map :set)
   (:shadow #:list #:list* #:cons #:append #:nconc #:quote)
   (:shadow #:kwote #:quotep #:n-vector #:make-vector)
@@ -18,6 +19,7 @@
            #:call-with-unquote-splicing-reader
            #:call-with-unquote-nsplicing-reader
            #:quasiquote-mixin
+           #:%seq #:%map #:%set
            #:make-seq #:make-set #:make-map))
 (in-package :cloture.qq)
 
@@ -28,11 +30,10 @@
   ;;(pushnew :quasiquote-at-macro-expansion-time *features*)
   )
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
 ;;; Functions that actually build data structures.
 ;; Note that we want our own tokens for decompilation reasons,
 ;; but as functions they must evaluate the usual way.
-  (defun list (&rest r) r) ;; (apply #'cl:list r)
+(defun list (&rest r) r) ;; (apply #'cl:list r)
 (defun list* (&rest r) (apply #'cl:list* r))
 (defun cons (x y) (cl:cons x y))
 (defun append (&rest r) (apply #'cl:append r))
@@ -60,9 +61,12 @@
           (error "provided contents larger than declared vector length"))
         a)))
 
+(defmacro %seq (&rest elts)
+  `(make-seq (list ,@elts)))
+
 (defun n-seq (n contents)
   (declare (ignore n))
-  (make-seq contents))
+  (cons '%seq contents))
 
 (defun n-set (n contents)
   (declare (ignore n))
@@ -94,7 +98,7 @@
   #-quasiquote-passes-literals (kwote literal))
 
 ;;; These macros expand into suitable forms
-(defmacro quote (x) (list 'cl:quote x))
+(defmacro quote (x) (list 'cl:quote (clojurize x)))
 (defmacro quasiquote (x) (quasiquote-expand x))
 (defmacro unquote (x)
   (declare (ignore x))
@@ -260,14 +264,15 @@
   (or (unquote-splicing-p x) (unquote-nsplicing-p x)))
 
 (defun quasiquote-expand (x)
-  (let ((*quasiquote-level* 0))
-    (multiple-value-bind (top arg)
-        (quasiquote-expand-0 x)
-      (when (eq top 'unquote-splicing)
-        (error ",@ after backquote in ~S" x))
-      (when (eq top 'unquote-nsplicing)
-        (error ",. after backquote in ~S" x))
-      (quasiquote-expand-1 top arg))))
+  (clojurize
+   (let ((*quasiquote-level* 0))
+     (multiple-value-bind (top arg)
+         (quasiquote-expand-0 x)
+       (when (eq top 'unquote-splicing)
+         (error ",@ after backquote in ~S" x))
+       (when (eq top 'unquote-nsplicing)
+         (error ",. after backquote in ~S" x))
+       (quasiquote-expand-1 top arg)))))
 
 (defun quasiquote-expand-0 (x)
   "Given an expression x under a backquote, return two values:
@@ -508,8 +513,6 @@ of the result of the top operation applied to the expression"
 (defun read-hash-dot (stream subchar arg)
   (let ((*quasiquote-level* 0))
     (funcall *hash-dot-reader* stream subchar arg)))
-
-);eval-when
 
 (named-readtables:defreadtable quasiquote-mixin
   (:macro-char #\` 'read-read-time-backquote)
