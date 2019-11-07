@@ -12,7 +12,7 @@
   (run! 'cloture))
 
 (test read-vector
-  (is (equal? (seq 1 2 3 :x) '#_[1 2 3 :X])))
+  (is (equal? (seq 1 2 3 :x) #_'[1 2 3 :X])))
 
 (test read-map
   (is (equal? (map (:x 1) (:y 2) (:z 3))
@@ -193,26 +193,34 @@
   (is #_(= "abc" (re-matches #"abc" "abc")))
   (is #_(= ["abcxyz" "xyz"] (re-matches #"abc(.*)" "abcxyz"))))
 
-(test qq-seq
+(test qq-seq-ok
   #_(let [body '(x)]
       (5AM:IS
        (= `(let [x 1]
              ~@body)
-          '(let [x 1] x))))
+          '(let [x 1] x)))))
+
+(test qq-seq-1
+  (is #_(= '[:x 1] `[~:x 1])))
+
+(test qq-seq-2
   #_(let [x :x]
       (5AM:IS
-       (= '[:x 1] `[,x 1]))))
+       (= [:x] `[~x]))))
 
 (test qq-map
   #_(let [form :form]
       (5AM:IS
        (= '{:expected :form}
-          `{:expected '~form}))))
+          `{:expected ~form}))))
 
 (test qq-set
   #_(let [x :x]
       (5AM:IS
-       (= '#{:x} `#{,x}))))
+       (= '#{:x} `#{~x}))))
+
+(test eval-vector
+  (is #_(= [(+ 1 1)] [2])))
 
 (test no-nest-anons
   (signals error

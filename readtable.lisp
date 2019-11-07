@@ -53,8 +53,14 @@
         (declare (ignore forms))
         (error "Anonymous function literal not yet implemented."))))
 
+(defun read-quote (stream char)
+  (declare (ignore char))
+  `(|clojure.core|:|quote| ,(rec-read stream)))
+
 (defreadtable cloture
-  (:fuze :standard cloture.qq:quasiquote-mixin)
+    (:fuze :standard cloture.qq:quasiquote-mixin)
+  ;; Clojure quote.
+  (:macro-char #\' 'read-quote)
   ;; Supress.
   (:dispatch-macro-char #\# #\_ 'read-nothing)
   ;; Metadata.

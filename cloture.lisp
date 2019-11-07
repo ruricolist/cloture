@@ -235,3 +235,24 @@ Also return (as a second value) a list of all the symbols bound."
   (if (emptyp specs) nil
       (runs specs :test (lambda (x y) (declare (ignore x))
                           (not (symbolp y))))))
+
+(defun declojurize (tree)
+  "Replace literal objects (outside quasiquotes) with constructors."
+  (map-tree (named-lambda rec (tree)
+              (match tree
+                ((type seq)
+                 `(%seq
+                   ,@(mapcar (op (map-tree #'rec _))
+                             (convert 'list tree))))
+                (otherwise tree)))
+            tree))
+
+(defun clojurize (tree)
+  "Replace calls to constructors with literal objects."
+  (map-tree (named-lambda rec (tree)
+              (match tree
+                ((list* '%seq elts)
+                 (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
+                   (convert 'seq elts)))
+                (otherwise tree)))
+            tree))

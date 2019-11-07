@@ -7,6 +7,7 @@
   (:use :uiop :fare-utils :cl)
   (:import-from :fset
     :seq :convert :empty-map :empty-seq :empty-set)
+  (:import-from :cloture :clojurize :%seq :%set :%map)
   (:shadowing-import-from :fset :map :set)
   (:shadow #:list #:list* #:cons #:append #:nconc #:quote)
   (:shadow #:kwote #:quotep #:n-vector #:make-vector)
@@ -17,7 +18,9 @@
            #:call-with-unquote-reader
            #:call-with-unquote-splicing-reader
            #:call-with-unquote-nsplicing-reader
-           #:quasiquote-mixin))
+           #:quasiquote-mixin
+           #:%seq #:%map #:%set
+           #:make-seq #:make-set #:make-map))
 (in-package :cloture.qq)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -27,26 +30,25 @@
   ;;(pushnew :quasiquote-at-macro-expansion-time *features*)
   )
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
 ;;; Functions that actually build data structures.
 ;; Note that we want our own tokens for decompilation reasons,
 ;; but as functions they must evaluate the usual way.
-(defsubst list (&rest r) r) ;; (apply #'cl:list r)
-(defsubst list* (&rest r) (apply #'cl:list* r))
-(defsubst cons (x y) (cl:cons x y))
-(defsubst append (&rest r) (apply #'cl:append r))
-(defsubst nconc (&rest r) (apply #'cl:nconc r))
+(defun list (&rest r) r) ;; (apply #'cl:list r)
+(defun list* (&rest r) (apply #'cl:list* r))
+(defun cons (x y) (cl:cons x y))
+(defun append (&rest r) (apply #'cl:append r))
+(defun nconc (&rest r) (apply #'cl:nconc r))
 ;; These supporting functions don't have a standard name
-(defsubst make-vector (l) (coerce l 'simple-vector))
-(defsubst make-seq (l) (convert 'seq l))
-(defsubst make-map (l)
+(defun make-vector (l) (coerce l 'simple-vector))
+(defun make-seq (l) (convert 'seq l))
+(defun make-map (l)
   (let ((pairs (serapeum:batches l 2 :even t)))
     (reduce (lambda (map pair)
               (destructuring-bind (key value) pair
                 (fset:with map key value)))
             pairs
             :initial-value (empty-map))))
-(defsubst make-set (l) (convert 'set l))
+(defun make-set (l) (convert 'set l))
 (defun n-vector (n contents)
   (if (null n) (make-vector contents)
       (let ((a (make-array n :element-type t)))
@@ -59,9 +61,12 @@
           (error "provided contents larger than declared vector length"))
         a)))
 
+(defmacro %seq (&rest elts)
+  `(make-seq (list ,@elts)))
+
 (defun n-seq (n contents)
   (declare (ignore n))
-  (make-seq contents))
+  (cons '%seq contents))
 
 (defun n-set (n contents)
   (declare (ignore n))
@@ -93,7 +98,7 @@
   #-quasiquote-passes-literals (kwote literal))
 
 ;;; These macros expand into suitable forms
-(defmacro quote (x) (list 'cl:quote x))
+(defmacro quote (x) (list 'cl:quote (clojurize x)))
 (defmacro quasiquote (x) (quasiquote-expand x))
 (defmacro unquote (x)
   (declare (ignore x))
@@ -259,14 +264,15 @@
   (or (unquote-splicing-p x) (unquote-nsplicing-p x)))
 
 (defun quasiquote-expand (x)
-  (let ((*quasiquote-level* 0))
-    (multiple-value-bind (top arg)
-        (quasiquote-expand-0 x)
-      (when (eq top 'unquote-splicing)
-        (error ",@ after backquote in ~S" x))
-      (when (eq top 'unquote-nsplicing)
-        (error ",. after backquote in ~S" x))
-      (quasiquote-expand-1 top arg))))
+  (clojurize
+   (let ((*quasiquote-level* 0))
+     (multiple-value-bind (top arg)
+         (quasiquote-expand-0 x)
+       (when (eq top 'unquote-splicing)
+         (error ",@ after backquote in ~S" x))
+       (when (eq top 'unquote-nsplicing)
+         (error ",. after backquote in ~S" x))
+       (quasiquote-expand-1 top arg)))))
 
 (defun quasiquote-expand-0 (x)
   "Given an expression x under a backquote, return two values:
@@ -452,11 +458,12 @@ of the result of the top operation applied to the expression"
                              (read-preserving-whitespace stream t nil t)))))))
 
 (defun read-seq (stream n)
+  (declare (ignore n))
   (if (= *quasiquote-level* 0)
-      (n-seq n (read-delimited-list #\] stream t))
+      (n-seq nil (read-delimited-list #\] stream t))
       (make-unquote
-       (k-n-seq n (quasiquote-expand
-                   (read-delimited-list #\] stream t))))))
+       (k-n-seq nil (quasiquote-expand
+                     (read-delimited-list #\] stream t))))))
 
 (defun read-map (stream n)
   (if (= *quasiquote-level* 0)
@@ -507,16 +514,16 @@ of the result of the top operation applied to the expression"
   (let ((*quasiquote-level* 0))
     (funcall *hash-dot-reader* stream subchar arg)))
 
-);eval-when
+(named-readtables:defreadtable quasiquote-mixin
+  (:macro-char #\` 'read-read-time-backquote)
+  (:macro-char #\, 'read-comma)
+  (:macro-char #\# :dispatch)
+  (:dispatch-macro-char #\# #\( 'read-hash-paren)
+  (:dispatch-macro-char #\# #\. 'read-hash-dot)
+  (:macro-char #\[ 'read-seq)
+  (:macro-char #\{ 'read-map)
+  (:dispatch-macro-char #\# #\{ 'read-set)
+  (:syntax-from :standard #\) #\]))
 
-(eval-now
-  (named-readtables:defreadtable quasiquote-mixin
-    (:macro-char #\` 'read-read-time-backquote)
-    (:macro-char #\, 'read-comma)
-    (:macro-char #\# :dispatch)
-    (:dispatch-macro-char #\# #\( 'read-hash-paren)
-    (:dispatch-macro-char #\# #\. 'read-hash-dot)
-    (:macro-char #\[ 'read-seq)
-    (:macro-char #\{ 'read-map)
-    (:dispatch-macro-char #\# #\{ 'read-set)
-    (:syntax-from :standard #\) #\])))
+(named-readtables:defreadtable quasiquote
+  (:fuze :standard quasiquote-mixin))

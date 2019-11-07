@@ -38,15 +38,40 @@ That's defun-1 as in Lisp-1."
 (defun-1 #_pos? (n) (plusp n))
 
 (defmacro #_quote (x)
-  `(quote ,x))
+  `(quote ,(clojurize x)))
 
-(defmacro #_if (test then &optional (else #_nil))
+(defun-1 #_eval (x)
+  (eval (declojurize x)))
+
+(defmacro define-clojure-macro (name args &body body)
+  (flet ((split-args-on (args kw)
+           (if-let (tail (member kw args))
+             (values (second tail)
+                     (append (ldiff args tail)
+                             (cddr tail)))
+             (values nil args))))
+    (mvlet* ((docs body (parse-docs body))
+             (forms (string-gensym 'forms))
+             (env args (split-args-on args '&environment))
+             (whole args (split-args-on args '&whole)))
+      `(defmacro ,name (,@(and whole `(&whole ,whole))
+                        &body ,forms
+                              ,@(and env `(&environment ,env)))
+         ,@(unsplice docs)
+         (declojurize
+          (block ,name                  ;catch return-from
+            (let ((,forms (clojurize ,forms))
+                  ,@(unsplice (and whole `(,whole (clojurize ,whole)))))
+              (destructuring-bind ,args ,forms
+                ,@body))))))))
+
+(define-clojure-macro #_if (test then &optional (else #_nil))
   `(if (truthy? ,test) ,then ,else))
 
-(defmacro #_if-not (test then &optional (else #_nil))
+(define-clojure-macro #_if-not (test then &optional (else #_nil))
   `(if (falsy? ,test) ,then ,else))
 
-(defmacro #_do (&rest exprs)
+(define-clojure-macro #_do (&rest exprs)
   `(progn ,@exprs))
 
 ;;; Here's how dynamic variables work. In Clojure `let' always
@@ -57,7 +82,7 @@ That's defun-1 as in Lisp-1."
 
 (defconst clojure-var-prefix '*clojure-var-)
 
-(defmacro defprivate (name &body body)
+(define-clojure-macro defprivate (name &body body)
   "Define a (private) var."
   (mvlet* ((docstring expr
             (ematch body
@@ -82,7 +107,7 @@ That's defun-1 as in Lisp-1."
          (apply ,name args))
        ',name)))
 
-(defmacro #_def (name &body body)
+(define-clojure-macro #_def (name &body body)
   (mvlet* ((private? (meta-ref name :|private|)))
     `(progn
        (defprivate ,name ,@body)
@@ -130,7 +155,7 @@ That's defun-1 as in Lisp-1."
                                        (list* 'funcall ',sym ,args)))
          ,@body))))
 
-(defmacro clojure-let (bindings &body body)
+(define-clojure-macro clojure-let (bindings &body body)
   (match bindings
     ((list) `(#_do ,@body))
     ((list* (and pattern (type symbol)) expr bindings)
@@ -148,7 +173,7 @@ That's defun-1 as in Lisp-1."
              (clojure-let ,bindings
                ,@body))))))))
 
-(defmacro #_let (bindings &body body)
+(define-clojure-macro #_let (bindings &body body)
   "Clojure let.
 Bear in mind Clojure let works like Lisp `let*' (bindings are
 nested)."
@@ -156,7 +181,7 @@ nested)."
     `(clojure-let ,bindings
        ,@body)))
 
-(defmacro #_binding (bindings &body body &environment env)
+(define-clojure-macro #_binding (bindings &body body &environment env)
   (let* ((bindings (convert 'list bindings))
          (binds (batches bindings 2 :even t))
          (symbols (mapcar #'first binds))
@@ -166,18 +191,18 @@ nested)."
     `(let ,(mapcar #'list vars exprs)
        ,@body)))
 
-(defmacro #_var (symbol &environment env)
+(define-clojure-macro #_var (symbol &environment env)
   `(quote ,(var symbol env)))
 
-(defmacro #_defn (name &body body)
+(define-clojure-macro #_defn (name &body body)
   (mvlet ((docs body (parse-docs body)))
     `(#_def ,name ,@(unsplice docs) (#_fn ,name ,@body))))
 
-(defmacro #_defn- (name &body body)
+(define-clojure-macro #_defn- (name &body body)
   (mvlet ((docs body (parse-docs body)))
     `(defprivate ,name ,@(unsplice docs) ,@body)))
 
-(defmacro #_fn (&body body)
+(define-clojure-macro #_fn (&body body)
   (mvlet* ((docstr body (parse-docs body))
            (name
             (and (symbolp (car body))
@@ -210,7 +235,7 @@ nested)."
            ,@(unsplice docstr)
            ,expr))))
 
-(defmacro #_loop (binds &body body)
+(define-clojure-macro #_loop (binds &body body)
   (mvlet* ((binds (convert 'list binds))
            (binds (batches binds 2 :even t))
            (exprs (mapcar #'second binds))
@@ -226,7 +251,7 @@ nested)."
   (declare (ignore args))
   (error (clojure-syntax-error "Cannot use `recur' outside `loop'.")))
 
-(defmacro #_recur (&rest args)
+(define-clojure-macro #_recur (&rest args)
   `(%recur (list ,@args)))
 
 ;; (defmacro #_try (&body body))
@@ -310,7 +335,7 @@ nested)."
 (defun-1 #_use (&rest args)
   (apply #'#_require args))
 
-(defmacro #_ns (name &body refs)
+(define-clojure-macro #_ns (name &body refs)
   (mvlet ((name (string name))
           (docstr refs (parse-docs refs)))
     `(eval-always
@@ -337,20 +362,22 @@ nested)."
                           `(#_refer-cl ,@args))))
        (find-package ,name))))
 
-(defmacro #_in-ns (name)
+(define-clojure-macro #_in-ns (name)
   `(in-package ,(string name)))
 
-(defmacro #_defmacro (name &body body)
+(define-clojure-macro #_defmacro (name &body body)
   (mvlet ((docstr body (parse-docs body))
           (forms (string-gensym 'forms)))
-    `(defmacro ,name (&whole #_&form
-                      &body ,forms
-                      &environment #_&env)
+    `(define-clojure-macro ,name (&whole #_&form
+                                         &body ,forms
+                                         &environment #_&env)
        ,@(unsplice docstr)
        (declare (ignorable #_&form #_&env))
-       (apply (#_fn ,@body) ,forms))))
+       (declojurize
+        (apply (#_fn ,@body)
+               (clojurize ,forms))))))
 
-(defmacro #_and (&rest forms)
+(define-clojure-macro #_and (&rest forms)
   (if (null forms) #_true
       (with-unique-names (val)
         `(let ((,val ,(first forms)))
@@ -358,17 +385,17 @@ nested)."
                      ,val
                      (#_and ,@(rest forms)))))))
 
-(defmacro #_or (&rest forms)
+(define-clojure-macro #_or (&rest forms)
   (if (null forms) #_nil
       (with-unique-names (val)
         `(let ((,val ,(first forms)))
            (#_if ,val ,val
                  (#_or ,@(rest forms)))))))
 
-(defmacro #_when (test &body body)
+(define-clojure-macro #_when (test &body body)
   `(#_if ,test (#_do ,@body)))
 
-(defmacro #_when-not (test &body body)
+(define-clojure-macro #_when-not (test &body body)
   `(#_if-not ,test (#_do ,@body)))
 
 (defun-1 #_apply (fn &rest args)
@@ -377,7 +404,7 @@ nested)."
 (defun-1 #_throw (arg)
   (error arg))
 
-(defmacro #_-> (x &rest steps)
+(define-clojure-macro #_-> (x &rest steps)
   (reduce (lambda (x step)
             (list* (first step)
                    x
@@ -386,7 +413,7 @@ nested)."
           :key #'ensure-list
           :initial-value x))
 
-(defmacro #_->> (x &rest steps)
+(define-clojure-macro #_->> (x &rest steps)
   (reduce (flip #'append1)
           steps
           :key #'ensure-list
@@ -409,7 +436,7 @@ nested)."
                           ,@(unsplice (and docs `(:documentation ,docs)))))
        (define-symbol-macro ,name (symbol-protocol ',name)))))
 
-(defmacro #_defprotocol (name &body specs)
+(define-clojure-macro #_defprotocol (name &body specs)
   (mvlet* ((docs specs (parse-docs specs))
            (sigs
             (collecting
@@ -519,7 +546,7 @@ nested)."
                                                                 ,@(rest lambda-list))
                                              ,@body)))))))
 
-(defmacro #_extend-type (type &body specs)
+(define-clojure-macro #_extend-type (type &body specs)
   (with-unique-names (this args)
     (let ((specs (split-specs specs)))
       `(extend-type ,type
@@ -535,7 +562,7 @@ nested)."
        ,@(loop for (type . methods) in specs
                collect `(extend-type ,type ,p ,@methods)))))
 
-(defmacro #_extend-protocol (p &body specs)
+(define-clojure-macro #_extend-protocol (p &body specs)
   (let ((specs (split-specs specs)))
     `(progn
        ,@(loop for (type . methods) in specs
@@ -544,7 +571,7 @@ nested)."
 (defclass clojure-class ()
   ())
 
-(defmacro #_deftype (type fields &body opts+specs)
+(define-clojure-macro #_deftype (type fields &body opts+specs)
   (mvlet* ((fields (convert 'list fields))
            (opts specs (parse-leading-keywords opts+specs))
            (specs (split-specs specs))
@@ -787,7 +814,7 @@ nested)."
   #_ICollection
   (#_conj (set x) (with set x)))
 
-(defmacro #_new (class-name &rest args)
+(define-clojure-macro #_new (class-name &rest args)
   `(make-instance ',class-name ,@args))
 
 (defun-1 #_instance? (x class)
@@ -808,7 +835,7 @@ nested)."
 (defun-1 #_/ (&rest ns)
   (apply #'/ ns))
 
-(defmacro #_locking (x &body body)
+(define-clojure-macro #_locking (x &body body)
   `(synchronized (,x)
      ,@body))
 
@@ -828,7 +855,7 @@ nested)."
     (setf (meta obj)
           (apply f (meta obj) args))))
 
-(defmacro #_cond (&rest clauses)
+(define-clojure-macro #_cond (&rest clauses)
   (ematch clauses
     ((list) #_nil)
     ((list test expr)
@@ -836,7 +863,7 @@ nested)."
     ((list* test expr clauses)
      `(#_if ,test ,expr (#_cond ,@clauses)))))
 
-(defmacro #_letfn (fnspecs &body body)
+(define-clojure-macro #_letfn (fnspecs &body body)
   (let* ((fnspecs (convert 'list fnspecs)))
     `(fbindrec ,(loop for (name . body) in fnspecs
                       collect `(,name (#_fn ,name ,@body)))
@@ -863,7 +890,7 @@ nested)."
 (defvar *assert* t)
 (expose-to-clojure #_*assert* *assert*)
 
-(defmacro #_assert (test &optional message)
+(define-clojure-macro #_assert (test &optional message)
   `(when *assert*
      (assert ,test () ,@(unsplice message))))
 
@@ -876,7 +903,7 @@ nested)."
 (defun-1 #_unchecked-multiply-int (x y)
   (- x y))
 
-(defmacro #_declare (&rest args)
+(define-clojure-macro #_declare (&rest args)
   `(progn
      ,@(loop for arg in args
              collect `(progn
@@ -896,7 +923,7 @@ nested)."
 (defun-1 #_== (&rest args)
   (apply #'= args))
 
-(defmacro #_comment (&body body)
+(define-clojure-macro #_comment (&body body)
   (declare (ignore body))
   (values))
 
