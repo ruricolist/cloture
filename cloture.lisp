@@ -283,3 +283,22 @@ Also return (as a second value) a list of all the symbols bound."
                    (list->map elts)))
                 (otherwise tree)))
             tree))
+
+(defun autogensym? (x)
+  (and (symbolp x)
+    (not (keywordp x))
+    (string$= "#" x)))
+
+(defun autogensyms (tree)
+  (let ((table (make-hash-table))
+        (tree (declojurize tree)))
+    (leaf-map (lambda (tree)
+                (match tree
+                  ((and sym
+                     (type symbol)
+                     (not (type keyword))
+                     (satisfies (lambda (x) (string$= "#" x))))
+                   (ensure2 (href table sym)
+                     (string-gensym (slice (string tree) 0 -1))))
+                  (otherwise tree)))
+              tree)))

@@ -226,8 +226,8 @@
   (signals error
     (read-clojure-from-string "#(#())")))
 
-;; (test autogensym
-;;   (destructuring-bind (x1 x2)
-;;       #_`(~x# ~x#)
-;;     (is (null (symbol-package x1)))
-;;     (is (eql x1 x2))))
+(test autogensym
+  (destructuring-bind (sym val)
+      #_(eval `(let [x# 1] (list 'x# x#)))
+    (is (null (symbol-package sym)))
+    (is (eql val 1))))

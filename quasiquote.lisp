@@ -7,7 +7,7 @@
   (:use :uiop :fare-utils :cl)
   (:import-from :fset
     :seq :convert :empty-map :empty-seq :empty-set)
-  (:import-from :cloture :clojurize :%seq :%set :%map :list->map)
+  (:import-from :cloture :clojurize :%seq :%set :%map :list->map :autogensyms)
   (:shadowing-import-from :fset :map :set)
   (:shadow #:list #:list* #:cons #:append #:nconc #:quote)
   (:shadow #:kwote #:quotep #:n-vector #:make-vector)
@@ -464,6 +464,7 @@ of the result of the top operation applied to the expression"
                      (read-delimited-list #\] stream t))))))
 
 (defun read-map (stream n)
+  (declare (ignore n))
   (if (= *quasiquote-level* 0)
       (n-map nil (read-delimited-list #\} stream t))
       (make-unquote
@@ -471,7 +472,7 @@ of the result of the top operation applied to the expression"
                      (read-delimited-list #\} stream t))))))
 
 (defun read-set (stream char n)
-  (declare (ignore char))
+  (declare (ignore char n))
   (if (= *quasiquote-level* 0)
       (n-set nil (read-delimited-list #\} stream t))
       (make-unquote
@@ -480,7 +481,7 @@ of the result of the top operation applied to the expression"
 
 (defun read-read-time-backquote (stream char)
   (declare (ignore char))
-  (values (macroexpand-1 (read-quasiquote stream))))
+  (values (autogensyms (macroexpand-1 (read-quasiquote stream)))))
 (defun read-macroexpand-time-backquote (stream char)
   (declare (ignore char))
   (read-quasiquote stream))
