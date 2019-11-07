@@ -41,4 +41,6 @@
 
            #:clojurize
 
+           #:map->list #:list->map
+
            #:%set #:%map #:%seq))
