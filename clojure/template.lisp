@@ -7,7 +7,7 @@
     `(symbol-macrolet ,(mapcar #'list argv values)
        ,expr)))
 
-(defmacro #_do-template (argv expr &body values)
+(define-clojure-macro #_do-template (argv expr &body values)
   `(#_do
     ,@(loop for value in values
             collect (#_apply-template argv expr value))))
