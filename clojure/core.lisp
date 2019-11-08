@@ -55,7 +55,7 @@ That's defun-1 as in Lisp-1."
              (env args (split-args-on args '&environment))
              (whole args (split-args-on args '&whole)))
       `(defmacro ,name (,@(and whole `(&whole ,whole))
-                        &body ,forms
+                        &rest ,forms
                               ,@(and env `(&environment ,env)))
          ,@(unsplice docs)
          (declojurize

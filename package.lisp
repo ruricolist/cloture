@@ -41,4 +41,7 @@
 
            #:clojurize
 
-           #:%set #:%map #:%seq))
+           #:map->list #:list->map
+
+           #:%set #:%map #:%seq
+           #:autogensyms))

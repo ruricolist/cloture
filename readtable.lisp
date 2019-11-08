@@ -7,8 +7,8 @@
 
 (defun read-meta (stream char)
   (declare (ignore char))
-  (let ((meta (rec-read stream))
-        (value (rec-read stream)))
+  (let* ((meta (clojurize (rec-read stream)))
+         (value (clojurize (rec-read stream))))
     (merge-meta! value (ensure-meta meta))
     value))
 

@@ -163,6 +163,19 @@
     (do-map (k v map)
       (collect (cons k v)))))
 
+(defun map->list (map)
+  (collecting
+    (do-map (k v map)
+      (collect k v))))
+
+(defun list->map (l)
+  (let ((pairs (batches l 2 :even t)))
+    (reduce (lambda (map pair)
+              (destructuring-bind (key value) pair
+                (fset:with map key value)))
+            pairs
+            :initial-value (empty-map))))
+
 ;;; TODO
 (defun obj->pattern (obj)
   "Convert OBJ into a Trivia destructuring pattern.
@@ -183,9 +196,9 @@ Also return (as a second value) a list of all the symbols bound."
                   (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
                     ;; TODO vector, sequence
                     `(or (fset-seq ,@pats)
-                         (clojuresque-list ,@pats)
-                         ;; NB this matches lists with too few arguments.
-                         (clojuresque-sequence ,@pats))))
+                       (clojuresque-list ,@pats)
+                       ;; NB this matches lists with too few arguments.
+                       (clojuresque-sequence ,@pats))))
                  (map
                   `(fset-map ,(map->alist obj))))))
       (values (obj->pattern obj)
@@ -244,6 +257,14 @@ Also return (as a second value) a list of all the symbols bound."
                  `(%seq
                    ,@(mapcar (op (map-tree #'rec _))
                              (convert 'list tree))))
+                ((type set)
+                 `(%set
+                   ,@(mapcar (op (map-tree #'rec _))
+                             (convert 'list tree))))
+                ((type map)
+                 `(%map
+                   ,@(mapcar (op (map-tree #'rec _))
+                             (map->list tree))))
                 (otherwise tree)))
             tree))
 
@@ -254,5 +275,30 @@ Also return (as a second value) a list of all the symbols bound."
                 ((list* '%seq elts)
                  (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
                    (convert 'seq elts)))
+                ((list* '%set elts)
+                 (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
+                   (convert 'set elts)))
+                ((list* '%map elts)
+                 (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
+                   (list->map elts)))
                 (otherwise tree)))
             tree))
+
+(defun autogensym? (x)
+  (and (symbolp x)
+    (not (keywordp x))
+    (string$= "#" x)))
+
+(defun autogensyms (tree)
+  (let ((table (make-hash-table))
+        (tree (declojurize tree)))
+    (leaf-map (lambda (tree)
+                (match tree
+                  ((and sym
+                     (type symbol)
+                     (not (type keyword))
+                     (satisfies (lambda (x) (string$= "#" x))))
+                   (ensure2 (href table sym)
+                     (string-gensym (slice (string tree) 0 -1))))
+                  (otherwise tree)))
+              tree)))

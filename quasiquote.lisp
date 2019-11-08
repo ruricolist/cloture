@@ -7,7 +7,7 @@
   (:use :uiop :fare-utils :cl)
   (:import-from :fset
     :seq :convert :empty-map :empty-seq :empty-set)
-  (:import-from :cloture :clojurize :%seq :%set :%map)
+  (:import-from :cloture :clojurize :%seq :%set :%map :list->map :autogensyms)
   (:shadowing-import-from :fset :map :set)
   (:shadow #:list #:list* #:cons #:append #:nconc #:quote)
   (:shadow #:kwote #:quotep #:n-vector #:make-vector)
@@ -41,13 +41,7 @@
 ;; These supporting functions don't have a standard name
 (defun make-vector (l) (coerce l 'simple-vector))
 (defun make-seq (l) (convert 'seq l))
-(defun make-map (l)
-  (let ((pairs (serapeum:batches l 2 :even t)))
-    (reduce (lambda (map pair)
-              (destructuring-bind (key value) pair
-                (fset:with map key value)))
-            pairs
-            :initial-value (empty-map))))
+(defun make-map (l) (list->map l))
 (defun make-set (l) (convert 'set l))
 (defun n-vector (n contents)
   (if (null n) (make-vector contents)
@@ -63,6 +57,10 @@
 
 (defmacro %seq (&rest elts)
   `(make-seq (list ,@elts)))
+(defmacro %map (&rest elts)
+  `(make-map (list ,@elts)))
+(defmacro %set (&rest elts)
+  `(make-set (list ,@elts)))
 
 (defun n-seq (n contents)
   (declare (ignore n))
@@ -70,11 +68,11 @@
 
 (defun n-set (n contents)
   (declare (ignore n))
-  (make-set contents))
+  (cons '%set contents))
 
 (defun n-map (n contents)
   (declare (ignore n))
-  (make-map contents))
+  (cons '%map contents))
 
 ;;; These functions build the forms that build the data structures.
 (make-single-arg-form quote kwote)
@@ -466,23 +464,24 @@ of the result of the top operation applied to the expression"
                      (read-delimited-list #\] stream t))))))
 
 (defun read-map (stream n)
+  (declare (ignore n))
   (if (= *quasiquote-level* 0)
-      (n-map n (read-delimited-list #\} stream t))
+      (n-map nil (read-delimited-list #\} stream t))
       (make-unquote
-       (k-n-map n (quasiquote-expand
-                   (read-delimited-list #\} stream t))))))
+       (k-n-map nil (quasiquote-expand
+                     (read-delimited-list #\} stream t))))))
 
 (defun read-set (stream char n)
-  (declare (ignore char))
+  (declare (ignore char n))
   (if (= *quasiquote-level* 0)
-      (n-set n (read-delimited-list #\} stream t))
+      (n-set nil (read-delimited-list #\} stream t))
       (make-unquote
-       (k-n-set n (quasiquote-expand
-                   (read-delimited-list #\} stream t))))))
+       (k-n-set nil (quasiquote-expand
+                     (read-delimited-list #\} stream t))))))
 
 (defun read-read-time-backquote (stream char)
   (declare (ignore char))
-  (values (macroexpand-1 (read-quasiquote stream))))
+  (values (autogensyms (macroexpand-1 (read-quasiquote stream)))))
 (defun read-macroexpand-time-backquote (stream char)
   (declare (ignore char))
   (read-quasiquote stream))
