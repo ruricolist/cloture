@@ -25,7 +25,8 @@
                (:module "clojure"
                 :components ((:file "core")
                              (:file "pprint")
-                             (:file "template")))))
+                             (:file "template")
+                             (:file "stacktrace")))))
 
 (defsystem "cloture/test"
   :depends-on ("cloture" "fiveam")

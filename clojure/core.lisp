@@ -297,37 +297,37 @@ nested)."
 
 (defun-1 #_require (&rest args)
   "Implements Clojure require (and use, because)."
-  (flet ((expect-package (lib)
+  (flet ((expect-ns (lib)
            (loop
              (when (find-package lib)
                (return))
              (cerror "Try again"
-                     "No such package as ~a"))))
+                     "No such namespace as ~a" lib))))
     (dolist (arg args)
       (nlet rec ((prefix "")
                  (arg arg))
         (match arg
           ((and libspec (type symbol))
            (let ((name (string+ prefix libspec)))
-             (expect-package name)
+             (expect-ns name)
              (setup-qualified-names name)))
           ((and libspec (type seq))
            (ematch (convert 'list libspec)
-             ((lambda-list lib &key as refer exclude only rename)
-              (when (and (or exclude only rename) refer)
+             ((lambda-list lib &key |as| |refer| |exclude| |only| |rename|)
+              (when (and (or |exclude| |only| |rename|) |refer|)
                 (error (clojure-error "Invalid: ~a" libspec)))
               (let ((lib (string+ prefix lib)))
-                (expect-package lib)
-                (setup-qualified-names lib as)
-                (when refer
-                  (match refer
+                (expect-ns lib)
+                (setup-qualified-names lib |as|)
+                (when |refer|
+                  (match |refer|
                     (:all (#_refer lib))
                     (otherwise
-                     (#_refer lib :only (convert 'list refer)))))
-                (when (or exclude only rename)
-                  (#_refer lib :only only
-                               :exclude exclude
-                               :rename rename))))))
+                     (#_refer lib :only (convert 'list |refer|)))))
+                (when (or |exclude| |only| |rename|)
+                  (#_refer lib :only |only|
+                               :exclude |exclude|
+                               :rename |rename|))))))
           ((list* prefix libspecs)
            (dolist (libspec libspecs)
              (rec prefix libspec))))))))
@@ -340,6 +340,7 @@ nested)."
           (docstr refs (parse-docs refs)))
     `(eval-always
        (defpackage ,(string name)
+         (:use)
          ,@(unsplice docstr))
        (in-package ,(string name))
        ,@(unsplice
@@ -355,11 +356,11 @@ nested)."
                          ((list* :|use| args)
                           `(#_use ,@args))
                          ((list* :|require| args)
-                          `(#_require ,@args))
+                          `(apply #_require (#_quote ,args)))
                          ((list* :|refer-clojure| args)
-                          `(#_refer-clojure ,@args))
+                          `(apply #_refer-clojure (#_quote ,args)))
                          ((list* :|refer-cl| args)
-                          `(#_refer-cl ,@args))))
+                          `(apply #_refer-cl (#_quote ,args)))))
        (find-package ,name))))
 
 (define-clojure-macro #_in-ns (name)
@@ -403,6 +404,8 @@ nested)."
 
 (defun-1 #_throw (arg)
   (error arg))
+
+(de) (def #_Throwable (find-class 'condition))
 
 (define-clojure-macro #_-> (x &rest steps)
   (reduce (lambda (x step)

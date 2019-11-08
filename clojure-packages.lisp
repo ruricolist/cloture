@@ -11,6 +11,7 @@
                 '("&" "var" "true" "false" "nil"
                   "quote" "if" "do" "def" "recur" "throw" "try"
                   "invoke" "equiv"
+                  "Throwable"
                   "IAssociative"
                   "ICollection"
                   "IComparable"
@@ -46,15 +47,13 @@
   (:use)
   (:export "starts-with?" "ends-with?"))
 
-(defpackage "clojure.test"
-  (:use)
-  (:export #:is #:thrown? #:thrown-with-msg #:testing
-           #:with-test #:deftest #:run-tests #:run-all-tests
-           #:*load-tests* #:use-fixtures))
-
 (defpackage "clojure.template"
   (:use)
   (:export "apply-template" "do-template"))
+
+(defpackage "clojure.stacktrace"
+  (:use)
+  (:export "print-cause-trace" "print-stack-trace" "print-throwable" "root-cause"))
 
 (defpackage "user"
   (:use "clojure.core"))
@@ -65,5 +64,5 @@
     "clojure.core"
     "clojure.pprint"
     "clojure.string"
-    "clojure.test"
-    "clojure.template"))
+    "clojure.template"
+    "clojure.stacktrace"))
