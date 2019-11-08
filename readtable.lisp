@@ -42,23 +42,82 @@
   (let ((string (assure string (rec-read stream))))
     (regex string)))
 
-(defvar *in-anon* nil)
-
-(defun read-anon (stream char arg)
-  (declare (ignore char arg))
-  (if *in-anon*
-      (error (clojure-error "Anonymous function literals cannot be nested."))
-      (let* ((*in-anon* t)
-             (forms (read-delimited-list #\) stream t)))
-        (declare (ignore forms))
-        (error "Anonymous function literal not yet implemented."))))
-
 (defun read-quote (stream char)
   (declare (ignore char))
   `(|clojure.core|:|quote| ,(rec-read stream)))
 
+(defvar *anon*)
+
+(defconst max-anon-arg 20)
+
+(defunion %arg
+  %&
+  (%n
+   (pos (integer 0 #.max-anon-arg))))
+
+(defconst anon-arg-syms
+  (coerce (loop for i from 1 to max-anon-arg
+                collect (intern (string+ "%" i)))
+          'vector))
+
+(defun %arg-sym (arg)
+  (ematch arg
+    ((eql %&) '%&)
+    ((%n n) (aref anon-arg-syms (1- n)))))
+
+(defclass function-literal ()
+  ((args :initform nil :accessor function-literal-args)))
+
+(defmethod function-literal-lambda ((anon function-literal) forms)
+  (with-slots (args) anon
+    (multiple-value-bind (max-offset variadic?)
+        (mvfold (lambda (max variadic? arg)
+                  (ematch arg
+                    ((eql %&) (values max t))
+                    ((%n n) (values (max max n) variadic?))))
+                args
+                0 nil)
+      (let ((pos-args (coerce (take max-offset anon-arg-syms) 'list))
+            (rest (and variadic? '(&rest %&))))
+        ;; NB This must return a lambda so it can be used in function position.
+        `(lambda (,@pos-args ,@rest)
+           ,forms)))))
+
+(defun read-anon (stream char arg)
+  (declare (ignore char arg))
+  (if (boundp '*anon*)
+      (error (clojure-error "Anonymous function literals cannot be nested."))
+      (let* ((anon (make 'function-literal))
+             (*anon* anon)
+             (forms
+               (let ((*readtable* (find-readtable 'function-literal)))
+                 (read-delimited-list #\) stream t))))
+        (function-literal-lambda anon forms))))
+
+(defun read-%arg (stream char)
+  (declare (ignore char))
+  (assert (boundp '*anon*))
+  (let* ((next (read-char stream nil nil t))
+         (arg
+           (cond
+             ((eql next #\&) %&)
+             ((digit-char-p next)
+              (let* ((chars
+                       (cons next
+                             (loop while (digit-char-p (peek-char nil stream))
+                                   collect (read-char stream nil nil t))))
+                     (chars (coerce 'string chars))
+                     (n (parse-integer chars)))
+                (%n n)))
+             (t
+              (unread-char next stream)
+              (%n 1)))))
+    (push arg (function-literal-args *anon*))
+    (%arg-sym arg)))
+
 (defreadtable cloture
-    (:fuze :standard cloture.qq:quasiquote-mixin)
+  (:fuze :standard cloture.qq:quasiquote-mixin)
+  (:case :preserve)
   ;; Clojure quote.
   (:macro-char #\' 'read-quote)
   ;; Supress.
@@ -80,8 +139,12 @@
   ;; Dereference vars.
   (:dispatch-macro-char #\# #\' 'read-var)
   ;; Anonymous function.
-  (:dispatch-macro-char #\# #\( 'read-anon)
-  (:case :preserve))
+  (:dispatch-macro-char #\# #\( 'read-anon))
+
+(defreadtable function-literal
+  (:merge cloture)
+  (:case :preserve)
+  (:macro-char #\% 'read-%arg t))
 
 (defreadtable clojure-shortcut
   (:merge :standard)
