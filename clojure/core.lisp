@@ -405,7 +405,7 @@ nested)."
 (defun-1 #_throw (arg)
   (error arg))
 
-(de) (def #_Throwable (find-class 'condition))
+(def #_Throwable (find-class 'condition))
 
 (define-clojure-macro #_-> (x &rest steps)
   (reduce (lambda (x step)
