@@ -35,6 +35,9 @@
            #:cljc
            #:cljs
 
+           #:truthy
+           #:falsy
+
            #:defun-1
            #:expose-to-clojure
            #:defgeneric-1
