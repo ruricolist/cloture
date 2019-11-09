@@ -75,7 +75,7 @@
                  (list a b c x y z)))))
 
 (test destructure-short
-  (is (equal '(nil nil nil)
+  (is (equal #_'(nil nil nil)
              #_(let [[x y z] '()]
                  (list x y z)))))
 

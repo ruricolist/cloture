@@ -98,6 +98,11 @@
     (append pats
             (and rest (list '|clojure.core|:&)))))
 
+(defun lookup* (obj x)
+  "Lookup X in OBJ, returning Clojure nil if not present."
+  (multiple-value-bind (val val?) (lookup obj x)
+    (if val? val |clojure.core|:|nil|)))
+
 (defun fset-seq-pattern (pats)
   (multiple-value-bind (pats rest all len)
       (dissect-seq-pattern pats)
@@ -106,11 +111,11 @@
                     (typep ,all 'seq)
                     ,@(loop for pat in pats
                             for i from 0
-                            collect `(lookup ,all ,i)
+                            collect `(lookup* ,all ,i)
                             collect pat)
                     ,@(and rest
-                           `((convert 'list (fset:subseq ,all ,len))
-                             ,rest)))))
+                        `((convert 'list (fset:subseq ,all ,len))
+                          ,rest)))))
 
 (defpattern fset-seq (&rest pats)
   (fset-seq-pattern pats))
@@ -132,7 +137,7 @@
       pat)))
 
 (defun safe-elt (seq i)
-  (if (>= i (length seq)) nil
+  (if (>= i (length seq)) |clojure.core|:|nil|
       (elt seq i)))
 
 (defpattern clojuresque-sequence (&rest pats)
@@ -155,7 +160,7 @@
     `(guard1 ,it
              (typep ,it 'map)
              ,@(loop for (pat . key) in alist
-                     collect `(lookup ,it ,key)
+                     collect `(lookup* ,it ,key)
                      collect pat))))
 
 (defun map->alist (map)
