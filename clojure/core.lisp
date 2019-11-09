@@ -202,31 +202,55 @@ nested)."
   (mvlet ((body docs (body+docs+attrs body)))
     `(defprivate ,name ,@(unsplice docs) ,@body)))
 
+(defun extract-pre-post (body)
+  (match body
+    ((list* (and cond-map (type map))
+            body)
+     (let ((pre (lookup cond-map :|pre|))
+           (post (lookup cond-map :|post|)))
+       (values body pre post)))
+    (otherwise
+     (values body nil nil))))
+
 (define-clojure-macro #_fn (&body body)
   (mvlet* ((body docstr (body+docs+attrs body))
            (name
             (and (symbolp (car body))
-                 (pop body)))
+              (pop body)))
            (args (string-gensym 'args))
+           (match-clauses
+            (nlet rec (body)
+              (ematch body
+                ((list* (and params (type seq))
+                        exprs)
+                 (rec (list (cons params exprs))))
+                ((and clauses (type list))
+                 (collecting
+                   (dolist (clause clauses)
+                     (mvlet* ((params exprs (car+cdr clause))
+                              (exprs pre post (extract-pre-post exprs))
+                              (subpats rest all (dissect-seq-pattern params))
+                              (pattern
+                               (if rest
+                                   `(list* ,@subpats ,rest)
+                                   `(list ,@subpats)))
+                              (exprs
+                               (if pre
+                                   `(#_do (#_assert ,pre) ,@exprs)
+                                   exprs))
+                              (exprs
+                               (if post
+                                   (let ((% (intern "%")))
+                                     `(#_let ((,% (#_do ,@exprs)))
+                                             (#_assert ,post)
+                                             ,%))
+                                   exprs)))
+                       (when (symbol-package all)
+                         (error (clojure-error "No :as in fn.")))
+                       (collect `(,pattern ,@exprs)))))))))
            (expr
-            (ematch body
-              ((list* (and params (type seq))
-                      exprs)
-               (return-from #_fn
-                 `(#_fn (,params ,@exprs))))
-              ((and clauses (type list))
-               `(ematch ,args
-                  ,@(collecting
-                      (dolist (clause clauses)
-                        (mvlet* ((params exprs (car+cdr clause))
-                                 (pats rest all (dissect-seq-pattern params)))
-                          (when (symbol-package all)
-                            (error (clojure-error "No :as in fn.")))
-                          (collect
-                              `(,(if rest
-                                     `(list* ,@pats ,rest)
-                                     `(list ,@pats))
-                                ,@exprs))))))))))
+            `(ematch ,args
+               ,@match-clauses)))
     (if name
         `(named-lambda ,name (&rest ,args)
            ,@(unsplice docstr)
