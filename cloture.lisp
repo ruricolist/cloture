@@ -254,15 +254,15 @@ Also return (as a second value) a list of all the symbols bound."
   (map-tree (named-lambda rec (tree)
               (match tree
                 ((type seq)
-                 `(%seq
+                 `([]
                    ,@(mapcar (op (map-tree #'rec _))
                              (convert 'list tree))))
                 ((type set)
-                 `(%set
+                 `(|#{}|
                    ,@(mapcar (op (map-tree #'rec _))
                              (convert 'list tree))))
                 ((type map)
-                 `(%map
+                 `({}
                    ,@(mapcar (op (map-tree #'rec _))
                              (map->list tree))))
                 (otherwise tree)))
@@ -272,13 +272,13 @@ Also return (as a second value) a list of all the symbols bound."
   "Replace calls to constructors with literal objects."
   (map-tree (named-lambda rec (tree)
               (match tree
-                ((list* '%seq elts)
+                ((list* '[] elts)
                  (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
                    (convert 'seq elts)))
-                ((list* '%set elts)
+                ((list* '|#{}| elts)
                  (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
                    (convert 'set elts)))
-                ((list* '%map elts)
+                ((list* '{} elts)
                  (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
                    (list->map elts)))
                 (otherwise tree)))

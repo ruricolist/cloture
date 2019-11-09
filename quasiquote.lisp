@@ -7,7 +7,7 @@
   (:use :uiop :fare-utils :cl)
   (:import-from :fset
     :seq :convert :empty-map :empty-seq :empty-set)
-  (:import-from :cloture :clojurize :%seq :%set :%map :list->map :autogensyms)
+  (:import-from :cloture :clojurize :[] :|#{}| :{} :list->map :autogensyms)
   (:shadowing-import-from :fset :map :set)
   (:shadow #:list #:list* #:cons #:append #:nconc #:quote)
   (:shadow #:kwote #:quotep #:n-vector #:make-vector)
@@ -19,7 +19,7 @@
            #:call-with-unquote-splicing-reader
            #:call-with-unquote-nsplicing-reader
            #:quasiquote-mixin
-           #:%seq #:%map #:%set
+           #:[] #:{} #:|#{}|
            #:make-seq #:make-set #:make-map))
 (in-package :cloture.qq)
 
@@ -55,24 +55,24 @@
           (error "provided contents larger than declared vector length"))
         a)))
 
-(defmacro %seq (&rest elts)
+(defmacro [] (&rest elts)
   `(make-seq (list ,@elts)))
-(defmacro %map (&rest elts)
+(defmacro {} (&rest elts)
   `(make-map (list ,@elts)))
-(defmacro %set (&rest elts)
+(defmacro |#{}| (&rest elts)
   `(make-set (list ,@elts)))
 
 (defun n-seq (n contents)
   (declare (ignore n))
-  (cons '%seq contents))
+  (cons '[] contents))
 
 (defun n-set (n contents)
   (declare (ignore n))
-  (cons '%set contents))
+  (cons '|#{}| contents))
 
 (defun n-map (n contents)
   (declare (ignore n))
-  (cons '%map contents))
+  (cons '{} contents))
 
 ;;; These functions build the forms that build the data structures.
 (make-single-arg-form quote kwote)

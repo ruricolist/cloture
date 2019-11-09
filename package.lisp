@@ -46,5 +46,5 @@
 
            #:map->list #:list->map
 
-           #:%set #:%map #:%seq
+           #:|#{}| #:{} #:[]
            #:autogensyms))
