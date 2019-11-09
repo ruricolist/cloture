@@ -10,6 +10,7 @@
                   (asdf:system-relative-pathname "cloture" "core-syms.txt")))
                 '("&" "var" "true" "false" "nil"
                   "quote" "if" "do" "def" "recur" "throw" "try"
+                  "&env" "&form"
                   "invoke" "equiv"
                   "Throwable"
                   "IAssociative"
