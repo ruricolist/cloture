@@ -50,7 +50,7 @@ That's defun-1 as in Lisp-1."
                      (append (ldiff args tail)
                              (cddr tail)))
              (values nil args))))
-    (mvlet* ((docs body (parse-docs body))
+    (mvlet* ((body docs (body+docs+attrs body))
              (forms (string-gensym 'forms))
              (env args (split-args-on args '&environment))
              (whole args (split-args-on args '&whole)))
@@ -195,15 +195,15 @@ nested)."
   `(quote ,(var symbol env)))
 
 (define-clojure-macro #_defn (name &body body)
-  (mvlet ((docs body (parse-docs body)))
+  (mvlet ((body docs (body+docs+attrs body)))
     `(#_def ,name ,@(unsplice docs) (#_fn ,name ,@body))))
 
 (define-clojure-macro #_defn- (name &body body)
-  (mvlet ((docs body (parse-docs body)))
+  (mvlet ((body docs (body+docs+attrs body)))
     `(defprivate ,name ,@(unsplice docs) ,@body)))
 
 (define-clojure-macro #_fn (&body body)
-  (mvlet* ((docstr body (parse-docs body))
+  (mvlet* ((body docstr (body+docs+attrs body))
            (name
             (and (symbolp (car body))
                  (pop body)))
@@ -337,7 +337,7 @@ nested)."
 
 (define-clojure-macro #_ns (name &body refs)
   (mvlet ((name (string name))
-          (docstr refs (parse-docs refs)))
+          (refs docstr (body+docs+attrs refs)))
     `(eval-always
        (defpackage ,(string name)
          (:use)
@@ -367,7 +367,7 @@ nested)."
   `(in-package ,(string name)))
 
 (define-clojure-macro #_defmacro (name &body body)
-  (mvlet ((docstr body (parse-docs body))
+  (mvlet ((body docstr (body+docs+attrs body))
           (forms (string-gensym 'forms)))
     `(define-clojure-macro ,name (&whole #_&form
                                          &body ,forms
@@ -423,7 +423,7 @@ nested)."
           :initial-value x))
 
 (defmacro defprotocol (name &body specs)
-  (mvlet ((doc sigs (parse-docs specs)))
+  (mvlet ((sigs doc (body+docs+attrs specs)))
     `(progn
        (eval-always
          (setf (symbol-protocol ',name)
@@ -440,7 +440,7 @@ nested)."
        (define-symbol-macro ,name (symbol-protocol ',name)))))
 
 (define-clojure-macro #_defprotocol (name &body specs)
-  (mvlet* ((docs specs (parse-docs specs))
+  (mvlet* ((specs docs (body+docs+attrs specs))
            (sigs
             (collecting
               (dolist (spec specs)

@@ -214,10 +214,10 @@ Also return (as a second value) a list of all the symbols bound."
 
 ;;; Macro helpers.
 
-(defun parse-docs (body)
-  (if (stringp (first body))
-      (values (first body) (rest body))
-      (values nil body)))
+(defun body+docs+attrs (body)
+  (let ((docs (and (stringp (car body)) (pop body)))
+        (attrs (and (typep (car body) 'map) (pop body))))
+    (values body docs attrs)))
 
 (defun car+cdr (list)
   (values (car list) (cdr list)))
