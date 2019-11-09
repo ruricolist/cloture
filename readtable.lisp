@@ -167,15 +167,14 @@
     (read stream eof-error-p eof-value recursive)))
 
 (defun resolve-slash-symbol (symbol)
-  (match (symbol-name symbol)
-    ((and symbol (type keyword))
-     symbol)
-    ((ppcre "(.+?)/(.+)" package-name symbol-name)
-     (let* ((package
-              (or (find-package package-name)
-                  (error (clojure-reader-error "No such package as ~s" package-name)))))
-       (find-external-symbol symbol-name package :error t)))
-    (otherwise symbol)))
+  (if (keywordp symbol) symbol
+      (match (symbol-name symbol)
+        ((ppcre "(.+?)/(.+)" package-name symbol-name)
+         (let* ((package
+                  (or (find-package package-name)
+                    (error (clojure-reader-error "No such package as ~s" package-name)))))
+           (find-external-symbol symbol-name package :error t)))
+        (otherwise symbol))))
 
 (defun fixup-symbols (tree)
   ;; TODO descend into maps, vectors, etc.
