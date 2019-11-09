@@ -51,6 +51,7 @@ That's defun-1 as in Lisp-1."
                              (cddr tail)))
              (values nil args))))
     (mvlet* ((body docs (body+docs+attrs body))
+             (body decls (parse-body body))
              (forms (string-gensym 'forms))
              (env args (split-args-on args '&environment))
              (whole args (split-args-on args '&whole)))
@@ -63,6 +64,7 @@ That's defun-1 as in Lisp-1."
             (let ((,forms (clojurize ,forms))
                   ,@(unsplice (and whole `(,whole (clojurize ,whole)))))
               (destructuring-bind ,args ,forms
+                ,@decls
                 ,@body))))))))
 
 (define-clojure-macro #_if (test then &optional (else #_nil))
