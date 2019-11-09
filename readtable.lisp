@@ -115,6 +115,10 @@
     (push arg (function-literal-args *anon*))
     (%arg-sym arg)))
 
+(defun read-deref (stream char)
+  (declare (ignore char))
+  `(|clojure.core|:|deref| ,(rec-read stream)))
+
 (defreadtable cloture
   (:fuze :standard cloture.qq:quasiquote-mixin)
   (:case :preserve)
@@ -136,8 +140,10 @@
   (:syntax-from :standard #\Space #\,)
   ;; Reader conditionals.
   (:dispatch-macro-char #\# #\? 'read-conditional)
-  ;; Dereference vars.
+  ;; Vars.
   (:dispatch-macro-char #\# #\' 'read-var)
+  ;; Deref.
+  (:macro-char #\@ #'read-deref)
   ;; Anonymous function.
   (:dispatch-macro-char #\# #\( 'read-anon))
 

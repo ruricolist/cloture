@@ -238,3 +238,7 @@
   (is (equal '(1) #_(#(list %) 1)))
   (is (equal '((1 2 3)) #_(#(list %&) 1 2 3)))
   (is (equal '(1 (2 3)) #_(#(list % %&) 1 2 3))))
+
+(test deref-syntax
+  (is (equal '(|clojure.core|:|deref| :|x|)
+             #_'@:x)))
