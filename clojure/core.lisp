@@ -18,6 +18,15 @@ That's defun-1 as in Lisp-1."
      (define-symbol-macro ,name #',name)
      ',name))
 
+(defmacro defalias-1 (name fn)
+  "Like `defalias', but in both namespaces.
+For the rare case where the identity of the function matters (e.g.
+defmulti)."
+  `(progn
+     (defalias ,name ,fn)
+     (define-symbol-macro ,name #',name)
+     ',name))
+
 (defmacro defgeneric-1 (name args &body body)
   `(progn
      (defgeneric ,name ,args ,@body)
@@ -106,7 +115,7 @@ That's defun-1 as in Lisp-1."
             `(def ,name ,expr
                ,@(unsplice doc)))
        (defun ,name (&rest args)
-         (apply ,name args))
+         (ifn-apply ,name args))
        ',name)))
 
 (define-clojure-macro #_def (name &body body)
@@ -154,7 +163,7 @@ That's defun-1 as in Lisp-1."
     (with-unique-names (args)
       `(macrolet ,(loop for sym in syms
                         collect `(,sym (&rest ,args)
-                                       (list* 'funcall ',sym ,args)))
+                                       (list* 'ifncall ',sym ,args)))
          ,@body))))
 
 (define-clojure-macro clojure-let (bindings &body body)
@@ -462,7 +471,7 @@ nested)."
   `(#_if-not ,test (#_do ,@body)))
 
 (defun-1 #_apply (fn &rest args)
-  (apply #'apply fn args))
+  (apply #'ifn-apply fn args))
 
 (defun-1 #_throw (arg)
   (error arg))
@@ -546,6 +555,25 @@ nested)."
 
 (defprotocol #_IFn
   (#_invoke (x &rest args)))
+
+(defun ifncall (ifn &rest args)
+  ;; TODO avoid consing.
+  (apply (ifn-function ifn) args))
+
+(defun ifn-apply (ifn &rest args)
+  (apply #'apply (ifn-function ifn) args))
+
+(defun ifn-function (ifn)
+  (cond ((functionp ifn) ifn)
+        ((keywordp ifn)
+         (lambda (map)
+           (#_lookup map ifn)))
+        ((extends? '#_IFn ifn)
+         (lambda (&rest args)
+           (apply #'#_invoke ifn args)))
+        (t (error 'does-not-extend
+                  :protocol '#_IFn
+                  :object ifn))))
 
 (defun #_ifn? (x)
   (extends? '#_IFn x))
@@ -690,7 +718,7 @@ nested)."
 (extend-type function
   #_Fn
   #_IFn
-  (#_invoke (fn &rest args) (apply fn args)))
+  (#_invoke (fn &rest args) (ifn-apply fn args)))
 
 (extend-protocol #_IHash
   t
@@ -840,7 +868,7 @@ nested)."
                (if (empty? seq) seq
                    (let ((k 0))
                      (do-seq (v seq)
-                       (setf init (funcall f init (finc k) v)))
+                       (setf init (ifncall f init (finc k) v)))
                      init))))
 
 (extend-type map
@@ -864,7 +892,7 @@ nested)."
                (if (empty? map) map
                    (progn
                      (do-map (k v map)
-                       (setf init (funcall f init k v)))
+                       (setf init (ifncall f init k v)))
                      init))))
 
 (extend-type set
@@ -918,7 +946,7 @@ nested)."
 (defun-1 #_alter-meta! (obj f &rest args)
   (synchronized (obj)
     (setf (meta obj)
-          (apply f (meta obj) args))))
+          (ifn-apply f (meta obj) args))))
 
 (define-clojure-macro #_cond (&rest clauses)
   (ematch clauses
@@ -950,7 +978,7 @@ nested)."
 (defun-1 #_alter-var-root (root f &rest args)
   (synchronized (root)
     (setf (symbol-value root)
-          (apply f (symbol-value root) args))))
+          (ifn-apply f (symbol-value root) args))))
 
 (defvar *assert* t)
 (expose-to-clojure #_*assert* *assert*)
@@ -979,8 +1007,8 @@ nested)."
   (match args
     ((list) t)
     ((list _) t)
-    ((list x y) (equal? x y))
-    (otherwise (every #'equal? args (rest args)))))
+    ((list x y) (#_equiv x y))
+    (otherwise (every #'#_equiv args (rest args)))))
 
 (defun-1 #_not= (&rest args)
   (not (apply #'#_= args)))
@@ -1061,3 +1089,28 @@ nested)."
 
 (defun-1 #_re-pattern (s)
   (ppcre:create-scanner (assure string s)))
+
+(define-clojure-macro #_defmulti (name &body body)
+  (mvlet* ((body docs (body+docs+attrs body)))
+    (declare (ignore docs))             ;TODO
+    (ematch body
+      ((list* dispatch-fn args)
+       `(defalias-1 ,name
+            (make 'multimethod
+                  :name ',name
+                  :fn (ifn-function ,dispatch-fn)
+                  ,@args))))))
+
+(define-clojure-macro #_defmethod (name value params &body body)
+  `(progn
+     (add-clojure-method #',name ,value
+                         (#_fn ,params ,@body))
+     ',name))
+
+(defun-1 #_class (x)
+  (class-of x))
+
+(defun-1 #_class? (x)
+  (typep x 'class))
+
+(defun-1 #_identity (x) x)

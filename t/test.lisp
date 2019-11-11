@@ -252,3 +252,20 @@
   (is (eql -1
            (funcall #_(fn [x y] (x y))
                     #'- 1))))
+
+(test equality
+  (is #_(= 0 0))
+  (is (= (#_hash 0) (#_hash 0)))
+  (is #_(not= 0 1))
+  (is #_(not= (hash 0) (hash 1))))
+
+(test defmulti
+  (is (= 1 (#_factorial 0)))
+  (is (= 1 (#_factorial 1)))
+  (is (= 6 (#_factorial 3)))
+  (is (= 5040 (#_factorial 7))))
+
+#_(defmulti factorial identity)
+#_(defmethod factorial 0 [_]  1)
+#_(defmethod factorial :default [num]
+    (* num (factorial (dec num))))

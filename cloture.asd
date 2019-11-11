@@ -9,7 +9,9 @@
                "cl-murmurhash"
                "lisp-namespace"
                "cl-ppcre"
-               "fiveam")
+               "fiveam"
+               "closer-mop"
+               "cl-custom-hash-table")
   :in-order-to ((test-op (test-op "cloture/test")))
   :serial t
   :components ((:file "package")
@@ -23,6 +25,7 @@
                (:file "readtable")
                (:file "asdf")
                (:module "clojure"
+                :serial t
                 :components ((:file "core")
                              (:file "pprint")
                              (:file "template")

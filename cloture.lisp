@@ -300,10 +300,50 @@ Also return (as a second value) a list of all the symbols bound."
     (leaf-map (lambda (tree)
                 (match tree
                   ((and sym
-                     (type symbol)
-                     (not (type keyword))
-                     (satisfies (lambda (x) (string$= "#" x))))
+                        (type symbol)
+                        (not (type keyword))
+                        (satisfies (lambda (x) (string$= "#" x))))
                    (ensure2 (href table sym)
                      (string-gensym (slice (string tree) 0 -1))))
                   (otherwise tree)))
               tree)))
+
+;;; Hash tables that use Clojure's idea of equality.
+(define-custom-hash-table-constructor
+    make-clojure-hash-table
+  :test |clojure.core|:|=|
+  :hash-function |clojure.core|:|hash|)
+
+(defclass multimethod ()
+  ((name :initarg :name)
+   (fn :initarg :fn :type function)
+   (lock :initform (bt:make-lock) :reader monitor)
+   (method-table
+    :type hash-table
+    :initform (make-clojure-hash-table))
+   (default-value
+    :initarg :default)
+   ;; TODO
+   (hierarchy
+    :initarg :hierarchy))
+  (:default-initargs
+   :default :|default|)
+  (:metaclass funcallable-standard-class))
+
+(defmethod initialize-instance :after ((self multimethod) &key)
+  (with-slots (name method-table default-value) self
+    (set-funcallable-instance-function
+     self
+     (lambda (value &rest args)
+       (if-let (fn (href method-table value))
+         (apply fn value args)
+         (if-let (default-fn (href method-table default-value))
+           (apply default-fn value args)
+           (error 'no-such-method
+                  :multi name
+                  :value value)))))))
+
+(defmethod add-clojure-method ((self multimethod) value fn)
+  (with-slots (method-table) self
+    (setf (href method-table value)
+          (ifn-function fn))))

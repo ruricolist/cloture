@@ -55,3 +55,18 @@
   (error 'too-few-arguments
          :max max-arity
          :arguments args))
+
+(defcondition does-not-extend (clojure-error)
+  ((protocol :initarg :protocol)
+   (object :initarg :object))
+  (:report (lambda (c s)
+             (with-slots (protocol object) c
+               (format s "Class of ~a does not extend protocol ~a"
+                       object protocol)))))
+
+(defcondition no-such-method (clojure-error)
+  ((multi :initarg :multi)
+   (value :initarg :value))
+  (:report (lambda (c s)
+             (with-slots (multi value) c
+               (format s "No method for ~a in multimethod ~a" value multi)))))

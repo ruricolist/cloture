@@ -1,7 +1,17 @@
 (defpackage #:cloture
-  (:use #:cl #:alexandria #:serapeum #:named-readtables #:trivia)
+  (:use
+    ;; :cl with a portable MOP.
+    #:closer-common-lisp
+    ;; Utility libraries.
+    #:alexandria #:serapeum
+    ;; A namespace for readtables.
+    #:named-readtables
+    ;; Pattern matching.
+    #:trivia)
   (:local-nicknames (#:nick #:trivial-package-local-nicknames))
   (:import-from #:trivia.ppcre #:ppcre)
+  (:import-from #:cl-custom-hash-table
+    #:define-custom-hash-table-constructor)
   (:import-from #:fset
     #:equal?
     #:empty?
