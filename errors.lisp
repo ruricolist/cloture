@@ -11,6 +11,21 @@
 (defcondition clojure-syntax-error (clojure-error) ())
 (defcondition simple-clojure-syntax-error (simple-error clojure-syntax-error) ())
 
+(defcondition wrong-number-arguments (clojure-program-error)
+  ((arguments :initarg :arguments)))
+
+(defcondition too-many-arguments (wrong-number-arguments)
+  ((max :initarg :max :type (integer 0 *)))
+  (:report (lambda (c s)
+             (with-slots (arguments max) c
+               (format s "Too many arguments (max ~a):~%~s" max arguments)))))
+
+(defcondition too-few-arguments (wrong-number-arguments)
+  ((min :initarg :max :type (integer 0 *)))
+  (:report (lambda (c s)
+             (with-slots (arguments max) c
+               (format s "Too many arguments (max ~a):~%~s" max arguments)))))
+
 (defun clojure-error (control &rest args)
   (make-condition 'simple-clojure-error
                   :format-control control
@@ -30,3 +45,13 @@
   (make-condition 'simple-clojure-reader-error
                   :format-control control
                   :format-arguments args))
+
+(defun too-many-arguments (max-arity args)
+  (error 'too-many-arguments
+         :max max-arity
+         :arguments args))
+
+(defun too-few-arguments (max-arity args)
+  (error 'too-few-arguments
+         :max max-arity
+         :arguments args))

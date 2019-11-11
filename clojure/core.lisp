@@ -214,52 +214,88 @@ nested)."
     (otherwise
      (values body nil nil))))
 
-(define-clojure-macro #_fn (&body body)
-  (mvlet* ((body docstr (body+docs+attrs body))
-           (name
-            (and (symbolp (car body))
-              (pop body)))
-           (args (string-gensym 'args))
-           (match-clauses
-            (nlet rec (body)
-              (ematch body
-                ((list* (and params (type seq))
-                        exprs)
-                 (rec (list (cons params exprs))))
-                ((and clauses (type list))
-                 (collecting
-                   (dolist (clause clauses)
-                     (mvlet* ((params exprs (car+cdr clause))
-                              (exprs pre post (extract-pre-post exprs))
-                              (subpats rest all (dissect-seq-pattern params))
-                              (pattern
-                               (if rest
-                                   `(list* ,@subpats ,rest)
-                                   `(list ,@subpats)))
-                              (exprs
-                               (if pre
-                                   `(#_do (#_assert ,pre) ,@exprs)
-                                   exprs))
-                              (exprs
-                               (if post
-                                   (let ((% (intern "%")))
-                                     `(#_let ((,% (#_do ,@exprs)))
-                                             (#_assert ,post)
-                                             ,%))
-                                   exprs)))
-                       (when (symbol-package all)
-                         (error (clojure-error "No :as in fn.")))
-                       (collect `(,pattern ,@exprs)))))))))
-           (expr
-            `(ematch ,args
-               ,@match-clauses)))
+(defstruct-read-only fn-clause
+  params exprs pre post rest min-arity)
+
+(defun parse-clause (clause)
+  (mvlet* ((params exprs (car+cdr clause))
+           (exprs pre post (extract-pre-post exprs))
+           (subpats rest all min-arity (dissect-seq-pattern params)))
+    (declare (ignore subpats))
+    (when (symbol-package all)
+      (error (clojure-syntax-error "No :as in fn.")))
+    (make-fn-clause :params params
+                    :exprs exprs
+                    :pre pre
+                    :post post
+                    :rest rest
+                    :min-arity min-arity)))
+
+(defun fn-clause->body (c)
+  (with-accessors ((exprs fn-clause-exprs)
+                   (pre fn-clause-pre)
+                   (post fn-clause-post))
+      c
+    (let* ((exprs
+             (if pre
+                 `((#_do (#_assert ,pre) ,@exprs))
+                 exprs))
+           (exprs
+             (if post
+                 (let ((% (intern "%")))
+                   `((#_let ,(seq % `(#_do ,@exprs))
+                            (#_assert ,post)
+                            ,%)))
+                 exprs)))
+      exprs)))
+
+(define-clojure-macro #_fn (&body body*)
+  (local
+    (defun fn-clause->binding (c args-sym)
+      `(#_let ,(seq (fn-clause-params c) args-sym)
+              ,@(require-body-for-splice (fn-clause->body c))))
+
+    (def (values body docstr) (body+docs+attrs body*))
+    (def name
+      (and (symbolp (car body))
+           (pop body)))
+    (def args-sym (string-gensym 'args))
+    (def clauses
+      (ematch body
+        ((list* (and _ (type seq)) _)
+         (list (parse-clause body)))
+        ((and clauses (type list))
+         (mapcar #'parse-clause clauses))))
+    (def max-arity (reduce #'max clauses :key #'fn-clause-min-arity))
+    (def variadic-clauses (filter #'fn-clause-rest clauses))
+
+    (when (length> variadic-clauses 1)
+      (error (clojure-syntax-error "Only one variadic overloard in an fn.")))
+
+    (def variadic (first variadic-clauses))
+    (setf clauses (remove variadic clauses))
+
+    (def args-len (string-gensym 'len))
+
+    (def dispatch
+      ;; TODO Only check length up to max arity (+1)?
+      `(let ((,args-len (length ,args-sym)))
+         (if (> ,args-len ,max-arity)
+             ,(if variadic
+                  (fn-clause->binding variadic args-sym)
+                  `(too-many-arguments ,max-arity ,args-sym))
+             (ecase ,args-len
+               ,@(loop for clause in clauses
+                       collect `(,(fn-clause-min-arity clause)
+                                 ,(fn-clause->binding clause args-sym)))))))
+
     (if name
-        `(named-lambda ,name (&rest ,args)
+        `(named-lambda ,name (&rest ,args-sym)
            ,@(unsplice docstr)
-           ,expr)
-        `(lambda (&rest ,args)
+           ,dispatch)
+        `(lambda (&rest ,args-sym)
            ,@(unsplice docstr)
-           ,expr))))
+           ,dispatch))))
 
 (define-clojure-macro #_loop (binds &body body)
   (mvlet* ((binds (convert 'list binds))

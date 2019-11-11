@@ -242,3 +242,13 @@
 (test deref-syntax
   (is (equal '(|clojure.core|:|deref| :|x|)
              #_'@:x)))
+
+(test fn-destructure
+  (is (equal '(1 2 3)
+             (funcall #_(fn [[x y z]] (list x y z))
+                      '(1 2 3)))))
+
+(test fn-lisp-1
+  (is (eql -1
+           (funcall #_(fn [x y] (x y))
+                    #'- 1))))

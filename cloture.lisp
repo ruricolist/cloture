@@ -201,9 +201,9 @@ Also return (as a second value) a list of all the symbols bound."
                   (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
                     ;; TODO vector, sequence
                     `(or (fset-seq ,@pats)
-                       (clojuresque-list ,@pats)
-                       ;; NB this matches lists with too few arguments.
-                       (clojuresque-sequence ,@pats))))
+                         (clojuresque-list ,@pats)
+                         ;; NB this matches lists with too few arguments.
+                         (clojuresque-sequence ,@pats))))
                  (map
                   `(fset-map ,(map->alist obj))))))
       (values (obj->pattern obj)
