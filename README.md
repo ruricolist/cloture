@@ -1,10 +1,12 @@
 # Cloture
 
-Cloture is a (partial, pre-alpha) implementation of Clojure in Common Lisp. I am releasing now because it has progressed far enough for its test suite to actually be written in Clojure.
+Cloture is an implementation implementation of Clojure in Common Lisp. It is designed to interoperate well with Common Lisp; e.g. Clojure is read by the Lisp reader and Clojure namespaces are Lisp packages.
 
-My current goal with Cloture is to reduce the work of porting Clojure libraries to Common Lisp to the point where ports can just be forks, rather than complete rewrites, and future improvements can be merged from upstream.
+Cloture is in very early stages, but it has progressed far enough for its test suite to actually be written in Clojure, and I want to gauge if there is interest before taking it further.
 
-Work so far has been focused on the critical path to get Clojure code working in CL. But if there is interest from Clojurists I may work toward making it a more complete Clojure implementation.
+My ultimate goal with Cloture is to reduce the work of porting Clojure libraries to Common Lisp to the point where ports can just be forks, rather than complete rewrites, and future improvements can be merged from upstream.
+
+Work so far has been focused on the critical path to get Clojure code working in CL. But if there is interest from Clojurists I may work toward making it a more complete Clojure implementation – but not to the point where interoperability with Common Lisp is impaired.
 
 ## Using Clojure from Lisp
 
