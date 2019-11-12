@@ -5,10 +5,18 @@
   "Type for objects that don't allow metadata."
   '(or string number keyword boolean))
 
-(defunit |clojure.core|:|true|)
-(defunit |clojure.core|:|false|)
+(defunion clojure-boolean
+  |clojure.core|:|true|
+  |clojure.core|:|false|)
 ;;; Lisp nil is reserved for the empty list.
 (defunit |clojure.core|:|nil|)
+
+(defmethod murmurhash:murmurhash ((self |clojure.core|:|true|) &key)
+  (murmurhash:murmurhash '|clojure.core|:|true|))
+(defmethod murmurhash:murmurhash ((self |clojure.core|:|false|) &key)
+  (murmurhash:murmurhash '|clojure.core|:|false|))
+(defmethod murmurhash:murmurhash ((self |clojure.core|:|nil|) &key)
+  (murmurhash:murmurhash '|clojure.core|:|nil|))
 
 (define-modify-macro withf (&rest item-or-tuple) with)
 (define-modify-macro lessf (&rest item-or-tuple) less)
