@@ -48,9 +48,14 @@ defmulti)."
 (defun-1 #_true? (x)
   (? (eql x #_true)))
 
+(defun-1 #_identical (x y)
+  (? (eq x y)))
+
 (defun-1 #_zero? (n) (? (zerop n)))
 (defun-1 #_neg? (n) (? (minusp n)))
 (defun-1 #_pos? (n) (? (plusp n)))
+(defun-1 #_odd? (n) (? (oddp n)))
+(defun-1 #_even? (n) (? (oddp n)))
 
 (defmacro #_quote (x)
   `(quote ,(clojurize x)))
@@ -578,6 +583,7 @@ nested)."
 (defun ifn-apply (ifn &rest args)
   (apply #'apply (ifn-function ifn) args))
 
+(-> ifn-function (t) (values function &optional))
 (defun ifn-function (ifn)
   (cond ((functionp ifn) ifn)
         ((keywordp ifn)
@@ -1243,3 +1249,15 @@ nested)."
     (if (zerop n)
         (#_seq coll)
         (nthrest (#_next coll) (1- n)))))
+
+(define-clojure-macro #_time (form)
+  `(time ,form))
+
+(defun-1 #_memoize (f)
+  (let ((table (make-clojure-hash-table))
+        (fun (ifn-function f)))
+    (lambda (&rest args)
+      (values
+       (synchronized (table)
+         (ensure2 (gethash args table)
+           (apply fun args)))))))
