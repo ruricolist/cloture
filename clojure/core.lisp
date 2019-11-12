@@ -548,6 +548,15 @@ nested)."
   (#_first (seq))
   (#_rest (seq)))
 
+(defun-1 #_seq? (x)
+  (extends? '#_ISeq x))
+
+(defun-1 #_second (x) (#_first (#_next x)))
+(defun-1 #_fnext (x) (#_first (#_next x)))
+(defun-1 #_ffirst (x) (#_first (#_first x)))
+(defun-1 #_nfirst (x) (#_next (#_first x)))
+(defun-1 #_nnext (x) (#_next (#_next x)))
+
 (defprotocol #_INext
   (#_next (seq)))
 
@@ -603,6 +612,9 @@ nested)."
   (#_rseq (col)))
 
 (defprotocol #_ISequential)
+
+(defun-1 #_sequential? (x)
+  (extends? '#_ISequential x))
 
 (defprotocol #_IAssociative
   (#_contains-key? (coll k))
@@ -1161,6 +1173,9 @@ nested)."
       (intern name (#_the-ns ns))
       (intern name)))
 
+(defun-1 #_symbol? (x)
+  (? (symbolp x)))
+
 (defun-1 #_fnil (f x &optional
                    (y nil y-supplied?)
                    (z nil z-supplied?))
@@ -1212,3 +1227,19 @@ nested)."
     (do-map (k v map)
       (declare (ignore k))
       (collect v))))
+
+(defun-1 #_nthnext (coll n)
+  (assert (not (minusp n)))
+  (nlet nthnext ((coll coll)
+                 (n n))
+    (if (zerop n)
+        (#_seq coll)
+        (nthnext (#_next coll) (1- n)))))
+
+(defun-1 #_nthrest (coll n)
+  (assert (not (minusp n)))
+  (nlet nthrest ((coll coll)
+                 (n n))
+    (if (zerop n)
+        (#_seq coll)
+        (nthrest (#_next coll) (1- n)))))

@@ -275,7 +275,7 @@ Also return (as a second value) a list of all the symbols bound."
                    ,@(mapcar (op (map-tree #'rec _))
                              (convert 'list tree))))
                 ((type map)
-                 `({}
+                 `(|{}|
                    ,@(mapcar (op (map-tree #'rec _))
                              (map->list tree))))
                 (otherwise tree)))
