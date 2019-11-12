@@ -308,11 +308,15 @@ Also return (as a second value) a list of all the symbols bound."
                   (otherwise tree)))
               tree)))
 
+(defun hash-clojuresque (x)
+  ;; Use sxhash to reduce to the Lisp implementation's range.
+  (sxhash (|clojure.core|:|hash| x)))
+
 ;;; Hash tables that use Clojure's idea of equality.
 (define-custom-hash-table-constructor
     make-clojure-hash-table
   :test |clojure.core|:|=|
-  :hash-function |clojure.core|:|hash|)
+  :hash-function hash-clojuresque)
 
 (defclass multimethod ()
   ((name :initarg :name)
