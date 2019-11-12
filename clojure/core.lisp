@@ -33,18 +33,24 @@ defmulti)."
      (define-symbol-macro ,name #',name)
      ',name))
 
+(defun ? (x)
+  (if x #_true #_false))
+
+(defun-1 #_not (x)
+  (? (eql x #_false)))
+
 (defun-1 #_nil? (x)
-  (eql x #_nil))
+  (? (eql x #_nil)))
 
 (defun-1 #_false? (x)
-  (eql x #_false))
+  (? (eql x #_false)))
 
 (defun-1 #_true? (x)
-  (eql x #_true))
+  (? (eql x #_true)))
 
-(defun-1 #_zero? (n) (zerop n))
-(defun-1 #_neg? (n) (minusp n))
-(defun-1 #_pos? (n) (plusp n))
+(defun-1 #_zero? (n) (? (zerop n)))
+(defun-1 #_neg? (n) (? (minusp n)))
+(defun-1 #_pos? (n) (? (plusp n)))
 
 (defmacro #_quote (x)
   `(quote ,(clojurize x)))
@@ -632,7 +638,7 @@ nested)."
                do (check-protocol p methods)
                collect `(progn
                           (defmethod extends? ((protocol (eql ,p)) (x ,type))
-                            t)
+                            #_true)
                           ,@(loop for (fn-name lambda-list . body) in methods
                                   for this = (first lambda-list)
                                   collect `(defmethod ,fn-name ((,this ,type)
@@ -911,7 +917,7 @@ nested)."
   `(make-instance ',class-name ,@args))
 
 (defun-1 #_instance? (x class)
-  (typep x class))
+  (? (typep x class)))
 
 (defun-1 #_type (x)
   (type-of x))
@@ -921,12 +927,6 @@ nested)."
 
 (defun-1 #_dec (n)
   (1- n))
-
-(defun-1 #_* (&rest ns)
-  (apply #'* ns))
-
-(defun-1 #_/ (&rest ns)
-  (apply #'/ ns))
 
 (define-clojure-macro #_locking (x &body body)
   `(synchronized (,x)
@@ -988,7 +988,7 @@ nested)."
      (assert ,test () ,@(unsplice message))))
 
 (defun-1 #_special-symbol? (s)
-  (true (memq s special-forms)))
+  (? (memq s special-forms)))
 
 (defun-1 #_unchecked-add-int (x y)
   (+ x y))
@@ -1004,14 +1004,14 @@ nested)."
                         (#_def arg #_nil)))))
 
 (defun-1 #_= (&rest args)
-  (match args
-    ((list) t)
-    ((list _) t)
-    ((list x y) (#_equiv x y))
-    (otherwise (every #'#_equiv args (rest args)))))
+  (? (match args
+       ((list) t)
+       ((list _) t)
+       ((list x y) (#_equiv x y))
+       (otherwise (every (compose #'truthy? #'#_equiv) args (rest args))))))
 
 (defun-1 #_not= (&rest args)
-  (not (apply #'#_= args)))
+  (#_not (apply #'#_= args)))
 
 (defun-1 #_== (&rest args)
   (apply #'= args))
@@ -1114,3 +1114,14 @@ nested)."
   (typep x 'class))
 
 (defun-1 #_identity (x) x)
+
+(defun-1 #_rand (&optional (n 1))
+  (random (coerce n 'double-float)))
+
+(defun-1 #_rand-int (n)
+  (values (round (random n))))
+
+(defun-1 #_< (&rest xs)  (? (apply #'< xs)))
+(defun-1 #_> (&rest xs)  (? (apply #'> xs)))
+(defun-1 #_>= (&rest xs) (? (apply #'>= xs)))
+(defun-1 #_<= (&rest xs) (? (apply #'<= xs)))

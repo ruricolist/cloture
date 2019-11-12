@@ -1,9 +1,7 @@
 (defpackage "clojure.core"
   (:nicknames "clj")
   (:use)
-  (:import-from #:cl
-    #:< #:>= #:<= #:+ #:- #:-
-    #:quote)
+  (:import-from #:cl #:+ #:- #:/ #:*)
   (:export . #.(append
                 (serapeum:lines
                  (alexandria:read-file-into-string
