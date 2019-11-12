@@ -29,6 +29,7 @@
                 :components ((:file "core")
                              (:file "pprint")
                              (:file "template")
+                             (:file "strings")
                              (:file "stacktrace")))))
 
 (defsystem "cloture/test"
