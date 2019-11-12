@@ -327,21 +327,23 @@ Also return (as a second value) a list of all the symbols bound."
    (hierarchy
     :initarg :hierarchy))
   (:default-initargs
-   :default :|default|)
+   :default :|default|
+   :fn (error "A multimethods needs a function."))
   (:metaclass funcallable-standard-class))
 
 (defmethod initialize-instance :after ((self multimethod) &key)
-  (with-slots (name method-table default-value) self
+  (with-slots (name method-table default-value fn) self
     (set-funcallable-instance-function
      self
-     (lambda (value &rest args)
-       (if-let (fn (href method-table value))
-         (apply fn value args)
-         (if-let (default-fn (href method-table default-value))
-           (apply default-fn value args)
-           (error 'no-such-method
-                  :multi name
-                  :value value)))))))
+     (lambda (&rest args)
+       (let ((value (ifn-apply fn args)))
+         (if-let (method (href method-table value))
+           (apply method args)
+           (if-let (default-method (href method-table default-value))
+             (apply default-method args)
+             (error 'no-such-method
+                    :multi name
+                    :value value))))))))
 
 (defmethod add-clojure-method ((self multimethod) value fn)
   (with-slots (method-table) self
