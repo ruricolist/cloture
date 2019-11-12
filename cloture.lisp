@@ -343,19 +343,29 @@ Also return (as a second value) a list of all the symbols bound."
    :fn (error "A multimethods needs a function."))
   (:metaclass funcallable-standard-class))
 
+(defmethod print-object ((self multimethod) stream)
+  (with-slots (name fn) self
+    (print-unreadable-object (self stream :type t)
+      (format stream "~a ~a"
+              name fn))))
+
+(defmethod dispatch ((self multimethod) args)
+  (with-slots (name method-table default-value fn) self
+    (let ((value (ifn-apply fn args)))
+      (if-let (method (href method-table value))
+        (apply method args)
+        (if-let (default-method (href method-table default-value))
+          (apply default-method args)
+          (error 'no-such-method
+                 :multi name
+                 :value value))))))
+
 (defmethod initialize-instance :after ((self multimethod) &key)
   (with-slots (name method-table default-value fn) self
     (set-funcallable-instance-function
      self
      (lambda (&rest args)
-       (let ((value (ifn-apply fn args)))
-         (if-let (method (href method-table value))
-           (apply method args)
-           (if-let (default-method (href method-table default-value))
-             (apply default-method args)
-             (error 'no-such-method
-                    :multi name
-                    :value value))))))))
+       (dispatch self args)))))
 
 (defmethod add-clojure-method ((self multimethod) value fn)
   (with-slots (method-table) self
