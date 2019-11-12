@@ -289,3 +289,12 @@
   (is (equal #_'(nil) #_(list nil)))
   (is (equal #_'(true) #_(list true)))
   (is (equal #_'(false) #_(list false))))
+
+#_(defn squares-odd [n]
+    (cons (mysqr n) (lazy-seq (squares (inc n)))))
+#_(defn squares-even [n]
+    (lazy-seq (cons (mysqr n) (squares (inc n)))))
+
+(test lazy-seq
+  (is #_(= (take 1 (squares-odd 1))
+           (take 1 (squares-even 1)))))
