@@ -265,8 +265,22 @@
 #_(defmethod factorial :default [num]
     (* num (factorial (dec num))))
 
-(test defmulti
+(test defmulti-identity
   (is (= 1 (#_factorial 0)))
   (is (= 1 (#_factorial 1)))
   (is (= 6 (#_factorial 3)))
   (is (= 5040 (#_factorial 7))))
+
+#_(do
+   (defmulti rand-str
+       (fn [] (> (rand) 0.5)))
+
+   (defmethod rand-str true
+     [] "true")
+
+    (defmethod rand-str false
+      [] "false"))
+
+(test defmulti-random
+  (loop repeat 5 do
+    (is (member (#_rand-str) '("false" "true") :test #'equal))))
