@@ -298,6 +298,8 @@ Also convert the symbols for true, false, and nil to unit types."
                 ('|clojure.core|:|true|  |clojure.core|:|true|)
                 ('|clojure.core|:|false| |clojure.core|:|false|)
                 ('|clojure.core|:|nil|   |clojure.core|:|nil|)
+                ((list* _ (and _ (not (type list))))
+                 (error "Improper list in Clojure tree."))
                 (otherwise tree)))
             tree))
 
