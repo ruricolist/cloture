@@ -1125,3 +1125,90 @@ nested)."
 (defun-1 #_> (&rest xs)  (? (apply #'> xs)))
 (defun-1 #_>= (&rest xs) (? (apply #'>= xs)))
 (defun-1 #_<= (&rest xs) (? (apply #'<= xs)))
+
+(defun-1 #_all-ns ()
+  (list-all-packages))
+
+(defun-1 #_empty? (xs)
+  (#_not (#_seq xs)))
+
+(defun-1 #_reverse (xs)
+  (typecase xs
+    (sequence (reverse xs))
+    (t (#_rseq xs))))
+
+(defun-1 #_ns-name (ns)
+  (intern (package-name ns)))
+
+(defun-1 #_the-ns (name)
+  (find-package name))
+
+(define-clojure-macro #_if-let (bindings &body (then else))
+  (ematch bindings
+    ((seq binds test)
+     (with-unique-names (temp)
+       `(let ((,temp ,test))
+          (#_if ,temp
+                (#_let ,(seq binds temp)
+                       ,then)
+                ,else))))))
+
+(define-clojure-macro #_when-let (bindings &body body)
+  `(#_if-let ,bindings (#_do ,@body)))
+
+(defun-1 #_symbol (ns &optional (name nil name-supplied?))
+  (if name-supplied?
+      (intern name (#_the-ns ns))
+      (intern name)))
+
+(defun-1 #_fnil (f x &optional
+                   (y nil y-supplied?)
+                   (z nil z-supplied?))
+  (cond (z-supplied?
+         (lambda (arg1 arg2 arg3 &rest args)
+           (ifn-apply f
+                      (if (#_nil? arg1) x arg1)
+                      (if (#_nil? arg2) y arg2)
+                      (if (#_nil? arg3) z arg3)
+                      args)))
+        (y-supplied?
+         (lambda (arg1 arg2 &rest args)
+           (ifn-apply f
+                      (if (#_nil? arg1) x arg1)
+                      (if (#_nil? arg2) y arg2)
+                      args)))
+        (t
+         (lambda (arg1 &rest args)
+           (ifn-apply f
+                      (if (#_nil? arg1) x arg1)
+                      args)))))
+
+(defun-1 #_new (class &rest args)
+  (apply #'make-instance class args))
+
+(define-clojure-macro #_case (e &body clauses)
+  (mvlet* ((default? (evenp (length clauses)))
+           (clauses (batches clauses 2))
+           (clauses default
+            (if default?
+                (values clauses nil)
+                (values (butlast clauses) (lastcar clauses)))))
+    `(case-using #'_= ,e
+       ,@clauses
+       ,@(unsplice (and default? `(otherwise ,default))))))
+
+(defun-1 #_comp (&rest fns)
+  (if (null fns) #'identity
+      (apply #'compose fns)))
+
+(defun-1 #_vals (map)
+  (collecting
+    (do-map (k v map)
+      (declare (ignore v))
+      (collect k))))
+
+(defun-1 #_keys (map)
+  (collecting
+    (do-map (k v map)
+      (declare (ignore k))
+      (collect v))))
