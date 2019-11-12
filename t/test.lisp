@@ -75,9 +75,10 @@
                  (list a b c x y z)))))
 
 (test destructure-short
-  (is (equal #_'(nil nil nil)
-             #_(let [[x y z] '()]
-                 (list x y z)))))
+  (let ((l1 #_(list nil))
+        (l2 #_(let [[x] '()]
+                (list x))))
+    (is (equal l1 l2))))
 
 (test destructure-lisp-vector
   (is (equalp #(1 2 3 4 5)
