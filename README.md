@@ -8,6 +8,10 @@ My ultimate goal with Cloture is to reduce the work of porting Clojure libraries
 
 Work so far has been focused on the critical path to get Clojure code working in CL. But if there is interest from Clojurists I may work toward making it a more complete Clojure implementation – but not to the point where interoperability with Common Lisp is impaired.
 
+## A note about Fset
+
+Cloture uses Fset seqs, maps, and sets to implement Clojure vectors, maps, and sets, respectively. This involves a few hacks to FSet that might possibly affect other programs using FSet.
+
 ## Using Clojure from Lisp
 
 The overriding design goal of Cloture is to keep things as close to Common Lisp as possible: Clojure is read by the Lisp reader and Clojure namespaces are just packages. But of course Clojure is case sensitive, so you will need to use pipe characters to call, for example, `|clojure.core|:|cons|`.
@@ -42,3 +46,4 @@ Since I primarily use the [Clozure][] implementation of Common Lisp, and I am wr
 [cloture]: https://en.wikipedia.org/wiki/Cloture
 [EPL]: https://opensource.org/licenses/EPL-1.0
 [ClojureScript]: https://clojurescript.org/
+[FSet]: https://github.com/slburson/fset
