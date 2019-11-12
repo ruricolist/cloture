@@ -282,7 +282,8 @@ Also return (as a second value) a list of all the symbols bound."
             tree))
 
 (defun clojurize (tree)
-  "Replace calls to constructors with literal objects."
+  "Replace calls to constructors with literal objects.
+Also convert the symbols for true, false, and nil to unit types."
   (map-tree (named-lambda rec (tree)
               (match tree
                 ((list* '[] elts)
@@ -294,6 +295,9 @@ Also return (as a second value) a list of all the symbols bound."
                 ((list* '{} elts)
                  (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
                    (list->map elts)))
+                ('|clojure.core|:|true|  |clojure.core|:|true|)
+                ('|clojure.core|:|false| |clojure.core|:|false|)
+                ('|clojure.core|:|nil|   |clojure.core|:|nil|)
                 (otherwise tree)))
             tree))
 

@@ -284,3 +284,8 @@
 (test defmulti-random
   (loop repeat 5 do
     (is (member (#_rand-str) '("false" "true") :test #'equal))))
+
+(test quoted-literals
+  (is (equal #_'(nil) #_(list nil)))
+  (is (equal #_'(true) #_(list true)))
+  (is (equal #_'(false) #_(list false))))
