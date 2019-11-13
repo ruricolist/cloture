@@ -931,9 +931,6 @@ nested)."
   #_ICollection
   (#_conj (set x) (with set x)))
 
-(define-clojure-macro #_new (class-name &rest args)
-  `(make-instance ',class-name ,@args))
-
 (defun-1 #_instance? (x class)
   (? (typep x class)))
 
