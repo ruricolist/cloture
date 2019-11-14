@@ -1496,3 +1496,32 @@ nested)."
      (#_range 0 end 1))
     ((list)
      (#_range 0 infinity 1))))
+
+(defun-1 #_pr (&rest xs)
+  (format t "~{~s~^ ~}" xs)
+  #_nil)
+
+(defun-1 #_prn (&rest xs)
+  (apply #_pr xs)
+  (terpri)
+  #_nil)
+
+(defun-1 #_print (&rest more)
+  (format t "~{~a~^ ~}" more)
+  #_nil)
+
+(defun-1 #_println (&rest more)
+  (apply #_print more)
+  #_nil)
+
+(defun-1 #_print-str (&rest more)
+  (with-output-to-string (*standard-output*)
+    (apply #_print more)))
+
+(defun-1 #_pr-str (&rest more)
+  (with-output-to-string (*standard-output*)
+    (apply #_pr more)))
+
+(define-clojure-macro #_with-out-str (&body body)
+  `(with-output-to-string (*standard-output*)
+     ,@body))
