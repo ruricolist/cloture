@@ -291,10 +291,50 @@
   (is (equal #_'(false) #_(list false))))
 
 #_(defn squares-odd [n]
-    (cons (mysqr n) (lazy-seq (squares (inc n)))))
+    (cons (* n n) (lazy-seq (squares-odd (inc n)))))
 #_(defn squares-even [n]
-    (lazy-seq (cons (mysqr n) (squares (inc n)))))
+    (lazy-seq (cons (* n n) (squares-even (inc n)))))
 
 (test lazy-seq
   (is #_(= (take 1 (squares-odd 1))
            (take 1 (squares-even 1)))))
+
+(test cycle
+  (is (equal '(1 2 3 1 2 3 1 2 3 1)
+             #_(doall 10 (cycle '(1 2 3))))))
+
+(test concat
+  (is (equal '(1 2 3 4 5 6)
+             #_(doall 10 (concat '(1 2 3) '(4 5 6))))))
+
+(test take
+  (is (equal '(1 2 3 4 5 6)
+             #_(doall (take 6 '(1 2 3 4 5 6))))))
+
+(test repeat
+  (is (equal '(t t t t t)
+             #_(doall 10 (repeat 5 CL:T))))
+  (is (equal '(t t t)
+             #_(doall 10 (repeat 3 CL:T)))))
+
+(test filter
+  (is (equal '(0 2 4 6 8)
+             #_(doall (filter even? (range 10))))))
+
+(test map
+  (is (equal (cl:map 'list #'- (range 5))
+             #_(doall (map - (range 5)))))
+  (is (equal
+       (cl:map 'list #'- (range 5) (range 5 10))
+       #_(doall (map - (range 5) (range 5 10))))))
+
+(test range
+  (is (emptyp #_(take 10 (range 0 0 0))))
+  (is (equal (make-list 5 :initial-element 0)
+             #_(doall 5 (range 0 10 0))))
+  (is (seq= (range 10)
+            #_(doall 10 (range)))))
+
+(test drop-while
+  (is (equal '(2 4 6)
+             #_(doall (drop-while odd? '(1 3 5 2 4 6))))))

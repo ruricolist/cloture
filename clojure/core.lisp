@@ -5,6 +5,11 @@
 
 ;;; TODO make Lisp lambda lists and Clojure arg vectors congruent when possible.
 
+;;; Not inlining these would be criminal.
+(declaim (inline . #_(bit-and bit-or bit-xor bit-not bit-flip bit-set bit-shift-right bit-shift-left bit-and-not bit-clear bit-test unsigned-bit-shift-right)))
+
+(declaim (inline . #_(cons < > >= <= + - / *)))
+
 (defconst special-forms
   '#_(quote
       if do def let binding var
@@ -55,7 +60,7 @@ defmulti)."
 (defun-1 #_neg? (n) (? (minusp n)))
 (defun-1 #_pos? (n) (? (plusp n)))
 (defun-1 #_odd? (n) (? (oddp n)))
-(defun-1 #_even? (n) (? (oddp n)))
+(defun-1 #_even? (n) (? (evenp n)))
 
 (defmacro #_quote (x)
   `(quote ,(clojurize x)))
@@ -553,8 +558,15 @@ nested)."
   (#_first (seq))
   (#_rest (seq)))
 
+(defun first+rest (seq)
+  (values (#_first seq)
+          (#_rest seq)))
+
 (defun-1 #_seq? (x)
   (extends? '#_ISeq x))
+
+(defun seq? (x)
+  (truthy? (#_seq x)))
 
 (defun-1 #_second (x) (#_first (#_next x)))
 (defun-1 #_fnext (x) (#_first (#_next x)))
@@ -641,6 +653,12 @@ nested)."
 (defprotocol #_IStack
   (#_peek (s))
   (#_pop (s)))
+
+(defprotocol #_IPending
+  (#_realized? (x)))
+
+(defprotocol #_IDeref
+  (#_deref (x)))
 
 (defgeneric extends? (protocol-name type))
 
@@ -1049,9 +1067,6 @@ nested)."
                   (fset:concat (fset:reverse items)
                                (reverse (butlast items)))))))))
 
-;;; Not inlining these would be criminal.
-(declaim (inline #_bit-and #_bit-or #_bit-xor #_bit-not #_bit-flip #_bit-set #_bit-shift-right #_bit-shift-left #_bit-and-not #_bit-clear #_bit-test #_unsigned-bit-shift-right))
-
 (defun-1 #_bit-and (x y &rest more)
   (apply #'logand x y more))
 
@@ -1140,6 +1155,10 @@ nested)."
 (defun-1 #_> (&rest xs)  (? (apply #'> xs)))
 (defun-1 #_>= (&rest xs) (? (apply #'>= xs)))
 (defun-1 #_<= (&rest xs) (? (apply #'<= xs)))
+(defun-1 #_+ (&rest xs) (apply #'+ xs))
+(defun-1 #_- (&rest xs) (apply #'- xs))
+(defun-1 #_* (&rest xs) (apply #'* xs))
+(defun-1 #_/ (&rest xs) (apply #'/ xs))
 
 (defun-1 #_all-ns ()
   (list-all-packages))
@@ -1258,3 +1277,225 @@ nested)."
        (synchronized (table)
          (ensure2 (gethash args table)
            (apply fun args)))))))
+
+(defunit unrealized)
+
+(defstruct (memo-cell
+            (:constructor memo-cell (thunk)))
+  (value unrealized)
+  (thunk (error "No thunk!") :type function)
+  (lock (bt:make-lock) :read-only t))
+
+(defun force (memo-cell)
+  (with-accessors ((value memo-cell-value)
+                   (thunk memo-cell-thunk)
+                   (lock  memo-cell-lock))
+      memo-cell
+    (if (eq value unrealized)
+        (synchronized (lock)
+          (if (eq value unrealized)
+              (setf value (funcall (shiftf thunk #'identity)))
+              value))
+        value)))
+
+(defun forced? (memo-cell)
+  (not (eq unrealized (memo-cell-value memo-cell))))
+
+(defstruct (delay
+            (:include memo-cell)
+            (:constructor make-delay (thunk))))
+
+(define-clojure-macro #_delay (&body body)
+  `(make-delay (lambda () ,@body)))
+
+(defun-1 #_delay? (x)
+  (? (typep x 'delay)))
+
+(defun-1 #_force (x)
+  (if (typep x 'delay) (force x) x))
+
+(extend-type delay
+  #_IDeref
+  (#_deref (x) (force x))
+  #_IPending
+  (#_realized? (x) (forced? x)))
+
+(defstruct (lazy-seq
+             (:include memo-cell)
+             (:constructor make-lazy-seq (thunk))))
+
+(defmacro lazy-seq (&body body)
+  `(make-lazy-seq (lambda () ,@body)))
+
+(defmacro #_lazy-seq (&body body)
+  `(lazy-seq ,@body))
+
+(extend-type lazy-seq
+  #_IDeref
+  (#_deref (x) (force x))
+  #_IPending
+  (#_realized? (x) (forced? x))
+  #_ISequential
+  #_ISeq
+  (#_first (x) (#_first (force x)))
+  (#_rest (x) (#_rest (force x)))
+  #_INext
+  (#_next (x) (#_next (force x)))
+  #_ISeqable
+  (#_seq (x) (force x))
+  #_IEmptyableCollection
+  (#_empty (seq) '()))
+
+(defun-1 #_cons (x y)
+  (cons x y))
+
+(defun doall-n (n seq)
+  (nlet doall-n ((n n)
+                 (seq seq)
+                 (acc '()))
+    (if (and (plusp n)
+             (seq? seq))
+        (doall-n (1- n)
+                 (#_next seq)
+                 (cons (#_first seq) acc))
+        (nreverse acc))))
+
+(defun doall (seq)
+  (nlet doall ((seq seq)
+               (acc '()))
+    (if (seq? seq)
+        (doall (#_next seq)
+               (cons (#_first seq) acc))
+        (nreverse acc))))
+
+(defun-1 #_doall (n-or-seq &optional seq)
+  (if (numberp n-or-seq)
+      (doall-n n-or-seq seq)
+      (doall n-or-seq)))
+
+(defun-1 #_dorun (n-or-seq &optional seq)
+  ;; TODO avoid consing
+  (#_doall n-or-seq seq)
+  (values))
+
+(defun-1 #_concat (&rest seqs)
+  (labels ((rec (seqs)
+             (if (null seqs) '()
+                 (let ((seq1 (first seqs)))
+                   (if (seq? seq1)
+                       (lazy-seq
+                         (cons (#_first seq1)
+                               (apply #'#_concat
+                                      (#_rest seq1)
+                                      (rest seqs))))
+                       (rec (rest seqs)))))))
+    (rec seqs)))
+
+(defun-1 #_cycle (seq)
+  (labels ((rec (tail)
+             (if (seq? tail)
+                 (#_cons (#_first tail)
+                         (lazy-seq (rec (#_rest tail))))
+                 (rec seq))))
+    (rec seq)))
+
+(defun-1 #_take (n seq)
+  (if (and (plusp n)
+           (seq? seq))
+      (lazy-seq (cons (#_first seq)
+                      (take (1- n) (#_rest seq))))
+      '()))
+
+(defun-1 #_drop-while (pred seq)
+  (fbind ((pred (ifn-function pred)))
+    (if (not (seq? seq)) '()
+        (lazy-seq
+          (multiple-value-bind (first rest) (first+rest seq)
+            (if (truthy? (pred first))
+                (#_drop-while pred rest)
+                seq))))))
+
+(defun zip (seqs)
+  (if (notevery #'seq? seqs)
+      '()
+      (lazy-seq
+        (cons (mapcar #_first seqs)
+              (zip (mapcar #_rest seqs))))))
+
+(defun map/1 (fn col)
+  (labels ((map/1 (fn col)
+             (if (not (seq? col)) '()
+                 (lazy-seq
+                   (cons (funcall fn (#_first col))
+                         (map/1 fn (#_rest col)))))))
+    (map/1 (ifn-function fn) col)))
+
+(defun map/n (fn &rest cols)
+  (fbind ((fn (ifn-function fn)))
+    (map/1 (lambda (args) (apply fn args))
+           (zip cols))))
+
+(defun-1 #_map (fn &rest colls)
+  (ematch colls
+    ((list) '())
+    ((list coll) (map/1 fn coll))
+    ((list* _ _) (apply #'map/n fn colls))))
+
+(defun-1 #_filter (pred coll)
+  (fbind ((pred (ifn-function pred)))
+    (if (not (seq? coll)) '()
+        (lazy-seq
+          (nlet filter* ((coll coll))
+            (if (not (seq? coll)) '()
+                (multiple-value-bind (first rest) (first+rest coll)
+                  (if (truthy? (pred first))
+                      (cons first (#_filter pred rest))
+                      (filter* rest)))))))))
+
+(defun repeatedly (fn &optional n)
+  (fbind ((fn (ifn-function fn)))
+    (if (null n)
+        (lazy-seq (cons (fn) (lazy-seq (repeatedly fn))))
+        (labels ((rec (n)
+                   (if (zerop n) '()
+                       (lazy-seq (cons (fn) (repeatedly fn (1- n)))))))
+          (rec n)))))
+
+(defun-1 #_repeatedly (&rest args)
+  (ematch args
+    ((list n fn)
+     (repeatedly fn n))
+    ((list fn)
+     (repeatedly fn))))
+
+(defun-1 #_repeat (n-or-x &optional (x nil x-supplied?))
+  (multiple-value-bind (n x)
+      (if x-supplied?
+          (values n-or-x x)
+          (values nil n-or-x))
+    (if (null n)
+        (#_repeatedly (#_constantly x))
+        (#_repeatedly n (#_constantly x)))))
+
+(defunit infinity)
+
+(defun-1 #_range (&rest args)
+  (ematch args
+    ((list start (and _ (eql start)) _)
+     '())
+    ((list start _ 0)
+     (#_repeat start))
+    ((list start (and end (eq infinity)) step)
+     (let ((next (+ start step)))
+       (lazy-seq (cons start (#_range next end step)))))
+    ((list start end step)
+     (let ((next (+ start step)))
+       (if (< next end)
+           (lazy-seq (cons start (#_range next end step)))
+           (list start))))
+    ((list start end)
+     (#_range start end 1))
+    ((list end)
+     (#_range 0 end 1))
+    ((list)
+     (#_range 0 infinity 1))))
