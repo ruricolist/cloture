@@ -98,15 +98,6 @@
     (is (= 3000 (funcall bar 5 6)))
     (is (= 60 (funcall bar 5 6 2)))))
 
-(let ((bar
-        #_(fn bar
-            ([a b]
-             (bar a b 100))
-            ([a b c]
-             (* a b c)))))
-  (= 3000 (funcall bar 5 6))
-  (= 60 (funcall bar 5 6 2)))
-
 (test ->
   (is (listp (#_-> '((1 2) (3 4)))))
   (is (= 2 (#_-> '((1 2) (3 4)) first second)))
