@@ -778,7 +778,7 @@ nested)."
 
 (extend-protocol #_IEquiv
   t
-  (#_equiv (self other) (equal? self other)))
+  (#_equiv (self other) (? (equal? self other))))
 
 (extend-protocol #_IMeta
   t
@@ -1040,8 +1040,11 @@ nested)."
   (? (match args
        ((list) t)
        ((list _) t)
-       ((list x y) (#_equiv x y))
-       (otherwise (every (compose #'truthy? #'#_equiv) args (rest args))))))
+       ((list x y) (truthy? (#_equiv x y)))
+       (otherwise
+        (loop for x in args
+              for y in (rest args)
+              always (truthy? (#_equiv x y)))))))
 
 (defun-1 #_not= (&rest args)
   (#_not (apply #'#_= args)))
@@ -1286,17 +1289,18 @@ nested)."
   (thunk (error "No thunk!") :type function)
   (lock (bt:make-lock) :read-only t))
 
-(defun force (memo-cell)
-  (with-accessors ((value memo-cell-value)
-                   (thunk memo-cell-thunk)
-                   (lock  memo-cell-lock))
-      memo-cell
-    (if (eq value unrealized)
-        (synchronized (lock)
-          (if (eq value unrealized)
-              (setf value (funcall (shiftf thunk #'identity)))
-              value))
-        value)))
+(defun force (x)
+  (if (not (typep x 'memo-cell)) x
+      (with-accessors ((value memo-cell-value)
+                       (thunk memo-cell-thunk)
+                       (lock  memo-cell-lock))
+          x
+        (if (eq value unrealized)
+            (synchronized (lock)
+              (if (eq value unrealized)
+                  (setf value (funcall (shiftf thunk #'identity)))
+                  value))
+            value))))
 
 (defun forced? (memo-cell)
   (not (eq unrealized (memo-cell-value memo-cell))))
@@ -1318,7 +1322,7 @@ nested)."
   #_IDeref
   (#_deref (x) (force x))
   #_IPending
-  (#_realized? (x) (forced? x)))
+  (#_realized? (x) (? (forced? x))))
 
 (defstruct (lazy-seq
              (:include memo-cell)
@@ -1334,7 +1338,7 @@ nested)."
   #_IDeref
   (#_deref (x) (force x))
   #_IPending
-  (#_realized? (x) (forced? x))
+  (#_realized? (x) (? (forced? x)))
   #_ISequential
   #_ISeq
   (#_first (x) (#_first (force x)))
@@ -1344,38 +1348,34 @@ nested)."
   #_ISeqable
   (#_seq (x) (force x))
   #_IEmptyableCollection
-  (#_empty (seq) '()))
+  (#_empty (seq) '())
+  #_IEquiv
+  (#_equiv (self other)
+           (#_= (force self) (force other))))
 
 (defun-1 #_cons (x y)
   (cons x y))
 
 (defun doall-n (n seq)
   (nlet doall-n ((n n)
-                 (seq seq)
-                 (acc '()))
-    (if (and (plusp n)
-             (seq? seq))
-        (doall-n (1- n)
-                 (#_next seq)
-                 (cons (#_first seq) acc))
-        (nreverse acc))))
+                 (seq seq))
+    (and (plusp n)
+         (seq? seq)
+         (doall-n (1- n)
+                  (#_next seq)))))
 
 (defun doall (seq)
-  (nlet doall ((seq seq)
-               (acc '()))
-    (if (seq? seq)
-        (doall (#_next seq)
-               (cons (#_first seq) acc))
-        (nreverse acc))))
+  (nlet doall ((seq seq))
+    (and (seq? seq)
+         (doall (#_next seq)))))
 
-(defun-1 #_doall (n-or-seq &optional seq)
-  (if (numberp n-or-seq)
-      (doall-n n-or-seq seq)
-      (doall n-or-seq)))
+#_(defn doall
+      ([seq] (CLOTURE::DOALL seq))
+    ([n seq] (CLOTURE::DOALL-N n seq)))
 
-(defun-1 #_dorun (n-or-seq &optional seq)
+(defun-1 #_dorun (&rest args)
   ;; TODO avoid consing
-  (#_doall n-or-seq seq)
+  (apply #_doall args)
   (values))
 
 (defun-1 #_concat (&rest seqs)
@@ -1403,7 +1403,7 @@ nested)."
   (if (and (plusp n)
            (seq? seq))
       (lazy-seq (cons (#_first seq)
-                      (take (1- n) (#_rest seq))))
+                      (#_take (1- n) (#_rest seq))))
       '()))
 
 (defun-1 #_drop-while (pred seq)
@@ -1431,7 +1431,7 @@ nested)."
     (map/1 (ifn-function fn) col)))
 
 (defun map/n (fn &rest cols)
-  (fbind ((fn (ifn-function fn)))
+  (let ((fn (ifn-function fn)))
     (map/1 (lambda (args) (apply fn args))
            (zip cols))))
 

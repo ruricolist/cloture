@@ -45,8 +45,8 @@
            #:cljc
            #:cljs
 
-           #:truthy
-           #:falsy
+           #:truthy?
+           #:falsy?
 
            #:defun-1
            #:expose-to-clojure
