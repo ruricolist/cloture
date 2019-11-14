@@ -277,8 +277,9 @@ nested)."
 (define-clojure-macro #_fn (&body body*)
   (local
     (defun fn-clause->binding (c args-sym)
-      `(#_let ,(seq (fn-clause-params c) args-sym)
-              ,@(require-body-for-splice (fn-clause->body c))))
+      `(nlet %recur ((,args-sym ,args-sym))
+         (#_let ,(seq (fn-clause-params c) args-sym)
+                ,@(require-body-for-splice (fn-clause->body c)))))
 
     (def (values body docstr) (body+docs+attrs body*))
     (def name
@@ -324,15 +325,11 @@ nested)."
 
 (define-clojure-macro #_loop (binds &body body)
   (mvlet* ((binds (convert 'list binds))
-           (binds (batches binds 2 :even t))
-           (exprs (mapcar #'second binds))
-           (pats syms (mapcar (compose #'obj->pattern #'first) binds)))
-    (with-unique-names (args)
-      `(nlet %recur ((,args (list ,@exprs)))
-         (ematch ,args
-           ((list ,@pats)
-            (with-syms-fbound ,syms
-              ,@body)))))))
+           (specs (batches binds 2 :even t))
+           (exprs (mapcar #'second specs))
+           (binds (convert 'seq (mapcar #'first specs))))
+    `(funcall (#_fn ,binds ,@body)
+              ,@exprs)))
 
 (defmacro %recur (&rest args)
   (declare (ignore args))
@@ -1331,7 +1328,7 @@ nested)."
 (defmacro lazy-seq (&body body)
   `(make-lazy-seq (lambda () ,@body)))
 
-(defmacro #_lazy-seq (&body body)
+(define-clojure-macro #_lazy-seq (&body body)
   `(lazy-seq ,@body))
 
 (extend-type lazy-seq
