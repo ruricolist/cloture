@@ -8,7 +8,7 @@
 ;;; Not inlining these would be criminal.
 (declaim (inline . #_(bit-and bit-or bit-xor bit-not bit-flip bit-set bit-shift-right bit-shift-left bit-and-not bit-clear bit-test unsigned-bit-shift-right)))
 
-(declaim (inline . #_(cons < > >= <= + - / *)))
+(declaim (inline . #_(cons < > >= <= + - / * mod rem)))
 
 (defconst special-forms
   '#_(quote
@@ -1159,6 +1159,9 @@ nested)."
 (defun-1 #_- (&rest xs) (apply #'- xs))
 (defun-1 #_* (&rest xs) (apply #'* xs))
 (defun-1 #_/ (&rest xs) (apply #'/ xs))
+
+(defun-1 #_mod (num div) (mod num div))
+(defun-1 #_rem (num div) (rem num div))
 
 (defun-1 #_all-ns ()
   (list-all-packages))
