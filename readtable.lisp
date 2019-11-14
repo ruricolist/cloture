@@ -119,6 +119,9 @@
   (declare (ignore char))
   `(|clojure.core|:|deref| ,(rec-read stream)))
 
+(defalias read-eval
+  (get-dispatch-macro-character #\# #\.))
+
 (defreadtable cloture
   (:fuze :standard cloture.qq:quasiquote-mixin)
   (:case :preserve)
@@ -145,7 +148,9 @@
   ;; Deref.
   (:macro-char #\@ #'read-deref)
   ;; Anonymous function.
-  (:dispatch-macro-char #\# #\( 'read-anon))
+  (:dispatch-macro-char #\# #\( 'read-anon)
+  ;; Read eval.
+  (:dispatch-macro-char #\# #\= 'read-eval))
 
 (defreadtable function-literal
   (:merge cloture)
