@@ -1541,5 +1541,5 @@ nested)."
             maps
             :initial-value (empty-map))))
 
-(defun #_merge (&rest maps)
+(defun-1 #_merge (&rest maps)
   (apply #_merge-with #'second maps))
