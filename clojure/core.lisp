@@ -1295,6 +1295,7 @@ nested)."
   #_IPending
   (#_realized? (x) (? (forced? x))))
 
+(declaim (inline make-lazy-seq))        ;It might be useful to stack-allocate?
 (defstruct (lazy-seq
              (:include memo-cell)
              (:constructor make-lazy-seq (thunk))))
