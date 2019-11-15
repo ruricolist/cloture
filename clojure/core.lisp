@@ -1564,3 +1564,13 @@ nested)."
     (dolist (group groups map)
       (let ((key (funcall fn (first group))))
         (withf map key (convert 'seq group))))))
+
+(defun-1 #_merge-with (fn &rest maps)
+  (let ((fn (ifn-function fn)))
+    (reduce (lambda (map1 map2)
+              (fset:map-union map1 map2 fn))
+            maps
+            :initial-value (empty-map))))
+
+(defun #_merge (&rest maps)
+  (apply #_merge-with #'second maps))
