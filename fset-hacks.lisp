@@ -44,3 +44,15 @@
   (murmurhash:murmurhash
    (list* '%set (size map) (map->alist map))
    :seed seed :mix-only mix-only))
+
+;;; We want to be able to build on FSet's idea of equality, but we
+;;; also need FSet to take into account Clojure's idea of equality (so
+;;; that maps have the correct behavior). The following hack lets that
+;;; work by detecting and breaking recursion.
+
+(defmethod fset:compare (a b)
+  (handler-case
+      (without-recursion ()
+        (if (truthy? (|clojure.core|:|=| a b)) :equal :unequal))
+    (recursion-forbidden ()
+      (call-next-method))))

@@ -38,7 +38,9 @@ defmulti)."
      (define-symbol-macro ,name #',name)
      ',name))
 
+(-> ? (t) clojure-boolean)
 (defun ? (x)
+  "Convert a (generalized) Lisp boolean to a Clojure boolean."
   (if x #_true #_false))
 
 (defun-1 #_not (x)
@@ -841,9 +843,11 @@ nested)."
   (#_pop (c) (cdr c))
   #_IEquiv
   (#_equiv (self other)
-           (and (seq? other)
+           (if (seq? other)
+               (#_and
                 (#_equiv (car self) (#_first other))
-                (#_equiv (cdr self) (#_rest other)))))
+                (#_equiv (cdr self) (#_rest other)))
+               #_false)))
 
 ;; A Lisp vector (or a string).
 (extend-type vector
@@ -1045,14 +1049,15 @@ nested)."
                         (#_def arg #_nil)))))
 
 (defun-1 #_= (&rest args)
-  (? (match args
-       ((list) #_true)
-       ((list _) #_true)
-       ((list x y) (#_equiv x y))
-       (otherwise
-        (? (loop for x in args
-                 for y in (rest args)
-                 always (truthy? (#_equiv x y))))))))
+  (assure clojure-boolean
+    (match args
+      ((list) #_true)
+      ((list _) #_true)
+      ((list x y) (#_equiv x y))
+      (otherwise
+       (? (loop for x in args
+                for y in (rest args)
+                always (truthy? (#_equiv x y))))))))
 
 (defun-1 #_not= (&rest args)
   (#_not (apply #'#_= args)))

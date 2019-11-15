@@ -75,11 +75,13 @@
       (setf (meta obj)
             (with meta key value)))))
 
+(-> falsy? (t) boolean)
 (defun falsy? (x)
   ;; TODO false value?
   (or (eql x |clojure.core|:|false|)
       (eql x |clojure.core|:|nil|)))
 
+(-> truthy? (t) boolean)
 (defun truthy? (x)
   (not (falsy? x)))
 

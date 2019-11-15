@@ -290,11 +290,11 @@
            (lazy-seq (cons 1 (lazy-seq '(2))))))
   (is #_(= (lazy-seq (cons 1 (lazy-seq '(2))))
            (lazy-seq (cons 1 (lazy-seq '(3))))))
-  (is (falsy?
+  (is (truthy?
        #_(let [tail (lazy-seq (list 2 3))
-               seq (lazy-seq (cons 1 tail))]
-           (= '(1) tail)
-           (realized? tail)))))
+               seq (lazy-seq (list 1 tail))]
+           (= '(1) seq)
+           (not (realized? tail))))))
 
 #_(defn squares-odd [n]
     (cons (* n n) (lazy-seq (squares-odd (inc n)))))
