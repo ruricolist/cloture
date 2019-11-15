@@ -1589,15 +1589,8 @@ nested)."
 (define-clojure-macro #_defonce (name value)
   `(#_def ,name (ensure2 (get-once-value ',name) ,value)))
 
-(defvar *syncing* nil)
-
 (define-clojure-macro #_dosync (&body body)
-  (with-thunk (body)
-    `(if *syncing*
-         (,body)
-         (synchronized ()
-           (let ((*syncing* t))
-             (,body))))))
+  `(stmx:atomic ,@body))
 
 (defun-1 #_name (x)
   (etypecase x

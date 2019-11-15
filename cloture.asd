@@ -11,7 +11,8 @@
                "cl-ppcre"
                "fiveam"
                "closer-mop"
-               "cl-custom-hash-table")
+               "cl-custom-hash-table"
+               "stmx")
   :in-order-to ((test-op (test-op "cloture/test")))
   :serial t
   :components ((:file "package")
