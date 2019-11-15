@@ -57,4 +57,6 @@
            #:map->list #:list->map
 
            #:|#{}| #:{} #:[]
-           #:autogensyms))
+           #:autogensyms
+
+           #:declare-keywords))
