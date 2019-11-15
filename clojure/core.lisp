@@ -1543,3 +1543,11 @@ nested)."
 
 (defun-1 #_merge (&rest maps)
   (apply #_merge-with #'second maps))
+
+(defun-1 #_reduce (f &rest args)
+  (let ((f (ifn-function f)))
+    (ematch args
+      ((list val coll)
+       (fset:reduce f coll :initial-value val))
+      ((list coll)
+       (fset:reduce f coll)))))
