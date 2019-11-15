@@ -832,7 +832,12 @@ nested)."
   (#_conj (coll x) (cons x coll))
   #_IStack
   (#_peek (c) (car c))
-  (#_pop (c) (cdr c)))
+  (#_pop (c) (cdr c))
+  #_IEquiv
+  (#_equiv (self other)
+           (and (seq? other)
+                (#_equiv (car self) (#_first other))
+                (#_equiv (cdr self) (#_rest other)))))
 
 ;; A Lisp vector (or a string).
 (extend-type vector
@@ -1035,13 +1040,13 @@ nested)."
 
 (defun-1 #_= (&rest args)
   (? (match args
-       ((list) t)
-       ((list _) t)
-       ((list x y) (truthy? (#_equiv x y)))
+       ((list) #_true)
+       ((list _) #_true)
+       ((list x y) (#_equiv x y))
        (otherwise
-        (loop for x in args
-              for y in (rest args)
-              always (truthy? (#_equiv x y)))))))
+        (? (loop for x in args
+                 for y in (rest args)
+                 always (truthy? (#_equiv x y))))))))
 
 (defun-1 #_not= (&rest args)
   (#_not (apply #'#_= args)))
@@ -1378,6 +1383,14 @@ nested)."
   (apply #_doall args)
   (values))
 
+(defun lazy-seq->list (lazy-seq)
+  (nlet rec ((seq lazy-seq)
+             (acc '()))
+    (if (not (seq? seq))
+        (nreverse acc)
+        (rec (#_rest seq)
+             (cons (#_first seq) acc)))))
+
 (defun-1 #_concat (&rest seqs)
   (labels ((rec (seqs)
              (if (null seqs) '()
@@ -1416,8 +1429,7 @@ nested)."
                 seq))))))
 
 (defun zip (seqs)
-  (if (notevery #'seq? seqs)
-      '()
+  (if (notevery #'seq? seqs) '()
       (lazy-seq
         (cons (mapcar #_first seqs)
               (zip (mapcar #_rest seqs))))))
@@ -1528,3 +1540,12 @@ nested)."
 (define-clojure-macro #_with-out-str (&body body)
   `(with-output-to-string (*standard-output*)
      ,@body))
+
+(defun-1 #_interpose (sep coll)
+  (if (not (seq? coll)) '()
+      (if (not (seq? (#_rest coll)))
+          coll
+          (#_concat
+           (list (#_first coll)
+                 sep)
+           (#_interpose sep (#_next coll))))))

@@ -345,3 +345,8 @@
 (test drop-while
   (is #_(= '(2 4 6)
            (doall (drop-while odd? '(1 3 5 2 4 6))))))
+
+(test interpose
+  (is (truthy?
+       #_(= '("one" "," "two" "," "three")
+            (interpose "," '("one" "two" "three"))))))
