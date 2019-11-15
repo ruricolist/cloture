@@ -18,10 +18,15 @@
 (defmacro defun-1 (name args &body body)
   "Define NAME in both the function and value namespaces.
 That's defun-1 as in Lisp-1."
-  `(progn
-     (defun ,name ,args ,@body)
-     (define-symbol-macro ,name #',name)
-     ',name))
+  (let* ((predicate? (string$= "?" name))
+         (body (if predicate?
+                   `((assure clojure-boolean
+                       ,@body))
+                   body)))
+    `(progn
+       (defun ,name ,args ,@body)
+       (define-symbol-macro ,name #',name)
+       ',name)))
 
 (defmacro defalias-1 (name fn)
   "Like `defalias', but in both namespaces.
@@ -45,6 +50,9 @@ defmulti)."
 
 (defun-1 #_not (x)
   (? (eql x #_false)))
+
+(defun nil? (x)
+  (eql x #_nil))
 
 (defun-1 #_nil? (x)
   (? (eql x #_nil)))
@@ -703,7 +711,7 @@ nested)."
 (defun-1 #_str (&rest args)
   (with-output-to-string (s)
     (dolist (arg args)
-      (unless (#_nil? arg)
+      (unless (nil? arg)
         (write-string (#_toString arg) s)))))
 
 (extend-type t
@@ -1178,20 +1186,20 @@ nested)."
   (cond (z-supplied?
          (lambda (arg1 arg2 arg3 &rest args)
            (ifn-apply f
-                      (if (#_nil? arg1) x arg1)
-                      (if (#_nil? arg2) y arg2)
-                      (if (#_nil? arg3) z arg3)
+                      (if (nil? arg1) x arg1)
+                      (if (nil? arg2) y arg2)
+                      (if (nil? arg3) z arg3)
                       args)))
         (y-supplied?
          (lambda (arg1 arg2 &rest args)
            (ifn-apply f
-                      (if (#_nil? arg1) x arg1)
-                      (if (#_nil? arg2) y arg2)
+                      (if (nil? arg1) x arg1)
+                      (if (nil? arg2) y arg2)
                       args)))
         (t
          (lambda (arg1 &rest args)
            (ifn-apply f
-                      (if (#_nil? arg1) x arg1)
+                      (if (nil? arg1) x arg1)
                       args)))))
 
 (defun-1 #_new (class &rest args)
