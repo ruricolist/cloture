@@ -237,51 +237,6 @@ nested)."
   (mvlet ((body docs (body+docs+attrs body)))
     `(defprivate ,name ,@(unsplice docs) ,@body)))
 
-(defun extract-pre-post (body)
-  (match body
-    ((list* (and cond-map (type map))
-            body)
-     (let ((pre (lookup cond-map :|pre|))
-           (post (lookup cond-map :|post|)))
-       (values body pre post)))
-    (otherwise
-     (values body nil nil))))
-
-(defstruct-read-only fn-clause
-  params exprs pre post rest min-arity)
-
-(defun parse-clause (clause)
-  (mvlet* ((params exprs (car+cdr clause))
-           (exprs pre post (extract-pre-post exprs))
-           (subpats rest all min-arity (dissect-seq-pattern params)))
-    (declare (ignore subpats))
-    (when (symbol-package all)
-      (error (clojure-syntax-error "No :as in fn.")))
-    (make-fn-clause :params params
-                    :exprs exprs
-                    :pre pre
-                    :post post
-                    :rest rest
-                    :min-arity min-arity)))
-
-(defun fn-clause->body (c)
-  (with-accessors ((exprs fn-clause-exprs)
-                   (pre fn-clause-pre)
-                   (post fn-clause-post))
-      c
-    (let* ((exprs
-             (if pre
-                 `((#_do (#_assert ,pre) ,@exprs))
-                 exprs))
-           (exprs
-             (if post
-                 (let ((% (intern "%")))
-                   `((#_let ,(seq % `(#_do ,@exprs))
-                            (#_assert ,post)
-                            ,%)))
-                 exprs)))
-      exprs)))
-
 (define-clojure-macro #_fn (&body body*)
   (local
     (defun fn-clause->binding (c args-sym)
@@ -1279,11 +1234,11 @@ nested)."
 
 (defun-1 #_nthrest (coll n)
   (assert (not (minusp n)))
-  (nlet nthrest ((coll coll)
-                 (n n))
+  (nlet rec ((coll coll)
+             (n n))
     (if (zerop n)
         (#_seq coll)
-        (nthrest (#_next coll) (1- n)))))
+        (rec (#_next coll) (1- n)))))
 
 (define-clojure-macro #_time (form)
   `(time ,form))

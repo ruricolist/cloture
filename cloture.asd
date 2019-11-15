@@ -15,10 +15,10 @@
   :in-order-to ((test-op (test-op "cloture/test")))
   :serial t
   :components ((:file "package")
-               (:file "fset-hacks")
                (:static-file "core-syms.txt")
                (:static-file "pprint-syms.txt")
                (:file "clojure-packages")
+               (:file "fset-hacks")
                (:file "errors")
                (:file "cloture")
                (:file "quasiquote")

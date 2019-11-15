@@ -382,3 +382,48 @@ Also convert the symbols for true, false, and nil to unit types."
   (with-slots (method-table) self
     (setf (href method-table value)
           (ifn-function fn))))
+
+(defun extract-pre-post (body)
+  (match body
+    ((list* (and cond-map (type map))
+            body)
+     (let ((pre (lookup cond-map :|pre|))
+           (post (lookup cond-map :|post|)))
+       (values body pre post)))
+    (otherwise
+     (values body nil nil))))
+
+(defstruct-read-only fn-clause
+  params exprs pre post rest min-arity)
+
+(defun parse-clause (clause)
+  (mvlet* ((params exprs (car+cdr clause))
+           (exprs pre post (extract-pre-post exprs))
+           (subpats rest all min-arity (dissect-seq-pattern params)))
+    (declare (ignore subpats))
+    (when (symbol-package all)
+      (error (clojure-syntax-error "No :as in fn.")))
+    (make-fn-clause :params params
+                    :exprs exprs
+                    :pre pre
+                    :post post
+                    :rest rest
+                    :min-arity min-arity)))
+
+(defun fn-clause->body (c)
+  (with-accessors ((exprs fn-clause-exprs)
+                   (pre fn-clause-pre)
+                   (post fn-clause-post))
+      c
+    (let* ((exprs
+             (if pre
+                 `((|clojure.core|:|do| (|clojure.core|:|assert| ,pre) ,@exprs))
+                 exprs))
+           (exprs
+             (if post
+                 (let ((% (intern "%")))
+                   `((|clojure.core|:|let| ,(seq % `(|clojure.core|:|do| ,@exprs))
+                                    (|clojure.core|:|assert| ,post)
+                                    ,%)))
+                 exprs)))
+      exprs)))
