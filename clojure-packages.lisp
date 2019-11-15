@@ -33,7 +33,9 @@
                   "ISorted"
                   "IStack"
                   "IWithMeta"
-                  "Object"))))
+                  "Object"
+                  "IllegalArgumentException."
+                  "IllegalArgumentException"))))
 
 (defpackage "clojure.pprint"
   (:use)

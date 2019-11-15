@@ -70,3 +70,6 @@
   (:report (lambda (c s)
              (with-slots (multi value) c
                (format s "No method for ~a in multimethod ~a" value multi)))))
+
+(defcondition |clojure.core|:|IllegalArgumentException| (simple-program-error clojure-error)
+  ())

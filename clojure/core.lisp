@@ -1551,3 +1551,8 @@ nested)."
        (fset:reduce f coll :initial-value val))
       ((list coll)
        (fset:reduce f coll)))))
+
+(defun-1 #_IllegalArgumentException. (string)
+  (make-condition #_'IllegalArgumentException
+                  :format-control string
+                  :format-arguments '()))
