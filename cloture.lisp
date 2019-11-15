@@ -236,12 +236,15 @@ Also return (as a second value) a list of all the symbols bound."
   (values (car list) (cdr list)))
 
 (defun var (sym &optional env)
+  (or (find-var sym env)
+      (error (clojure-error "Not a var: ~a" sym))))
+
+(defun find-var (sym &optional env)
   (let ((exp (macroexpand-1 (assure symbol sym) env)))
-    (when (or (eql exp sym)
-              (not (symbolp exp))
-              (not (meta-ref sym :|dynamic|)))
-      (error (clojure-error "Not a var: ~a" sym)))
-    exp))
+    (unless (or (eql exp sym)
+                (not (symbolp exp))
+                (not (meta-ref sym :|dynamic|)))
+      exp)))
 
 (defconstructor protocol
   (name symbol)

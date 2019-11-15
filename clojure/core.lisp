@@ -221,6 +221,12 @@ nested)."
 (define-clojure-macro #_var (symbol &environment env)
   `(quote ,(var symbol env)))
 
+(defun-1 #_find-var (symbol)
+  (find-var symbol))
+
+(defun-1 #_var-get (var)
+  (symbol-value var))
+
 (define-clojure-macro #_defn (name &body body)
   (mvlet ((body docs (body+docs+attrs body)))
     `(#_def ,name ,@(unsplice docs) (#_fn ,name ,@body))))
