@@ -227,8 +227,12 @@ Also return (as a second value) a list of all the symbols bound."
             (lambda (map)
               (|clojure.core|:|get| map keyword))))))
 
-(defun declare-keywords (&rest keywords)
+(defun proclaim-keywords (&rest keywords)
   (fbind-keywords keywords))
+
+(defmacro declare-keywords (&rest keywords)
+  `(eval-always
+     (proclaim-keywords ,@keywords)))
 
 ;;; Macro helpers.
 

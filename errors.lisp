@@ -1,7 +1,55 @@
 (in-package :cloture)
+(in-readtable clojure-shortcut)
 
 (defcondition clojure-condition () ())
-(defcondition clojure-error (clojure-condition error) ())
+
+(defcondition clojure-error (error clojure-condition)
+  ((message :initarg :message :reader #_.getMessage)
+   (cause :initarg :cause :reader #_.getCause))
+  (:documentation "Sub-root of all Clojure conditions." )
+  (:report (lambda (c s)
+             (with-slots (message) c
+               (format s "~a" message)))))
+
+(defmacro define-simple-error-constructor (name)
+  (let* ((ctor-name (string+ name "."))
+         (ctor (find-external-symbol ctor-name (symbol-package name) :error t)))
+    `(defsubst ,ctor (msg)
+       (make-condition ',name :message msg))))
+
+(defcondition #_Throwable (clojure-error) ())
+(define-simple-error-constructor #_Throwable)
+
+(defcondition #_Exception (#_Throwable) ())
+(define-simple-error-constructor #_Exception)
+
+(defcondition #_RuntimeException (#_Exception) ())
+(define-simple-error-constructor #_RuntimeException)
+
+(defcondition #_IllegalArgumentException (#_RuntimeException) ())
+(define-simple-error-constructor #_IllegalArgumentException)
+
+(defcondition #_IllegalStateException (#_RuntimeException) ())
+(define-simple-error-constructor #_IllegalStateException)
+
+(defcondition #_ArityException (#_IllegalArgumentException)
+  ((actual :initarg :actual)
+   (name :initarg :name))
+  (:report (lambda (c s)
+             (with-slots (name actual) c
+               (format s "~a got ~a arg~:p, which is the wrong arity."
+                       name actual)))))
+(defun #_ArityException. (actual name)
+  (make-condition '#_ArityException
+                  :actual actual
+                  :name name))
+
+(defcondition #_Error (#_Exception) ())
+(define-simple-error-constructor #_Error)
+
+(defcondition #_AssertionError (#_Exception) ())
+(define-simple-error-constructor #_AssertionError)
+
 (defcondition simple-clojure-error (clojure-condition simple-error) ())
 (defcondition clojure-program-error (program-error clojure-error) ())
 (defcondition simple-clojure-program-error (clojure-program-error simple-condition) ())
@@ -70,6 +118,3 @@
   (:report (lambda (c s)
              (with-slots (multi value) c
                (format s "No method for ~a in multimethod ~a" value multi)))))
-
-(defcondition |clojure.core|:|IllegalArgumentException| (simple-program-error clojure-error)
-  ())

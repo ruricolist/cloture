@@ -19,11 +19,11 @@
                (:static-file "pprint-syms.txt")
                (:file "clojure-packages")
                (:file "fset-hacks")
-               (:file "errors")
                (:file "cloture")
                (:file "quasiquote")
                (:file "readtable")
                (:file "asdf")
+               (:file "errors")
                (:module "clojure"
                 :serial t
                 :components ((:file "core")

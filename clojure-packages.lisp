@@ -34,8 +34,18 @@
                   "IStack"
                   "IWithMeta"
                   "Object"
-                  "IllegalArgumentException."
-                  "IllegalArgumentException"))))
+                  "Thread" "Thread."
+                  "Throwable" "Throwable."
+                  ".getMessage" ".getCause"
+                  ".getStackTrace" ".printStackTrace"
+                  "Exception" "Exception."
+                  "Error" "Error."
+                  "RuntimeException" "RuntimeException."
+                  "IllegalArgumentException" "IllegalArgumentException."
+                  "IllegalStateException" "IllegalStateException."
+                  "AssertionError" "AssertionError."
+                  "ArityException" "ArityException."
+                  ".getClassName"))))
 
 (defpackage "clojure.pprint"
   (:use)

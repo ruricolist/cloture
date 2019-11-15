@@ -301,8 +301,10 @@
   {:added "1.1"
    :deprecated "1.2"}
   [n]
-  (let [^StackTraceElement s (nth (.getStackTrace (new java.lang.Throwable)) n)]
-    [(.getFileName s) (.getLineNumber s)]))
+  #?(:cl 0
+     :clj
+     (let [^StackTraceElement s (nth (.getStackTrace (new java.lang.Throwable)) n)]
+       [(.getFileName s) (.getLineNumber s)])))
 
 (defn testing-vars-str
   "Returns a string representation of the current test.  Renders names
@@ -369,15 +371,18 @@
   [m]
   (report
    (case
-    (:type m)
-    :fail (merge (stacktrace-file-and-line (drop-while
-                                             #(let [cl-name (.getClassName ^StackTraceElement %)]
-                                                (or (str/starts-with? cl-name "java.lang.")
-                                                    (str/starts-with? cl-name "clojure.test$")
-                                                    (str/starts-with? cl-name "clojure.core$ex_info")))
-                                             (.getStackTrace (Thread/currentThread)))) m)
-    :error (merge (stacktrace-file-and-line (.getStackTrace ^Throwable (:actual m))) m)
-    m)))
+       (:type m)
+       :fail (merge (stacktrace-file-and-line (drop-while
+                                               #(let [cl-name (.getClassName ^StackTraceElement %)]
+                                                  (or (str/starts-with? cl-name "java.lang.")
+                                                      (str/starts-with? cl-name "clojure.test$")
+                                                      (str/starts-with? cl-name "clojure.core$ex_info")))
+                                               (.getStackTrace
+                                                #?(:cl (BT:CURRENT-THREAD)
+                                                   :cljs (Thread/currentThread)))))
+                    m)
+       :error (merge (stacktrace-file-and-line (.getStackTrace ^Throwable (:actual m))) m)
+       m)))
 
 (defmethod report :default [m]
   (with-test-out (prn m)))

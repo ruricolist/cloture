@@ -59,4 +59,5 @@
            #:|#{}| #:{} #:[]
            #:autogensyms
 
-           #:declare-keywords))
+           #:declare-keywords
+           #:proclaim-keywords))

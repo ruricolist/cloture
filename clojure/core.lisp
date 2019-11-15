@@ -153,6 +153,13 @@ defmulti)."
             `(export ',name ,(package-name (symbol-package name)))))
        ',name)))
 
+(defun-1 #_ns-interns (ns)
+  (let ((map (empty-map)))
+    (do-symbols (s ns)
+      (when-let (var (find-var s))
+        (withf map s var)))
+    map))
+
 (defmacro expose-to-clojure-1 (clj cl)
   "Export a Lisp special variable as a Clojure dynamic binding."
   `(progn
@@ -239,11 +246,13 @@ nested)."
 
 (define-clojure-macro #_defn (name &body body)
   (mvlet ((body docs (body+docs+attrs body)))
-    `(#_def ,name ,@(unsplice docs) (#_fn ,name ,@body))))
+    `(#_def ,name ,@(unsplice docs)
+            (#_fn ,name ,@body))))
 
 (define-clojure-macro #_defn- (name &body body)
   (mvlet ((body docs (body+docs+attrs body)))
-    `(defprivate ,name ,@(unsplice docs) ,@body)))
+    `(defprivate ,name ,@(unsplice docs)
+       (#_fn ,name ,@body))))
 
 (define-clojure-macro #_fn (&body body*)
   (local
@@ -319,6 +328,13 @@ nested)."
 
 (defun qualify-symbol (ns symbol)
   (intern (string+ ns "/" symbol)))
+
+(defun unqualify-symbol (symbol)
+  (if (not (string*= "/" symbol)) symbol
+      (intern (ematch (symbol-name symbol)
+                ((ppcre "(.+?)/(.+)" _ symbol-name)
+                 symbol-name))
+              (symbol-package symbol))))
 
 (defun-1 #_refer-clojure (&rest args)
   (apply #'#_refer :|clojure.core| args))
@@ -1159,6 +1175,13 @@ nested)."
 (defun-1 #_the-ns (name)
   (find-package name))
 
+(defun-1 #_ns-resolve (ns sym)
+  (declare (ignore ns))
+  (macroexpand (assure symbol sym)))
+
+(defun-1 #_resolve (sym)
+  (#_ns-resolve #_*ns* sym))
+
 (define-clojure-macro #_if-let (bindings &body (then else))
   (ematch bindings
     ((seq binds test)
@@ -1212,13 +1235,13 @@ nested)."
             (if default?
                 (values clauses nil)
                 (values (butlast clauses) (lastcar clauses)))))
-    `(case-using #'_= ,e
+    `(case-using #'#_= ,e
        ,@clauses
        ,@(unsplice (and default? `(otherwise ,default))))))
 
 (defun-1 #_comp (&rest fns)
   (if (null fns) #'identity
-      (apply #'compose fns)))
+      (apply #'compose (mapcar #'ifn-function fns))))
 
 (defun-1 #_vals (map)
   (collecting
@@ -1349,9 +1372,10 @@ nested)."
     (and (seq? seq)
          (doall (#_next seq)))))
 
-#_(defn doall
-      ([seq] (CLOTURE::DOALL seq))
-    ([n seq] (CLOTURE::DOALL-N n seq)))
+(defun-1 #_doall (&rest args)
+  (ematch args
+    ((list seq) (doall seq))
+    ((list n seq) (doall-n n seq))))
 
 (defun-1 #_dorun (&rest args)
   ;; TODO avoid consing
@@ -1552,11 +1576,6 @@ nested)."
       ((list coll)
        (fset:reduce f coll)))))
 
-(defun-1 #_IllegalArgumentException. (string)
-  (make-condition #_'IllegalArgumentException
-                  :format-control string
-                  :format-arguments '()))
-
 (defun get-once-value (name)
   (let* ((unbound "unbound")
          (val (get name 'once-value unbound)))
@@ -1564,5 +1583,47 @@ nested)."
         (values nil nil)
         (values val t))))
 
+(defun (setf get-once-value) (value name)
+  (setf (get name 'once-value) value))
+
 (define-clojure-macro #_defonce (name value)
   `(#_def ,name (ensure2 (get-once-value ',name) ,value)))
+
+(defvar *syncing* nil)
+
+(define-clojure-macro #_dosync (&body body)
+  (with-thunk (body)
+    `(if *syncing*
+         (,body)
+         (synchronized ()
+           (let ((*syncing* t))
+             (,body))))))
+
+(defun-1 #_name (x)
+  (etypecase x
+    (string x)
+    (symbol (unqualify-symbol x))))
+
+(define-clojure-macro #_try (&body forms)
+  (flet ((catcher->handler (catcher)
+           (ematch catcher
+             ((list* classname name exprs)
+              `(,classname (,name) ,@exprs)))))
+    (let* ((catchers (find '#_catch forms :key #'car-safe))
+           (finallies (find '#_finally forms :key #'car-safe))
+           (exprs (remove-if (lambda (form)
+                               (or (member form catchers)
+                                   (member form finallies)))
+                             forms))
+           (expr `(progn ,@exprs))
+           (expr
+             (if finallies
+                 `(unwind-protect
+                       ,expr
+                    ,@(mapcar #'rest finallies))))
+           (expr
+             (if catchers
+                 `(handler-case
+                      ,expr
+                    ,@(mapcar #'catcher->handler catchers)))))
+      expr)))
