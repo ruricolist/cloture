@@ -350,3 +350,7 @@
   (is (truthy?
        #_(= '("one" "," "two" "," "three")
             (interpose "," '("one" "two" "three"))))))
+
+(test group-by
+  (let ((map #_(group-by count ["a" "as" "asd" "aa" "asdf" "qwer"])))
+    (is (= (fset:size map) 4))))

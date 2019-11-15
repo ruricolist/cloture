@@ -1555,3 +1555,12 @@ nested)."
            (list (#_first coll)
                  sep)
            (#_interpose sep (#_next coll))))))
+
+(defun-1 #_group-by (fn seq)
+  (let* ((fn (ifn-function fn))
+         (seq (convert 'list seq))
+         (groups (assort seq :key fn :test (compose #'truthy? #_=)))
+         (map (empty-map)))
+    (dolist (group groups map)
+      (let ((key (funcall fn (first group))))
+        (withf map key (convert 'seq group))))))
