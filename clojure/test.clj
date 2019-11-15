@@ -239,6 +239,19 @@
 ;; Nothing is marked "private" here, so you can rebind things to plug
 ;; in your own testing or reporting frameworks.
 
+#?(:cl (CLOTURE:DECLARE-KEYWORDS
+        :actual
+        :each-fixtures
+        :error
+        :expected
+        :fail
+        :macro
+        :message
+        :ns
+        :once-fixtures
+        :pass
+        :test
+        :type))
 
 ;;; USER-MODIFIABLE GLOBALS
 
