@@ -1556,3 +1556,13 @@ nested)."
   (make-condition #_'IllegalArgumentException
                   :format-control string
                   :format-arguments '()))
+
+(defun get-once-value (name)
+  (let* ((unbound "unbound")
+         (val (get name 'once-value unbound)))
+    (if (eq unbound val)
+        (values nil nil)
+        (values val t))))
+
+(define-clojure-macro #_defonce (name value)
+  `(#_def ,name (ensure2 (get-once-value ',name) ,value)))
