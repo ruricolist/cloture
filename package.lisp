@@ -30,7 +30,7 @@
   (:shadowing-import-from #:fset
     #:map
     #:set)
-  (:shadow :@)
+  (:shadow :@ :atom)
   (:export #:cloture                    ;Readtable.
            #:meta-ref
            #:read-clojure

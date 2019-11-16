@@ -12,7 +12,8 @@
                "fiveam"
                "closer-mop"
                "cl-custom-hash-table"
-               "stmx")
+               "stmx"
+               "atomics")
   :in-order-to ((test-op (test-op "cloture/test")))
   :serial t
   :components ((:file "package")

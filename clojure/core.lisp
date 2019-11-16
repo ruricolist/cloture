@@ -1620,3 +1620,29 @@ nested)."
                       ,expr
                     ,@(mapcar #'catcher->handler catchers)))))
       expr)))
+
+(declaim (inline make-atom))
+(atomics:defstruct atom
+  (value (error "No value!") :type t)
+  (validator (constantly t) :type function :read-only t))
+
+(extend-type atom
+  #_IDeref
+  (#_deref (x) (atom-value x)))
+
+(defun-1 #_atom (value &key meta validator)
+  (lret* ((validator (or validator (constantly t)))
+          (atom (make-atom :validator validator
+                           :value value)))
+    (when |meta|
+      (setf (meta atom) |meta|))))
+
+(defun-1 #_reset! (atom value)
+  (prog1 value
+    (setf (atom-value atom) value)))
+
+(defun-1 #_swap! (atom f &rest args)
+  (let ((f (ifn-function f)))
+    (atomics:atomic-update (atom-value atom)
+                           (lambda (old-val)
+                             (apply f old-val args)))))
