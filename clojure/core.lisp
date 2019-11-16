@@ -1014,7 +1014,7 @@ nested)."
 (defun-1 #_constantly (x)
   (constantly x))
 
-(defun-1 #_alter-var-root (root f &rest args)
+(defun-1 #_alter-var-root! (root f &rest args)
   (synchronized (root)
     (setf (symbol-value root)
           (ifn-apply f (symbol-value root) args))))
@@ -1604,9 +1604,6 @@ nested)."
 (define-clojure-macro #_defonce (name value)
   `(#_def ,name (ensure2 (get-once-value ',name) ,value)))
 
-(define-clojure-macro #_dosync (&body body)
-  `(stmx:atomic ,@body))
-
 (defun-1 #_name (x)
   (etypecase x
     (string x)
@@ -1661,3 +1658,50 @@ nested)."
     (atomics:atomic-update (atom-value atom)
                            (lambda (old-val)
                              (apply f old-val args)))))
+
+(defvar *syncing* nil)
+
+(defun check-transaction ()
+  (unless *syncing*
+    (error (#_IllegalStateException. "No transaction running!"))))
+
+(defmacro #_io! (&body body)
+  `(progn
+     (when *syncing*
+       (error (#_IllegalStateException. "IO in transaction!")))
+     ,@body))
+
+(define-clojure-macro #_dosync (&body body)
+  `(let ((*sycing* t))
+     (stmx:atomic ,@body)))
+
+(stmx:transactional
+    (defstruct ref
+      (value (error "No value!") :type t)
+      (validator (constantly t) :transactional nil :type function :read-only t)))
+
+(extend-type ref
+  #_IDeref
+  (#_deref (x) (ref-value x)))
+
+(defun-1 #_ref (x &key meta validator min-history max-history)
+  (declare (ignore min-history max-history))
+  (lret* ((validator (or validator (constantly t)))
+          (ref (make-ref :value x :validator validator)))
+    (when meta
+      (setf (meta ref) meta))))
+
+(defun-1 #_alter (ref f &rest args)
+  (let ((f (ifn-function f)))
+    (#_ref-set ref (apply f (ref-value ref) args))))
+
+(defun-1 #_commute (ref f &rest args)
+  ;; TODO
+  (apply #_alter ref f args))
+
+(defun-1 #_ref-set (ref value)
+  (check-transaction)
+  (unless (funcall (ref-validator ref) value)
+    (error (clojure-error "Cannot set ref ~a to value ~a"
+                          ref value)))
+  (setf (ref-value ref) value))
