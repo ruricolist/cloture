@@ -1705,3 +1705,95 @@ nested)."
     (error (clojure-error "Cannot set ref ~a to value ~a"
                           ref value)))
   (setf (ref-value ref) value))
+
+(defvar *agent-pool* nil)
+(defun ensure-agent-pool ()
+  (or *agent-pool*
+      (synchronized ('*agent-pool*)
+        (or *agent-pool*
+            (setf *agent-pool*
+                  (lparallel:make-kernel (+ 2 (overlord:nproc))
+                                         :name "Agent kernel"))))))
+
+(defun call/agent-pool (fn)
+  (let ((lparallel:*kernel* (ensure-agent-pool)))
+    (funcall fn)))
+
+(defmacro with-agent-pool ((&key) &body body)
+  (with-thunk (body)
+    `(call/agent-pool ,body)))
+
+(deftype agent-error-mode ()
+  '(member :fail :continue))
+
+(defstruct agent
+  (state (error "No state!"))
+  (validator (constantly t))
+  (error #_nil)
+  (error-mode :fail)
+  (error-handler #_nil))
+
+(defun signal-agent-error (agent)
+  (when-let (e (agent-error agent))
+    (error e)))
+
+(defun-1 #_agent (state &key meta validator error-handler error-mode)
+  (lret* ((error-mode (or error-mode (if error-handler :continue :fail)))
+          (error-handler (and error-handler (ifn-function error-handler)))
+          (validator (if validator (ifn-function validator) (constantly t)))
+          (agent
+           (make-agent :state state
+                       :validator validator
+                       :error-mode error-mode
+                       :error-handler error-handler)))
+    (when (eql error-mode :|continue|)
+      (assert (functionp error-handler)))
+    (when meta
+      (setf (meta agent) meta))))
+
+(defun-1 #_agent-error (agent)
+  (agent-error agent))
+
+(defun-1 #_error-handler (agent)
+  (agent-error-handler agent))
+
+(defun-1 #_error-mode (agent)
+  (agent-error-mode agent))
+
+(extend-type agent
+  #_IDeref
+  (#_deref (agent)
+           (signal-agent-error agent)
+           (agent-state agent)))
+
+(defun update-agent (agent f &rest args)
+  (handler-case
+      (setf (agent-state agent)
+            (apply f (agent-state agent) args))
+    (error (e)
+      (ecase-of agent-error-mode (agent-error-mode agent)
+        (:fail (setf (agent-error agent) e))
+        (:continue (funcall (agent-error-handler agent) e))))))
+
+(defun #_send (agent f &rest args)
+  ;; TODO
+  (signal-agent-error agent)
+  (with-agent-pool ()
+    (lparallel:future
+      (setf (agent-state agent)
+            (apply f (agent-state agent) args))))
+  agent)
+
+(defun #_send-off (agent f &rest args)
+  (signal-agent-error agent)
+  (bt:make-thread
+   (lambda ()
+     (setf (agent-state agent)
+           (apply f (agent-state agent) args)))
+   :name "Send-off thread")
+  agent)
+
+(defun-1 #_restart-agent (agent state)
+  (synchronized (agent)
+    (setf (agent-state agent) state
+          (agent-error agent) #_nil)))

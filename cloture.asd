@@ -13,7 +13,9 @@
                "closer-mop"
                "cl-custom-hash-table"
                "stmx"
-               "atomics")
+               "atomics"
+               "lparallel"
+               "overlord")
   :in-order-to ((test-op (test-op "cloture/test")))
   :serial t
   :components ((:file "package")
