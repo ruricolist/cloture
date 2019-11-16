@@ -17,12 +17,26 @@
 
 (defmacro defun-1 (name args &body body)
   "Define NAME in both the function and value namespaces.
-That's defun-1 as in Lisp-1."
-  (let* ((predicate? (string$= "?" name))
-         (body (if predicate?
-                   `((assure clojure-boolean
-                       ,@body))
-                   body)))
+That's defun-1 as in Lisp-1.
+
+This also implicitly downcases the keywords for keyword arguments.
+"
+  (mvlet* ((required optional rest keywords aok aux key?
+            (parse-ordinary-lambda-list args))
+           (keywords
+            (loop for ((keyword-name name) init supplied?)
+                    in keywords
+                  collect `((,(make-keyword (string-invert-case keyword-name))
+                             ,name)
+                            ,init ,supplied?)))
+           (args
+            (unparse-ordinary-lambda-list
+             required optional rest keywords aok aux key?))
+           (predicate? (string$= "?" name))
+           (body (if predicate?
+                     `((assure clojure-boolean
+                         ,@body))
+                     body)))
     `(progn
        (defun ,name ,args ,@body)
        (define-symbol-macro ,name #',name)
@@ -394,11 +408,12 @@ nested)."
                   (match |refer|
                     (:all (#_refer lib))
                     (otherwise
-                     (#_refer lib :only (convert 'list |refer|)))))
+                     (#_refer lib :|only| (convert 'list |refer|)))))
                 (when (or |exclude| |only| |rename|)
-                  (#_refer lib :only |only|
-                               :exclude |exclude|
-                               :rename |rename|))))))
+                  (#_refer lib
+                           :|only| |only|
+                           :|exclude| |exclude|
+                           :|rename| |rename|))))))
           ((list* prefix libspecs)
            (dolist (libspec libspecs)
              (rec prefix libspec))))))))
@@ -1634,8 +1649,8 @@ nested)."
   (lret* ((validator (or validator (constantly t)))
           (atom (make-atom :validator validator
                            :value value)))
-    (when |meta|
-      (setf (meta atom) |meta|))))
+    (when meta
+      (setf (meta atom) meta))))
 
 (defun-1 #_reset! (atom value)
   (prog1 value
