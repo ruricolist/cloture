@@ -354,3 +354,6 @@
 (test group-by
   (let ((map #_(group-by count ["a" "as" "asd" "aa" "asdf" "qwer"])))
     (is (= (fset:size map) 4))))
+
+(test doseq
+  (is (equal "123" #_(with-out-str (doseq [x '(1 2 3)] (pr x))))))

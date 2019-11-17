@@ -15,6 +15,8 @@
       if do def let binding var
       loop recur throw try))
 
+(defconst empty-list '())
+
 (defmacro defun-1 (name args &body body)
   "Define NAME in both the function and value namespaces.
 That's defun-1 as in Lisp-1.
@@ -1837,3 +1839,23 @@ nested)."
   (#_deref (p) (lparallel:force p))
   #_IPending
   (#_realized? (p) (lparallel:fulfilledp p)))
+
+(define-clojure-macro #_doseq (binds &body body)
+  `(#_doall (#_for ,binds ,@body)))
+
+(defun call/for (fn seq)
+  (if (seq? seq)
+      (lazy-seq
+        (cons (funcall fn (#_first seq))
+              (call/for fn (#_rest seq))))
+      empty-list))
+
+(define-clojure-macro #_for (binds &body body)
+  ;; TODO Fork cl-lc and actually implement list comprehensions.
+  (ematch binds
+    ((seq pat form)
+     (with-unique-names (temp)
+       `(call/for (lambda (,temp)
+                    (#_let ,(seq pat temp)
+                           ,@body))
+                  ,form)))))
