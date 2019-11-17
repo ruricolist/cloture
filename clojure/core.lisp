@@ -579,7 +579,7 @@ nested)."
           (#_rest seq)))
 
 (defun-1 #_seq? (x)
-  (extends? '#_ISeq x))
+  (#_satisfies? '#_ISeq x))
 
 (defun seq? (x)
   (truthy? (#_seq x)))
@@ -596,10 +596,16 @@ nested)."
 (defprotocol #_IIndexed
   (#_nth (seq n &optional not-found)))
 
+(defun indexed? (x)
+  (satisfies? '#_IIndexed x))
+
+(deftype indexed ()
+  '(satisfies indexed?))
+
 (defprotocol #_Fn)
 
-(defun #_fn? (x)
-  (extends? '#_Fn x))
+(defun-1 #_fn? (x)
+  (#_satisfies? '#_Fn x))
 
 (defprotocol #_IFn
   (#_invoke (x &rest args)))
@@ -617,7 +623,7 @@ nested)."
         ((keywordp ifn)
          (lambda (map)
            (#_lookup map ifn)))
-        ((extends? '#_IFn ifn)
+        ((satisfies? '#_IFn ifn)
          (lambda (&rest args)
            (apply #'#_invoke ifn args)))
         (t (error 'does-not-extend
@@ -625,7 +631,7 @@ nested)."
                   :object ifn))))
 
 (defun #_ifn? (x)
-  (extends? '#_IFn x))
+  (satisfies? '#_IFn x))
 
 (defprotocol #_ISeqable
   (#_seq (x)))
@@ -639,6 +645,12 @@ nested)."
 (defprotocol #_ILookup
   (#_lookup (obj key &optional not-found)))
 
+(defun lookupable? (x)
+  (satisfies? '#_ILookup x))
+
+(deftype lookupable ()
+  '(satisfies lookupable?))
+
 (defprotocol #_ICounted
   (#_count (col)))
 
@@ -648,7 +660,7 @@ nested)."
 (defprotocol #_ISequential)
 
 (defun-1 #_sequential? (x)
-  (extends? '#_ISequential x))
+  (satisfies? '#_ISequential x))
 
 (defprotocol #_IAssociative
   (#_contains-key? (coll k))
@@ -676,12 +688,19 @@ nested)."
 (defprotocol #_IDeref
   (#_deref (x)))
 
-(defgeneric extends? (protocol-name type))
-
 (defgeneric-1 #_extends? (protocol atype)
   (:method ((protocol protocol) atype)
-    (extends? (protocol-name protocol) atype)))
-(defgeneric-1 #_satisfies? (protocol x))
+    (#_satisfies? (protocol-name protocol)
+                  (class-prototype atype))))
+(defgeneric-1 #_satisfies? (protocol x)
+  (:method (name type)
+    (declare (ignore name type))
+    #_false)
+  (:method ((protocol protocol) x)
+    (#_satisfies? (protocol-name protocol) x)))
+
+(defun satisfies? (protocol x)
+  (truthy? (#_satisfies? protocol x)))
 
 (defmacro extend-type (type &body specs)
   (let ((specs (split-specs specs)))
@@ -689,7 +708,7 @@ nested)."
        ,@(loop for (p . methods) in specs
                do (check-protocol p methods)
                collect `(progn
-                          (defmethod extends? ((protocol (eql ,p)) (x ,type))
+                          (defmethod #_satisfies? ((protocol (eql ',p)) (x ,type))
                             #_true)
                           ,@(loop for (fn-name lambda-list . body) in methods
                                   for this = (first lambda-list)
@@ -812,7 +831,7 @@ nested)."
   hash-table (#_count (x) (hash-table-count x)))
 
 (defun-1 #_counted? (x)
-  (extends? x #_ICounted))
+  (satisfies? '#_ICounted x))
 
 (extend-type #_nil
   #_ISeq
@@ -823,7 +842,11 @@ nested)."
   #_IEmptyableCollection
   (#_empty (x) #_nil)
   #_ICollection
-  (#_conj (coll x) (list x)))
+  (#_conj (coll x) (list x))
+  #_ILookup
+  (#_lookup (coll key &optional (default #_nil))
+            (declare (ignore coll key))
+            default))
 
 (extend-type null
   #_ISeq
@@ -837,7 +860,11 @@ nested)."
   (#_conj (coll x) (list x))
   #_IStack
   (#_peek (c) #_nil)
-  (#_pop (c) (error (clojure-program-error "Pop on empty seq!"))))
+  (#_pop (c) (error (clojure-program-error "Pop on empty seq!")))
+  #_ILookup
+  (#_lookup (coll key &optional (default #_nil))
+            (declare (ignore coll key))
+            default))
 
 (extend-type cons
   #_ISeq
@@ -858,7 +885,16 @@ nested)."
                (#_and
                 (#_equiv (car self) (#_first other))
                 (#_equiv (cdr self) (#_rest other)))
-               #_false)))
+               #_false))
+  #_ILookup
+  (#_lookup (coll key &optional (default #_nil))
+            (nlet rec ((tail coll)
+                       (i key))
+              (if (not (plusp i))
+                  (if tail (first tail)
+                      default)
+                  (rec (rest tail)
+                       (1- i))))))
 
 ;; A Lisp vector (or a string).
 (extend-type vector
@@ -876,7 +912,10 @@ nested)."
          (if (and (>= n (length v))
                   not-found-supplied?)
              not-found
-             (aref v n))))
+             (aref v n)))
+  #_ILookup
+  (#_lookup (coll key &optional (default #_nil))
+            (#_nth coll key default)))
 
 (extend-type sequence
   #_ISeq
@@ -895,7 +934,10 @@ nested)."
          (if (and (>= n (length v))
                   not-found-supplied?)
              not-found
-             (elt v n))))
+             (elt v n)))
+  #_ILookup
+  (#_lookup (coll key &optional (default #_nil))
+            (#_nth coll key default)))
 
 (extend-type fset:seq
   #_ISeq
@@ -934,7 +976,10 @@ nested)."
                    (let ((k 0))
                      (do-seq (v seq)
                        (setf init (ifncall f init (finc k) v)))
-                     init))))
+                     init)))
+  #_ILookup
+  (#_lookup (coll key &optional (default #_nil))
+            (#_nth coll key default)))
 
 (extend-type map
   #_ISeqable

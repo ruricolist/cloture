@@ -108,27 +108,32 @@
     (append pats
             (and rest (list '|clojure.core|:&)))))
 
+(defun safe-elt (seq i)
+  (if (>= i (length seq)) |clojure.core|:|nil|
+      (elt seq i)))
+
 (defun lookup* (obj x)
   "Lookup X in OBJ, returning Clojure nil if not present."
-  (multiple-value-bind (val val?) (lookup obj x)
-    (if val? val |clojure.core|:|nil|)))
+  (if (typep obj 'sequence) (safe-elt obj x)
+      (multiple-value-bind (val val?) (lookup obj x)
+        (if val? val |clojure.core|:|nil|))))
 
-(defun fset-seq-pattern (pats)
+(defun build-fset-seq-pattern (pats)
   (multiple-value-bind (pats rest all len)
       (dissect-seq-pattern pats)
     `(trivia:guard1 (,all :type seq)
                     ;; Missing or excess elements are just bound to nil.
-                    (typep ,all 'seq)
+                    (typep ,all 'indexed)
                     ,@(loop for pat in pats
                             for i from 0
-                            collect `(lookup* ,all ,i)
+                            collect `(|clojure.core|:|nth| ,all ,i |clojure.core|:|nil|)
                             collect pat)
                     ,@(and rest
-                        `((convert 'list (fset:subseq ,all ,len))
-                          ,rest)))))
+                           `((convert 'list (fset:subseq ,all ,len))
+                             ,rest)))))
 
 (defpattern fset-seq (&rest pats)
-  (fset-seq-pattern pats))
+  (build-fset-seq-pattern pats))
 
 (defpattern clojuresque-list (&rest pats)
   ;; NB This only works for lists with at least as many pats as are
@@ -146,31 +151,14 @@
                  pat)))
       pat)))
 
-(defun safe-elt (seq i)
-  (if (>= i (length seq)) |clojure.core|:|nil|
-      (elt seq i)))
-
-(defpattern clojuresque-sequence (&rest pats)
-  (multiple-value-bind (pats rest all len)
-      (dissect-seq-pattern pats)
-    `(trivia:guard1 (,all :type sequence)
-                    (typep ,all 'sequence)
-                    ,@(loop for pat in pats
-                            for i from 0
-                            collect `(safe-elt ,all ,i)
-                            collect pat)
-                    ,@(and rest
-                           `((drop ,len ,all)
-                             ,rest)))))
-
 (defpattern fset-map (alist)
   (let* ((as (assocdr :|as| alist))
          (alist (remove :|as| alist :key #'car))
          (it (or as (string-gensym 'it))))
     `(guard1 ,it
-             (typep ,it 'map)
+             (typep ,it 'lookupable)
              ,@(loop for (pat . key) in alist
-                     collect `(lookup* ,it ,key)
+                     collect `(|clojure.core|:|lookup| ,it ,key)
                      collect pat))))
 
 (defun map->alist (map)
@@ -209,11 +197,9 @@ Also return (as a second value) a list of all the symbols bound."
                   obj)
                  (seq
                   (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
-                    ;; TODO vector, sequence
-                    `(or (fset-seq ,@pats)
-                         (clojuresque-list ,@pats)
+                    `(or (clojuresque-list ,@pats)
                          ;; NB this matches lists with too few arguments.
-                         (clojuresque-sequence ,@pats))))
+                         (fset-seq ,@pats))))
                  (map
                   `(fset-map ,(map->alist obj))))))
       (values (obj->pattern obj)
