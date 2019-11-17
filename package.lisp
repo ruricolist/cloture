@@ -60,4 +60,5 @@
            #:autogensyms
 
            #:declare-keywords
-           #:proclaim-keywords))
+           #:proclaim-keywords
+           #:nil?))

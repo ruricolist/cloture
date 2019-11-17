@@ -208,6 +208,21 @@ Also return (as a second value) a list of all the symbols bound."
                            (let ((map (empty-map)))
                              (do-map (k v or-map map)
                                (withf map (make-keyword k) v))))
+                         (keys (cdr (pop-assoc :|keys| alist)))
+                         (strs (cdr (pop-assoc :|strs| alist)))
+                         (syms (cdr (pop-assoc :|syms| alist)))
+                         (alist
+                           (append
+                            (and keys
+                                 (loop for key in (convert 'list keys)
+                                       collect `(,key . ,(make-keyword key))))
+                            (and strs
+                                 (loop for str in (convert 'list strs)
+                                       collect `(,str . ,(string str))))
+                            (and syms
+                                 (loop for sym in (convert 'list syms)
+                                       collect `(,sym . ',sym)))
+                            alist))
                          (list
                            (loop for (obj . key) in alist
                                  for default = (|clojure.core|:|lookup| or-map key)

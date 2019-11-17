@@ -228,6 +228,7 @@ defmulti)."
 
 (defmacro with-syms-fbound (syms &body body)
   (assert (every #'symbolp syms))
+  (assert (notany #'keywordp syms))
   (let ((syms (remove '_ syms :test #'string=)))
     (with-unique-names (args)
       `(macrolet ,(loop for sym in syms
@@ -943,6 +944,12 @@ nested)."
   #_ILookup
   (#_lookup (coll key &optional (default #_nil))
             (#_nth coll key default)))
+
+(extend-type string
+  #_IEquiv
+  (#_equiv (x y)
+           (? (and (stringp y)
+                   (string= x y)))))
 
 (extend-type fset:seq
   #_ISeq
