@@ -360,3 +360,7 @@
 
 (test assoc-in
   (is #_(= {:x {:y {:z 1}}} (assoc-in {} [:x :y :z] 1))))
+
+(test macroexpand
+  (is #_(= '(def x (fn x []))
+           (macroexpand '(defn x [])))))

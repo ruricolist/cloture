@@ -118,6 +118,21 @@ defmulti)."
                 ,@decls
                 ,@body))))))))
 
+(defun special-form? (form)
+  (and (consp form)
+       (symbolp (car form))
+       (member (car form) special-forms)))
+
+(defun-1 #_macroexpand-1 (form)
+  (if (special-form? form) form
+      (clojurize (macroexpand-1 form))))
+
+(defun-1 #_macroexpand (form)
+  (loop for f = form then exp
+        for exp = (#_macroexpand-1 f)
+        until (eq f exp)
+        finally (return f)))
+
 (define-clojure-macro #_if (test then &optional (else #_nil))
   `(if (truthy? ,test) ,then ,else))
 
