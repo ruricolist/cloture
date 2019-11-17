@@ -1797,3 +1797,31 @@ nested)."
   (synchronized (agent)
     (setf (agent-state agent) state
           (agent-error agent) #_nil)))
+
+(defstruct future
+  (lp-future (error "No future!")))
+
+(define-clojure-macro #_future (&body body)
+  `(with-agent-pool ()
+     (make-future :lp-future (lparallel:future ,@body))))
+
+(extend-type future
+  #_IDeref
+  (#_deref (f) (lparallel:force f))
+  #_IPending
+  (#_realized? (f) (lparallel:fulfilledp f)))
+
+(defstruct promise
+  (lp-promise (lparallel:promise)))
+
+(defun-1 #_promise ()
+  (make-promise))
+
+(defun-1 #_deliver (promise value)
+  (lparallel:fulfill promise value))
+
+(extend-type promise
+  #_IDeref
+  (#_deref (p) (lparallel:force p))
+  #_IPending
+  (#_realized? (p) (lparallel:fulfilledp p)))
