@@ -82,10 +82,10 @@
 
 (test destructure-lisp-vector
   (is (equalp #(1 2 3 4 5)
-              #_(let [[_ _ _ _ _ :as all] (CL:VECTOR 1 2 3 4 5)]
+              #_(let [[_ _ _ _ _ :as all] #L(cl:vector 1 2 3 4 5)]
                   all)))
   (is (equal '(1 2 3 4 5)
-             #_(let [[a b c d e] (CL:VECTOR 1 2 3 4 5)]
+             #_(let [[a b c d e] #L(cl:vector 1 2 3 4 5)]
                  (list a b c d e)))))
 
 (test fn
@@ -148,12 +148,12 @@
 
 (test letfn
   (is (= 1
-         #_(letfn [(fst [xs] (CL:FIRST xs))]
-             (fst '(1 2 3)))))
+         #_(letfn [(fst [xs] #L(cl:first |xs|))]
+                  (fst '(1 2 3)))))
   (is (= 1
          (funcall
-          #_(letfn [(fst [xs] (CL:FIRST xs))]
-              fst)
+          #_(letfn [(fst [xs] #L(cl:first |xs|))]
+                   fst)
           '(1 2 3)))))
 
 (test read-nothing
@@ -329,17 +329,17 @@
 
 (test map
   ;; TODO cl-in-clojure reader macro, please!
-  (is #_(= (CL:MAP 'CL:LIST (CL:FUNCTION CL:-) (SERAPEUM:RANGE 5))
+  (is #_(= #L(cl:map 'cl:list #'cl:- (serapeum:range 5))
            (doall (map - (range 5)))))
   (is #_(=
-         (CL:MAP 'CL:LIST (CL:FUNCTION CL:-) (SERAPEUM:RANGE 5) (SERAPEUM:RANGE 5 10))
+         #L(cl:map 'cl:list #'cl:- (serapeum:range 5) (serapeum:range 5 10))
          (doall (map - (range 5) (range 5 10))))))
 
 (test range
   (is #_(empty? (take 10 (range 0 0 0))))
-  (is #_(= (CL:MAKE-LIST 5 :INITIAL-ELEMENT 0)
+  (is #_(= #L(cl:make-list 5 :initial-element 0)
            (doall 5 (range 0 10 0))))
-  (is #_(= (SERAPEUM:RANGE 10)
+  (is #_(= #L(serapeum:range 10)
            (doall 10 (range)))))
 
 (test drop-while

@@ -2,24 +2,24 @@
 
 (defunit eof)
 
-(defun rec-read (stream)
+(defun subread (stream)
   (read stream t nil t))
 
 (defun read-meta (stream char)
   (declare (ignore char))
-  (let* ((meta (clojurize (rec-read stream)))
-         (value (clojurize (rec-read stream))))
+  (let* ((meta (clojurize (subread stream)))
+         (value (clojurize (subread stream))))
     (merge-meta! value (ensure-meta meta))
     value))
 
 (defun read-var (stream char arg)
   (declare (ignore char arg))
-  (let ((sym (rec-read stream)))
+  (let ((sym (subread stream)))
     `(|clojure.core|:|var| ,sym)))
 
 (defun read-conditional (stream char arg)
   (declare (ignore char arg))
-  (let ((forms (rec-read stream)))
+  (let ((forms (subread stream)))
     (values
      (let* ((missing "missing")
             (cl (getf forms :|cl| missing)))
@@ -30,7 +30,7 @@
 (defun read-nothing (stream char arg)
   (declare (ignore char arg))
   (let ((*read-suppress* t))
-    (rec-read stream)
+    (subread stream)
     (values)))
 
 (defconstructor regex
@@ -39,12 +39,12 @@
 (defun read-regex (stream char arg)
   (declare (ignore arg))
   (unread-char char stream)
-  (let ((string (assure string (rec-read stream))))
+  (let ((string (assure string (subread stream))))
     (regex string)))
 
 (defun read-quote (stream char)
   (declare (ignore char))
-  `(|clojure.core|:|quote| ,(rec-read stream)))
+  `(|clojure.core|:|quote| ,(subread stream)))
 
 (defvar *anon*)
 
@@ -117,10 +117,15 @@
 
 (defun read-deref (stream char)
   (declare (ignore char))
-  `(|clojure.core|:|deref| ,(rec-read stream)))
+  `(|clojure.core|:|deref| ,(subread stream)))
 
 (defalias read-eval
   (get-dispatch-macro-character #\# #\.))
+
+(defun subread-cl (stream char arg)
+  (declare (ignore char arg))
+  (let ((*readtable* (find-readtable :standard)))
+    (subread stream)))
 
 (defreadtable cloture
   (:fuze :standard cloture.qq:quasiquote-mixin)
@@ -150,7 +155,9 @@
   ;; Anonymous function.
   (:dispatch-macro-char #\# #\( 'read-anon)
   ;; Read eval.
-  (:dispatch-macro-char #\# #\= 'read-eval))
+  (:dispatch-macro-char #\# #\= 'read-eval)
+  ;; Shortcut to read CL.
+  (:dispatch-macro-char #\# #\L 'subread-cl))
 
 (defreadtable function-literal
   (:merge cloture)

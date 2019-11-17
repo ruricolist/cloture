@@ -20,7 +20,7 @@ Clojure files can be integrated into Lisp systems by making the system definitio
 
 ## Using Lisp from Clojure
 
-Clojure uses the Lisp reader, so all you have to do to use Lisp from Clojure is to SHOUT. (Obviously Lisp reader macros may be overwritten by Clojure; this notably applies to sharp-quote.) This also applies when defining a namespace; you can refer or require CL packages from your `ns` form, you just have to SHOUT.
+Since Clojure uses the Lisp reader, you can call Lisp functions just by uppercasing them. However, this can get clumsy, so there is a reader macro, `#L`, that switches back to the Lisp reader. (Note that it does *not* change the package.)
 
 ## Reader conditionals
 
