@@ -46,6 +46,7 @@
 
            #:truthy?
            #:falsy?
+           #:clojure=
 
            #:defun-1
            #:expose-to-clojure

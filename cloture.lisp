@@ -85,6 +85,12 @@
 (defun truthy? (x)
   (not (falsy? x)))
 
+(defun clojure= (&rest xs)
+  "Are all of XS equal according to Clojure's idea of equality?"
+  (loop for x in xs
+        for y in (rest xs)
+        always (truthy? (|clojure.core|:= x y))))
+
 (defun dissect-seq-pattern (pats)
   (mvlet* ((pats (convert 'list pats))
            (all pats
