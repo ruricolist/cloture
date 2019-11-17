@@ -227,12 +227,13 @@ defmulti)."
   #_*read-eval* *read-eval*)
 
 (defmacro with-syms-fbound (syms &body body)
+  (assert (every #'symbolp syms))
   (let ((syms (remove '_ syms :test #'string=)))
     (with-unique-names (args)
       `(macrolet ,(loop for sym in syms
                         collect `(,sym (&rest ,args)
                                        (list* 'ifncall ',sym ,args)))
-         ,@body))))
+         ,@body))))()
 
 (define-clojure-macro clojure-let (bindings &body body)
   (match bindings

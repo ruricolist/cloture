@@ -124,7 +124,7 @@
       (multiple-value-bind (val val?) (lookup obj x)
         (if val? val |clojure.core|:|nil|))))
 
-(defun build-fset-seq-pattern (pats)
+(defun build-sequential-pattern (pats)
   (multiple-value-bind (pats rest all len)
       (dissect-seq-pattern pats)
     `(trivia:guard1 (,all :type seq)
@@ -138,8 +138,8 @@
                            `((|clojure.core|:|nthrest| ,all ,len)
                              ,rest)))))
 
-(defpattern fset-seq (&rest pats)
-  (build-fset-seq-pattern pats))
+(defpattern sequential (&rest pats)
+  (build-sequential-pattern pats))
 
 (defpattern clojuresque-list (&rest pats)
   ;; NB This only works for lists with at least as many pats as are
@@ -157,14 +157,12 @@
                  pat)))
       pat)))
 
-(defpattern fset-map (alist)
-  (let* ((as (assocdr :|as| alist))
-         (alist (remove :|as| alist :key #'car))
-         (it (or as (string-gensym 'it))))
-    `(guard1 ,it
-             (typep ,it 'lookupable)
-             ,@(loop for (pat . key) in alist
-                     collect `(|clojure.core|:|lookup| ,it ,key)
+(defpattern associative (list &key as)
+  (let* ((as (or as (string-gensym 'as))))
+    `(guard1 ,as
+             (typep ,as 'lookupable)
+             ,@(loop for (pat key default) in list
+                     collect `(|clojure.core|:|lookup| ,as ,key ,default)
                      collect pat))))
 
 (defun map->alist (map)
@@ -190,12 +188,7 @@
   "Convert OBJ into a Trivia destructuring pattern.
 Also return (as a second value) a list of all the symbols bound."
   (let ((syms (queue)))
-    (labels ((map->alist (map)
-               (collecting
-                 (do-map (k v map)
-                   (enq v syms)
-                   (collect (cons k v)))))
-             (obj->pattern (obj)
+    (labels ((obj->pattern (obj)
                (etypecase obj
                  (keyword obj)
                  (symbol
@@ -205,9 +198,22 @@ Also return (as a second value) a list of all the symbols bound."
                   (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
                     `(or (clojuresque-list ,@pats)
                          ;; NB this matches lists with too few arguments.
-                         (fset-seq ,@pats))))
+                         (sequential ,@pats))))
                  (map
-                  `(fset-map ,(map->alist obj))))))
+                  (let* ((alist (map->alist obj))
+                         (as (cdr (pop-assoc :|as| alist)))
+                         (or-map (or (cdr (pop-assoc :|or| alist))
+                                     (empty-map)))
+                         (or-map
+                           (let ((map (empty-map)))
+                             (do-map (k v or-map map)
+                               (withf map (make-keyword k) v))))
+                         (list
+                           (loop for (obj . key) in alist
+                                 for default = (|clojure.core|:|lookup| or-map key)
+                                 for pat = (obj->pattern obj)
+                                 collect (list pat key default))))
+                    `(associative ,list :as ,as))))))
       (values (obj->pattern obj)
               (qlist syms)))))
 

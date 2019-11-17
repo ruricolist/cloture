@@ -90,6 +90,30 @@
              #_(let [[a b c d e] #L(cl:vector 1 2 3 4 5)]
                  (list a b c d e)))))
 
+#_(def client
+    {:name "Super Co."
+     :location "Philadelphia"
+     :description "The worldwide leader in plastic tableware."})
+
+(test destructure-associative
+  (is #_(= "Super Co. Philadelphia - The worldwide leader in plastic tableware."
+           (let [{name :name
+                       location :location
+                       description :description}
+                 client]
+             (str name location "-" description)))))
+
+(test destructure-associative-missing
+  (is #_(nil? (let [{category :category} client] category))))
+
+(test destructure-associative-as
+  (is #_(= client (let [{:as all} client] all))))
+
+(test destructure-associative-default
+  (is #_(= "Category not found"
+           (let [{category :category, :or {category "Category not found"}} client]
+             category))))
+
 (test fn
   (let ((bar
           #_(fn bar
