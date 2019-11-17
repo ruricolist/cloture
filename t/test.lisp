@@ -54,10 +54,12 @@
                           all)))))
 
 (test destructure-rest
-  (is (equal '(2 3) #_(let ([_ & ys] [1 2 3])
-                        ys)))
-  (is (equal '(2 3) #_(let ([_ & ys] '(1 2 3))
-                        ys))))
+  (is #_(= '(2 3)
+           (let ([_ & ys] [1 2 3])
+             ys)))
+  (is #_(= '(2 3)
+           (let ([_ & ys] '(1 2 3))
+             ys))))
 
 (test destructure-rest-and-as
   (is (equal '(1 2 3)

@@ -129,7 +129,7 @@
                             collect `(|clojure.core|:|nth| ,all ,i |clojure.core|:|nil|)
                             collect pat)
                     ,@(and rest
-                           `((convert 'list (fset:subseq ,all ,len))
+                           `((|clojure.core|:|nthrest| ,all ,len)
                              ,rest)))))
 
 (defpattern fset-seq (&rest pats)
