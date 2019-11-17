@@ -5,7 +5,6 @@
                "fset"
                "named-readtables"
                "fare-utils"
-               "trivial-package-local-nicknames"
                "cl-murmurhash"
                "lisp-namespace"
                "cl-ppcre"

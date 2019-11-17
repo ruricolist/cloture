@@ -8,7 +8,6 @@
     #:named-readtables
     ;; Pattern matching.
     #:trivia)
-  (:local-nicknames (#:nick #:trivial-package-local-nicknames))
   (:import-from #:trivia.ppcre #:ppcre)
   (:import-from #:cl-custom-hash-table
     #:define-custom-hash-table-constructor)
