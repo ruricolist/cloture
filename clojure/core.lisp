@@ -1859,3 +1859,21 @@ nested)."
                     (#_let ,(seq pat temp)
                            ,@body))
                   ,form)))))
+
+(defun-1 #_assoc-in (m ks v)
+  (#_update-in m ks (constantly v)))
+
+(defun-1 #_update-in (m ks f &rest args)
+  (let ((ks (convert 'list ks))
+        (f (ifn-function f)))
+    (labels ((rec (m ks)
+               (let ((m (if (nil? m) (empty-map) m)))
+                 (match ks
+                   ((list) m)
+                   ((list key)
+                    (let* ((old (#_lookup m key))
+                           (new (apply f old args)))
+                      (#_assoc m key new)))
+                   ((list* key keys)
+                    (#_assoc m key (rec (#_lookup m key) keys)))))))
+      (rec m ks))))
