@@ -21,8 +21,9 @@
   "Define NAME in both the function and value namespaces.
 That's defun-1 as in Lisp-1.
 
-This also implicitly downcases the keywords for keyword arguments.
-"
+Implicitly downcases the keywords for keyword arguments. Also, if no
+default argument is given for keywords or optional arguments, the
+default default is Clojure's nil instead of Lisp nil."
   (mvlet* ((required optional rest keywords aok aux key?
             (parse-ordinary-lambda-list args))
            (keywords
@@ -30,7 +31,10 @@ This also implicitly downcases the keywords for keyword arguments.
                     in keywords
                   collect `((,(make-keyword (string-invert-case keyword-name))
                              ,name)
-                            ,init ,supplied?)))
+                            ,(or init #_nil) ,supplied?)))
+           (optional
+            (loop for (name init suppliedp) in optional
+                  collect `(,name ,(or init #_nil) ,suppliedp)))
            (args
             (unparse-ordinary-lambda-list
              required optional rest keywords aok aux key?))
@@ -377,10 +381,10 @@ nested)."
       (let ((qname (qualify-symbol prefix export)))
         (eval `(alias-from ,export ,qname))))))
 
-(defun-1 #_refer (ns &key exclude only rename)
+(defun-1 #_refer (ns &key (exclude nil) (only nil) (rename nil))
   (let ((p (find-package ns)))
     (setup-qualified-names p)
-    (if (nor exclude only) (use-package p)
+    (if (and exclude only) (use-package p)
         (let* ((exports (package-exports p))
                (exports
                  (if only
@@ -1068,7 +1072,7 @@ nested)."
 (defun-1 #_gensym (&optional (prefix-string "G__"))
   (gensym prefix-string))
 
-(defun-1 #_get (map key &optional (not-found #_nil))
+(defun-1 #_get (map key &optional not-found)
   (multiple-value-bind (val val?)
       (lookup map key)
     (if val? val not-found)))
@@ -1272,8 +1276,8 @@ nested)."
 (define-clojure-macro #_when-let (bindings &body body)
   `(#_if-let ,bindings (#_do ,@body)))
 
-(defun-1 #_symbol (ns &optional (name nil name-supplied?))
-  (if name-supplied?
+(defun-1 #_symbol (ns &optional name)
+  (if (not (nil? name))
       (intern name (#_the-ns ns))
       (intern name)))
 
@@ -1281,8 +1285,8 @@ nested)."
   (? (symbolp x)))
 
 (defun-1 #_fnil (f x &optional
-                   (y nil y-supplied?)
-                   (z nil z-supplied?))
+                   (y #_nil y-supplied?)
+                   (z #_nil z-supplied?))
   (cond (z-supplied?
          (lambda (arg1 arg2 arg3 &rest args)
            (ifn-apply f
@@ -1556,11 +1560,11 @@ nested)."
     ((list fn)
      (repeatedly fn))))
 
-(defun-1 #_repeat (n-or-x &optional (x nil x-supplied?))
+(defun-1 #_repeat (n-or-x &optional x)
   (multiple-value-bind (n x)
-      (if x-supplied?
-          (values n-or-x x)
-          (values nil n-or-x))
+      (if (nil? x)
+          (values nil n-or-x)
+          (values n-or-x x))
     (if (null n)
         (#_repeatedly (#_constantly x))
         (#_repeatedly n (#_constantly x)))))
@@ -1705,10 +1709,10 @@ nested)."
   (#_deref (x) (atom-value x)))
 
 (defun-1 #_atom (value &key meta validator)
-  (lret* ((validator (or validator (constantly t)))
+  (lret* ((validator (if (nil? validator) (constantly t) validator))
           (atom (make-atom :validator validator
                            :value value)))
-    (when meta
+    (unless (nil? meta)
       (setf (meta atom) meta))))
 
 (defun-1 #_reset! (atom value)
@@ -1760,9 +1764,9 @@ nested)."
 
 (defun-1 #_ref (x &key meta validator min-history max-history)
   (declare (ignore min-history max-history))
-  (lret* ((validator (or validator (constantly t)))
+  (lret* ((validator (if (nil? validator) (constantly t) validator))
           (ref (make-ref :value x :validator validator)))
-    (when meta
+    (unless (nil? meta)
       (setf (meta ref) meta))))
 
 (defun-1 #_alter (ref f &rest args)
@@ -1812,9 +1816,14 @@ nested)."
     (error e)))
 
 (defun-1 #_agent (state &key meta validator error-handler error-mode)
-  (lret* ((error-mode (or error-mode (if error-handler :continue :fail)))
-          (error-handler (and error-handler (ifn-function error-handler)))
-          (validator (if validator (ifn-function validator) (constantly t)))
+  (lret* ((error-mode
+           (if (nil? error-mode)
+               (if (nil? error-handler) :fail :continue)
+               error-mode))
+          (error-handler
+           (unless (nil? error-handler)
+             (ifn-function error-handler)))
+          (validator (if (nil? validator) (constantly t) (ifn-function validator)))
           (agent
            (make-agent :state state
                        :validator validator
@@ -1822,7 +1831,7 @@ nested)."
                        :error-handler error-handler)))
     (when (eql error-mode :|continue|)
       (assert (functionp error-handler)))
-    (when meta
+    (unless (nil? meta)
       (setf (meta agent) meta))))
 
 (defun-1 #_agent-error (agent)
