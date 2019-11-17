@@ -1675,10 +1675,22 @@ nested)."
   `(let ((*sycing* t))
      (stmx:atomic ,@body)))
 
+;;; SBCL doesn't like it if this is a struct.
 (stmx:transactional
-    (defstruct ref
-      (value (error "No value!") :type t)
-      (validator (constantly t) :transactional nil :type function :read-only t)))
+    (defclass ref ()
+      ((value
+        :initform (error "No value!")
+        :initarg :value
+        :type t
+        :accessor ref-value)
+       (validator
+        :initform (constantly t)
+        :transactional nil
+        :type function
+        :reader ref-validator))))
+
+(defun make-ref (&rest args)
+  (apply #'make 'ref args))
 
 (extend-type ref
   #_IDeref
