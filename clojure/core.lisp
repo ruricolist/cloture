@@ -1946,3 +1946,8 @@ nested)."
                    ((list* key keys)
                     (#_assoc m key (rec (#_lookup m key) keys)))))))
       (rec m ks))))
+
+(defun-1 #_subvec (v start &optional end)
+  (if (nil? end)
+      (fset:subseq v start)
+      (fset:subseq v start end)))
