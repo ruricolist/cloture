@@ -45,7 +45,8 @@
                   "IllegalStateException" "IllegalStateException."
                   "AssertionError" "AssertionError."
                   "ArityException" "ArityException."
-                  ".getClassName"))))
+                  ".getClassName"
+                  "exit" "quit"))))
 
 (defpackage "clojure.pprint"
   (:use)

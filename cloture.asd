@@ -34,7 +34,8 @@
                              (:file "pprint")
                              (:file "template")
                              (:file "strings")
-                             (:file "stacktrace")))))
+                             (:file "stacktrace")))
+               (:file "repl")))
 
 (defsystem "cloture/test"
   :depends-on ("cloture" "fiveam")
