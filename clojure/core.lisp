@@ -1705,25 +1705,27 @@ nested)."
 (define-clojure-macro #_try (&body forms)
   (flet ((catcher->handler (catcher)
            (ematch catcher
-             ((list* classname name exprs)
+             ((list* '#_catch classname name exprs)
               `(,classname (,name) ,@exprs)))))
-    (let* ((catchers (find '#_catch forms :key #'car-safe))
-           (finallies (find '#_finally forms :key #'car-safe))
+    (let* ((catch-forms (keep '#_catch forms :key #'car-safe))
+           (finally-forms (keep '#_finally forms :key #'car-safe))
            (exprs (remove-if (lambda (form)
-                               (or (member form catchers)
-                                   (member form finallies)))
+                               (or (member form catch-forms)
+                                   (member form finally-forms)))
                              forms))
            (expr `(progn ,@exprs))
            (expr
-             (if finallies
+             (if finally-forms
                  `(unwind-protect
                        ,expr
-                    ,@(mapcar #'rest finallies))))
+                    ,@(mapcar #'rest finally-forms))
+                 expr))
            (expr
-             (if catchers
+             (if catch-forms
                  `(handler-case
                       ,expr
-                    ,@(mapcar #'catcher->handler catchers)))))
+                    ,@(mapcar #'catcher->handler catch-forms))
+                 expr)))
       expr)))
 
 (declaim (inline make-atom))

@@ -6,7 +6,7 @@
                  (alexandria:read-file-into-string
                   (asdf:system-relative-pathname "cloture" "core-syms.txt")))
                 '("&" "var" "true" "false" "nil"
-                  "quote" "if" "do" "def" "recur" "throw" "try"
+                  "quote" "if" "do" "def" "recur" "throw" "try" "catch" "finally"
                   "&env" "&form"
                   "invoke" "equiv" "lookup"
                   "Throwable"
