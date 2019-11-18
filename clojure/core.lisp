@@ -1290,7 +1290,7 @@ nested)."
 (defun-1 #_resolve (sym)
   (#_ns-resolve #_*ns* sym))
 
-(define-clojure-macro #_if-let (bindings &body (then else))
+(define-clojure-macro #_if-let (bindings &body (then &optional else))
   (ematch bindings
     ((seq binds test)
      (with-unique-names (temp)
