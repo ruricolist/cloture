@@ -773,7 +773,7 @@
       (do-report {:type :begin-test-ns, :ns ns-obj})
       ;; If the namespace has a test-ns-hook function, call that:
       (if-let [v (find-var (symbol (str (ns-name ns-obj)) "test-ns-hook"))]
-	((var-get v))
+        #?(:cl (CL:FUNCALL (var-get v)) :clj ((var-get v)))
         ;; Otherwise, just test every var in the namespace.
         (test-all-vars ns-obj))
       (do-report {:type :end-test-ns, :ns ns-obj}))
