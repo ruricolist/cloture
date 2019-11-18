@@ -69,7 +69,7 @@ defmulti)."
   (if x #_true #_false))
 
 (defun-1 #_not (x)
-  (? (eql x #_false)))
+  (? (falsy? x)))
 
 (defun nil? (x)
   (eql x #_nil))
@@ -854,6 +854,7 @@ nested)."
             (declare (ignore coll key))
             default))
 
+;;; Lisp null, Clojure's empty list.
 (extend-type null
   #_ISeq
   (#_first (x) #_nil)
@@ -870,7 +871,9 @@ nested)."
   #_ILookup
   (#_lookup (coll key &optional (default #_nil))
             (declare (ignore coll key))
-            default))
+            default)
+  #_IEquiv
+  (#_equiv (n x) (or (null x) (#_empty? x))))
 
 (extend-type cons
   #_ISeq
@@ -887,6 +890,8 @@ nested)."
   (#_pop (c) (cdr c))
   #_IEquiv
   (#_equiv (self other)
+           (when (equal self other)
+             (return-from #_equiv #_true))
            (if (seq? other)
                (#_and
                 (#_equiv (car self) (#_first other))
@@ -921,7 +926,18 @@ nested)."
              (aref v n)))
   #_ILookup
   (#_lookup (coll key &optional (default #_nil))
-            (#_nth coll key default)))
+            (#_nth coll key default))
+  #_IEquiv
+  (#_equiv (self other)
+           (if (and (vectorp other)
+                    (vector= self other :test #'#_=))
+               #_true
+               (if (emptyp self)
+                   (#_empty? other)
+                   (#_and (#_equiv (#_first self)
+                                   (#_first other))
+                          (#_equiv (#_rest self)
+                                   (#_rest other)))))))
 
 (extend-type sequence
   #_ISeq
@@ -1127,6 +1143,9 @@ nested)."
                 for y in (rest args)
                 always (truthy? (#_equiv x y))))))))
 
+(defun not= (&rest args)
+  (truthy? (apply #'#_not= args)))
+
 (defun-1 #_not= (&rest args)
   (#_not (apply #'#_= args)))
 
@@ -1217,7 +1236,7 @@ nested)."
 
 (define-clojure-macro #_defmethod (name value params &body body)
   `(progn
-     (add-clojure-method #',name ,value
+     (add-clojure-method (symbol-function ',name) ,value
                          (#_fn ,params ,@body))
      ',name))
 
@@ -1438,7 +1457,7 @@ nested)."
   #_INext
   (#_next (x) (#_next (force x)))
   #_ISeqable
-  (#_seq (x) (force x))
+  (#_seq (x) (#_seq (force x)))
   #_IEmptyableCollection
   (#_empty (seq) '())
   #_IEquiv
@@ -1463,8 +1482,8 @@ nested)."
 
 (defun-1 #_doall (&rest args)
   (ematch args
-    ((list seq) (doall seq))
-    ((list n seq) (doall-n n seq))))
+    ((list seq) (doall seq) seq)
+    ((list n seq) (doall-n n seq) seq)))
 
 (defun-1 #_dorun (&rest args)
   ;; TODO avoid consing
