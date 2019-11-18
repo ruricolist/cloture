@@ -107,6 +107,8 @@ defmulti)."
              (values nil args))))
     (mvlet* ((body docs (body+docs+attrs body))
              (body decls (parse-body body))
+             (outer-decls inner-decls
+              (partition-declarations '(#_&form #_&env) decls))
              (forms (string-gensym 'forms))
              (env args (split-args-on args '&environment))
              (whole args (split-args-on args '&whole)))
@@ -114,12 +116,13 @@ defmulti)."
                         &rest ,forms
                               ,@(and env `(&environment ,env)))
          ,@(unsplice docs)
+         ,@outer-decls
          (declojurize
           (block ,name                  ;catch return-from
             (let ((,forms (clojurize ,forms))
                   ,@(unsplice (and whole `(,whole (clojurize ,whole)))))
               (destructuring-bind ,args ,forms
-                ,@decls
+                ,@inner-decls
                 ,@body))))))))
 
 (defun special-form? (form)
@@ -486,6 +489,9 @@ nested)."
        (declojurize
         (apply (#_fn ,@body)
                (clojurize ,forms))))))
+
+(comment
+  (|clojure.core|:|defmacro| foo () 'foo))
 
 (define-clojure-macro #_and (&rest forms)
   (if (null forms) #_true
