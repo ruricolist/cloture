@@ -237,8 +237,8 @@ Also return (as a second value) a list of all the symbols bound."
     (assert (keywordp keyword))
     (unless (fboundp keyword)
       (setf (symbol-function keyword)
-            (lambda (map)
-              (|clojure.core|:|get| map keyword))))))
+            (lambda (map &optional (not-found |clojure.core|:|nil|))
+              (|clojure.core|:|get| map keyword not-found))))))
 
 (defun proclaim-keywords (&rest keywords)
   (fbind-keywords keywords))
