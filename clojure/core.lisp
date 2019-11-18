@@ -1760,7 +1760,7 @@ nested)."
   (unless *syncing*
     (error (#_IllegalStateException. "No transaction running!"))))
 
-(defmacro #_io! (&body body)
+(define-clojure-macro #_io! (&body body)
   `(progn
      (when *syncing*
        (error (#_IllegalStateException. "IO in transaction!")))
