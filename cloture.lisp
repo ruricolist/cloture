@@ -127,7 +127,7 @@
 (defun build-sequential-pattern (pats)
   (multiple-value-bind (pats rest all len)
       (dissect-seq-pattern pats)
-    `(trivia:guard1 (,all :type seq)
+    `(trivia:guard1 ,all
                     ;; Missing or excess elements are just bound to nil.
                     (typep ,all 'indexed)
                     ,@(loop for pat in pats
