@@ -1,10 +1,10 @@
 # Cloture
 
-Cloture is an implementation implementation of Clojure in Common Lisp. It is designed to interoperate well with Common Lisp; e.g. Clojure is read by the Lisp reader and Clojure namespaces are Lisp packages.
+Cloture is an implementation of Clojure in Common Lisp. It is designed to interoperate well with Common Lisp; e.g. Clojure is read by the Lisp reader and Clojure namespaces are Lisp packages.
 
 Cloture is in very early stages, but it has progressed far enough for its test suite to actually be written in Clojure.
 
-Work so far has been focused on the critical path to get Clojure code working in CL. But if there is interest from Clojurists I may work toward making it a more complete Clojure implementation.
+Work so far has been focused on the critical path to get real Clojure code working in CL. But if there is interest from Clojurists I may work toward making it a more complete Clojure implementation.
 
 ## A note about FSet
 
