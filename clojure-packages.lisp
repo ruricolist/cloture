@@ -5,6 +5,8 @@
                 (serapeum:lines
                  (alexandria:read-file-into-string
                   (asdf:system-relative-pathname "cloture" "core-syms.txt")))
+                ;; Some CL stuff it is nice to have available.
+                lambda-list-keywords
                 '("&" "var" "true" "false" "nil"
                   "quote" "if" "do" "def" "recur" "throw" "try" "catch" "finally"
                   "&env" "&form"
