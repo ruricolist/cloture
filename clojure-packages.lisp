@@ -48,6 +48,8 @@
                   "AssertionError" "AssertionError."
                   "ArityException" "ArityException."
                   ".getClassName"
+                  ;; These aren't part of Clojure but the REPL needs
+                  ;; them (and Leiningen provides them).
                   "exit" "quit"))))
 
 (defpackage "clojure.pprint"
