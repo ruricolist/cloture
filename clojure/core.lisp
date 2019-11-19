@@ -460,6 +460,8 @@ nested)."
   (mvlet ((name (string name))
           (refs docstr (body+docs+attrs refs)))
     `(eval-always
+       ;; Use define-package instead of defpackage so SBCL complain
+       ;; about package variance.
        (uiop:define-package ,(string name)
          (:use)
          ,@(unsplice docstr))
