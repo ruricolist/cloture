@@ -1775,7 +1775,7 @@ nested)."
      ,@body))
 
 (define-clojure-macro #_dosync (&body body)
-  `(let ((*sycing* t))
+  `(let ((*syncing* t))
      (stmx:atomic ,@body)))
 
 ;;; SBCL doesn't like it if this is a struct.
