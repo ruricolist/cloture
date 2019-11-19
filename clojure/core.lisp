@@ -453,7 +453,7 @@ nested)."
   (mvlet ((name (string name))
           (refs docstr (body+docs+attrs refs)))
     `(eval-always
-       (defpackage ,(string name)
+       (uiop:define-package ,(string name)
          (:use)
          ,@(unsplice docstr))
        (in-package ,(string name))
