@@ -555,7 +555,7 @@ nested)."
        ,@(loop for (name lambda-list docs) in sigs
                do (unless lambda-list
                     (error (clojure-syntax-error "Protocol function cannot be nullary.")))
-               collect `(defgeneric-1 ,name ,lambda-list
+               collect `(defgeneric-1 ,(symbol-drop-leading-dash name) ,lambda-list
                           ,@(unsplice (and docs `(:documentation ,docs)))))
        (define-symbol-macro ,name (symbol-protocol ',name)))))
 

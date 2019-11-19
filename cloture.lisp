@@ -447,3 +447,9 @@ Also convert the symbols for true, false, and nil to unit types."
                                     ,%)))
                  exprs)))
       exprs)))
+
+(defun symbol-drop-leading-dash (symbol)
+  (if (string^= "-" symbol)
+      (intern (drop 1 (string symbol))
+              (symbol-package symbol))
+      symbol))
