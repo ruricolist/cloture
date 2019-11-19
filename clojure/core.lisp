@@ -330,10 +330,12 @@ nested)."
              ,(if variadic
                   (fn-clause->binding variadic args-sym)
                   `(too-many-arguments ,max-arity ,args-sym))
-             (ecase ,args-len
-               ,@(loop for clause in clauses
-                       collect `(,(fn-clause-min-arity clause)
-                                 ,(fn-clause->binding clause args-sym)))))))
+             ,@(unsplice
+                (when clauses
+                  `(ecase ,args-len
+                     ,@(loop for clause in clauses
+                             collect `(,(fn-clause-min-arity clause)
+                                       ,(fn-clause->binding clause args-sym)))))))))
 
     (if name
         `(named-lambda ,name (&rest ,args-sym)
