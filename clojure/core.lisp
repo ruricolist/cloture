@@ -107,8 +107,10 @@ defmulti)."
              (values nil args))))
     (mvlet* ((body docs (body+docs+attrs body))
              (body decls (parse-body body))
-             (outer-decls inner-decls
-              (partition-declarations '(#_&form #_&env) decls))
+             (whole-decls decls
+              (partition-declarations '(#_&form) decls))
+             (env-decls decls
+              (partition-declarations '(#_&env) decls))
              (forms (string-gensym 'forms))
              (env args (split-args-on args '&environment))
              (whole args (split-args-on args '&whole)))
@@ -116,13 +118,14 @@ defmulti)."
                         &rest ,forms
                               ,@(and env `(&environment ,env)))
          ,@(unsplice docs)
-         ,@outer-decls
+         ,@env-decls
          (declojurize
           (block ,name                  ;catch return-from
             (let ((,forms (clojurize ,forms))
                   ,@(unsplice (and whole `(,whole (clojurize ,whole)))))
+              ,@whole-decls
               (destructuring-bind ,args ,forms
-                ,@inner-decls
+                ,@decls
                 ,@body))))))))
 
 (defun special-form? (form)
