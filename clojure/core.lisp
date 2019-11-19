@@ -114,19 +114,23 @@ defmulti)."
              (forms (string-gensym 'forms))
              (env args (split-args-on args '&environment))
              (whole args (split-args-on args '&whole)))
-      `(defmacro ,name (,@(and whole `(&whole ,whole))
-                        &rest ,forms
-                              ,@(and env `(&environment ,env)))
-         ,@(unsplice docs)
-         ,@env-decls
-         (declojurize
-          (block ,name                  ;catch return-from
-            (let ((,forms (clojurize ,forms))
-                  ,@(unsplice (and whole `(,whole (clojurize ,whole)))))
-              ,@whole-decls
-              (destructuring-bind ,args ,forms
-                ,@decls
-                ,@body))))))))
+      `(locally
+           ;; Suppress SBCL warnings about &form and &env being suspicious variables.
+           (declare #+sbcl (sb-ext:muffle-conditions style-warning))
+         (defmacro ,name (,@(and whole `(&whole ,whole))
+                          &rest ,forms
+                                ,@(and env `(&environment ,env)))
+           ,@(unsplice docs)
+           ,@env-decls
+           (declojurize
+            (block ,name              ;catch return-from
+              (let ((,forms (clojurize ,forms))
+                    ,@(unsplice (and whole `(,whole (clojurize ,whole)))))
+                ,@whole-decls
+                (destructuring-bind ,args ,forms
+                  ,@decls
+                  (declare #+sbcl (sb-ext:unmuffle-conditions style-warning))
+                  ,@body)))))))))
 
 (defun special-form? (form)
   (and (consp form)
@@ -1717,7 +1721,9 @@ nested)."
   (flet ((catcher->handler (catcher)
            (ematch catcher
              ((list* '#_catch classname name exprs)
-              `(,classname (,name) ,@exprs)))))
+              `(,classname (,name)
+                           ,@(unsplice (and (string= name '_) `(declare (ignorable ,name))))
+                           ,@exprs)))))
     (let* ((catch-forms (keep '#_catch forms :key #'car-safe))
            (finally-forms (keep '#_finally forms :key #'car-safe))
            (exprs (remove-if (lambda (form)

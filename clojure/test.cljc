@@ -247,6 +247,7 @@
         :fail
         :macro
         :message
+        :name
         :ns
         :once-fixtures
         :pass
@@ -301,7 +302,7 @@
   {:added "1.1"
    :deprecated "1.2"}
   [n]
-  #?(:cl 0
+  #?(:cl (do n 0)
      :clj
      (let [^StackTraceElement s (nth (.getStackTrace (new java.lang.Throwable)) n)]
        [(.getFileName s) (.getLineNumber s)])))
@@ -387,7 +388,7 @@
 (defmethod report :default [m]
   (with-test-out (prn m)))
 
-(defmethod report :pass [m]
+(defmethod report :pass [_]
   (with-test-out (inc-report-counter :pass)))
 
 (defmethod report :fail [m]
@@ -423,9 +424,9 @@
    (println "\nTesting" (ns-name (:ns m)))))
 
 ;; Ignore these message types:
-(defmethod report :end-test-ns [m])
-(defmethod report :begin-test-var [m])
-(defmethod report :end-test-var [m])
+(defmethod report :end-test-ns [_])
+(defmethod report :begin-test-var [_])
+(defmethod report :end-test-var [_])
 
 
 
@@ -436,7 +437,7 @@
   {:added "1.1"}
   [v]
   (try (var-get v)
-       (catch IllegalStateException e
+       (catch IllegalStateException _
          nil)))
 
 (defn function?
@@ -492,13 +493,13 @@
 ;; symbol in the test expression.
 
 (defmulti assert-expr 
-  (fn [msg form]
+  (fn [_ form]
     (cond
       (nil? form) :always-fail
       (seq? form) (first form)
       :else :default)))
 
-(defmethod assert-expr :always-fail [msg form]
+(defmethod assert-expr :always-fail [msg _]
   ;; nil test: always fail
   `(do-report {:type :fail, :message ~msg}))
 
@@ -690,12 +691,12 @@
   teardown. Using a fixture-type of :each wraps every test
   individually, while :once wraps the whole run in a single function."
   {:added "1.1"}
-  (fn [fixture-type & args] fixture-type))
+  (fn [fixture-type & _] fixture-type))
 
-(defmethod use-fixtures :each [fixture-type & args]
+(defmethod use-fixtures :each [_ & args]
   (add-ns-meta ::each-fixtures args))
 
-(defmethod use-fixtures :once [fixture-type & args]
+(defmethod use-fixtures :once [_ & args]
   (add-ns-meta ::once-fixtures args))
 
 (defn- default-fixture
