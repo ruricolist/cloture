@@ -6,4 +6,5 @@
   :components ((:module "clojure"
                 :components (("cloture:cljc" "test")))
                (:module "t"
-                :components ((:file "test")))))
+                :components ((:file "test")
+                             ("cloture:cljc" "cloture-tests")))))

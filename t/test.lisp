@@ -9,7 +9,8 @@
 (in-suite cloture)
 
 (defun run-cloture-tests ()
-  (run! 'cloture))
+  (run! 'cloture)
+  (|clojure.test|:|run-tests| (find-package "cloture.tests")))
 
 (defmacro is-truthy? (condition &rest reason-args)
   `(if (truthy? ,condition)

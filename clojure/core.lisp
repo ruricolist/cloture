@@ -286,7 +286,7 @@ nested)."
   `(quote ,(var symbol env)))
 
 (defun-1 #_find-var (symbol)
-  (find-var symbol))
+  (or (find-var symbol) #_nil))
 
 (defun-1 #_var-get (var)
   (symbol-value var))
@@ -638,7 +638,14 @@ nested)."
   (apply (ifn-function ifn) args))
 
 (defun ifn-apply (ifn &rest args)
-  (apply #'apply (ifn-function ifn) args))
+  (let* ((last (lastcar args))
+         (args
+           (if (listp last) args
+               (append1 (butlast args)
+                        (convert 'list last)))))
+    (apply #'apply
+           (ifn-function ifn)
+           (convert 'list args))))
 
 (-> ifn-function (t) (values function &optional))
 (defun ifn-function (ifn)
@@ -1033,6 +1040,14 @@ nested)."
              (collecting
                (do-map (k v map)
                  (collect (seq k v))))))
+  #_ISeq
+  (#_first (map)
+           (if (empty? map) #_nil
+               (do-map (k v map)
+                 (return (seq k v)))))
+  (#_rest (map) (#_rest (#_seq map)))
+  #_INext
+  (#_next (map) (#_next (#_seq map)))
   #_IEmptyableCollection
   (#_empty (map) (fset:empty-map))
   #_ICollection
@@ -1114,9 +1129,7 @@ nested)."
   (gensym prefix-string))
 
 (defun-1 #_get (map key &optional not-found)
-  (multiple-value-bind (val val?)
-      (lookup map key)
-    (if val? val not-found)))
+  (#_lookup map key not-found))
 
 (defun-1 #_constantly (x)
   (constantly x))
@@ -1515,6 +1528,9 @@ nested)."
         (rec (#_rest seq)
              (cons (#_first seq) acc)))))
 
+(defmethod convert ((type (eql 'list)) (seq lazy-seq) &key)
+  (lazy-seq->list seq))
+
 (defun-1 #_concat (&rest seqs)
   (labels ((rec (seqs)
              (if (null seqs) '()
@@ -1686,12 +1702,21 @@ nested)."
 (defun-1 #_merge-with (fn &rest maps)
   (let ((fn (ifn-function fn)))
     (reduce (lambda (map1 map2)
-              (fset:map-union map1 map2 fn))
+              ;; NB fset:map-union does not have the right semantics.
+              (do-map (key val2 map2 map1)
+                (multiple-value-bind (val1 val1?)
+                    (fset:lookup map1 key)
+                  (if val1?
+                      (withf map1 key (funcall fn val1 val2))
+                      (withf map1 key val2)))))
             maps
             :initial-value (empty-map))))
 
 (defun-1 #_merge (&rest maps)
   (apply #_merge-with #'second maps))
+
+(defmethod fset:reduce ((f function) (n #_nil) &rest args &key &allow-other-keys)
+  (apply #'reduce f nil args))
 
 (defun-1 #_reduce (f &rest args)
   (let ((f (ifn-function f)))
