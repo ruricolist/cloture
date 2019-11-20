@@ -16,7 +16,8 @@
                "stmx"
                "atomics"
                "lparallel"
-               "overlord")
+               "overlord"
+               "cl-interpol")
   :in-order-to ((test-op (test-op "cloture-test")))
   :serial t
   :components ((:file "package")

@@ -127,11 +127,21 @@
   (let ((*readtable* (find-readtable :standard)))
     (subread stream)))
 
+(defun read-string-with-escapes (stream char)
+  (unread-char char stream)
+  (let ((interpol:*outer-delimiters* '(#\"))
+        (interpol:*inner-delimiters* nil)
+        (interpol:*interpolate-format-directives* nil)
+        (interpol::*regex-delimiters* nil))
+    (interpol:interpol-reader stream nil nil)))
+
 (defreadtable cloture
   (:fuze :standard cloture.qq:quasiquote-mixin)
   (:case :preserve)
   ;; Clojure quote.
   (:macro-char #\' 'read-quote)
+  ;; Strings with escapes.
+  (:macro-char #\" 'read-string-with-escapes)
   ;; Supress.
   (:dispatch-macro-char #\# #\_ 'read-nothing)
   ;; Metadata.
