@@ -441,7 +441,7 @@ nested)."
                 (setup-qualified-names lib |as|)
                 (when |refer|
                   (match |refer|
-                    (:all (#_refer lib))
+                    (:|all| (#_refer lib))
                     (otherwise
                      (#_refer lib :|only| (convert 'list |refer|)))))
                 (when (or |exclude| |only| |rename|)
