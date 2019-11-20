@@ -351,7 +351,7 @@
 (defn- file-and-line
   {:deprecated "1.8"}
   [^Throwable exception depth]
-  #?(:cl {:file nil :line nil}
+  #?(:cl exception depth {:file nil :line nil}
      :clj (let [stacktrace (.getStackTrace exception)]
             (if (< depth (count stacktrace))
               (let [^StackTraceElement s (nth stacktrace depth)]
@@ -360,7 +360,7 @@
 
 (defn- stacktrace-file-and-line
   [stacktrace]
-  #?(:cl {:file nil :line nil}
+  #?(:cl stacktrace {:file nil :line nil}
      :clj (if (seq stacktrace)
             (let [^StackTraceElement s (first stacktrace)]
               {:file (.getFileName s) :line (.getLineNumber s)})
