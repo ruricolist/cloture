@@ -652,16 +652,26 @@
   {:added "1.1"}
   [name & body]
   (when *load-tests*
-    `(def ~(vary-meta name assoc :test `(fn [] ~@body))
-          (fn [] (test-var (var ~name))))))
+    #?(:clj
+       `(def #?(:clj ~(vary-meta name assoc :test `(fn [] ~@body) :private true))
+          (fn [] (test-var (var ~name))))
+       :cl
+       `(do
+          (defn ~name [] (test-var (var ~name)))
+          (set-test (var ~name) ~@body)))))
 
 (defmacro deftest-
   "Like deftest but creates a private var."
   {:added "1.1"}
   [name & body]
   (when *load-tests*
-    `(def ~(vary-meta name assoc :test `(fn [] ~@body) :private true)
-          (fn [] (test-var (var ~name))))))
+    #?(:clj
+       `(def #?(:clj ~(vary-meta name assoc :test `(fn [] ~@body) :private true))
+          (fn [] (test-var (var ~name))))
+       :cl
+       `(do
+          (defn- ~name [] (test-var (var ~name)))
+          (set-test (var ~name) ~@body)))))
 
 
 (defmacro set-test
