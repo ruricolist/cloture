@@ -351,18 +351,20 @@
 (defn- file-and-line
   {:deprecated "1.8"}
   [^Throwable exception depth]
-  (let [stacktrace (.getStackTrace exception)]
-    (if (< depth (count stacktrace))
-      (let [^StackTraceElement s (nth stacktrace depth)]
-        {:file (.getFileName s) :line (.getLineNumber s)})
-      {:file nil :line nil})))
+  #?(:cl {:file nil :line nil}
+     :clj (let [stacktrace (.getStackTrace exception)]
+            (if (< depth (count stacktrace))
+              (let [^StackTraceElement s (nth stacktrace depth)]
+                {:file (.getFileName s) :line (.getLineNumber s)})
+              {:file nil :line nil}))))
 
 (defn- stacktrace-file-and-line
   [stacktrace]
-  (if (seq stacktrace)
-    (let [^StackTraceElement s (first stacktrace)]
-      {:file (.getFileName s) :line (.getLineNumber s)})
-    {:file nil :line nil}))
+  #?(:cl {:file nil :line nil}
+     :clj (if (seq stacktrace)
+            (let [^StackTraceElement s (first stacktrace)]
+              {:file (.getFileName s) :line (.getLineNumber s)})
+            {:file nil :line nil})))
 
 (defn do-report
   "Add file and line information to a test result and call report.
@@ -371,19 +373,18 @@
   {:added "1.2"}
   [m]
   (report
-   (case
-       (:type m)
-       :fail (merge (stacktrace-file-and-line (drop-while
-                                               #(let [cl-name (.getClassName ^StackTraceElement %)]
-                                                  (or (str/starts-with? cl-name "java.lang.")
-                                                      (str/starts-with? cl-name "clojure.test$")
-                                                      (str/starts-with? cl-name "clojure.core$ex_info")))
-                                               (.getStackTrace
-                                                #?(:cl (BT:CURRENT-THREAD)
-                                                   :cljs (Thread/currentThread)))))
-                    m)
-       :error (merge (stacktrace-file-and-line (.getStackTrace ^Throwable (:actual m))) m)
-       m)))
+   #?(:cl m
+      :clj
+      (case (:type m)
+          :fail (merge (stacktrace-file-and-line (drop-while
+                                                  #(let [cl-name (.getClassName ^StackTraceElement %)]
+                                                     (or (str/starts-with? cl-name "java.lang.")
+                                                         (str/starts-with? cl-name "clojure.test$")
+                                                         (str/starts-with? cl-name "clojure.core$ex_info")))
+                                                  (.getStackTrace (Thread/currentThread))))
+                       m)
+          :error (merge (stacktrace-file-and-line (.getStackTrace ^Throwable (:actual m))) m)
+          m))))
 
 (defmethod report :default [m]
   (with-test-out (prn m)))
