@@ -17,7 +17,7 @@
                "atomics"
                "lparallel"
                "overlord")
-  :in-order-to ((test-op (test-op "cloture/test")))
+  :in-order-to ((test-op (test-op "cloture-test")))
   :serial t
   :components ((:file "package")
                (:static-file "core-syms.txt")
@@ -37,10 +37,3 @@
                              (:file "strings")
                              (:file "stacktrace")))
                (:file "repl")))
-
-(defsystem "cloture/test"
-  :depends-on ("cloture" "fiveam")
-  :perform (test-op (o c) (symbol-call :cloture.test :run-cloture-tests))
-  :serial t
-  :components ((:module "t"
-                :components ((:file "test")))))
