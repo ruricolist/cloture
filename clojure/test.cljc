@@ -360,6 +360,7 @@
 
 (defn- stacktrace-file-and-line
   [stacktrace]
+  ;; TODO There must be some way to do this in CL (since Slime/Sly do it).
   #?(:cl stacktrace {:file nil :line nil}
      :clj (if (seq stacktrace)
             (let [^StackTraceElement s (first stacktrace)]
@@ -638,6 +639,8 @@
     `(doto ~definition (alter-meta! assoc :test (fn [] ~@body)))
     definition))
 
+;;; I have a plan to make uses of vary-meta like that below work in
+;;; CL, but since it already exists just use set-test for the moment.
 
 (defmacro deftest
   "Defines a test function with no arguments.  Test functions may call
@@ -658,8 +661,8 @@
           (fn [] (test-var (var ~name))))
        :cl
        `(do
-          (defn ~name [] (test-var (var ~name)))
-          (set-test (var ~name) ~@body)))))
+         (defn ~name [] (test-var (var ~name)))
+         (set-test (var ~name) ~@body)))))
 
 (defmacro deftest-
   "Like deftest but creates a private var."
