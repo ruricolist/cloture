@@ -1667,6 +1667,7 @@ nested)."
 
 (defun-1 #_println (&rest more)
   (apply #_print more)
+  (terpri)
   #_nil)
 
 (defun-1 #_print-str (&rest more)
