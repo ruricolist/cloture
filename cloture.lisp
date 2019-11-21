@@ -264,8 +264,7 @@ Also return (as a second value) a list of all the symbols bound."
 (defun find-var (sym &optional env)
   (let ((exp (macroexpand-1 (assure symbol sym) env)))
     (unless (or (eql exp sym)
-                (not (symbolp exp))
-                (not (boundp exp)))
+                (not (symbolp exp)))
       exp)))
 
 (defconstructor protocol
