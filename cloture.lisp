@@ -265,7 +265,7 @@ Also return (as a second value) a list of all the symbols bound."
   (let ((exp (macroexpand-1 (assure symbol sym) env)))
     (unless (or (eql exp sym)
                 (not (symbolp exp))
-                (not (meta-ref sym :|dynamic|)))
+                (not (boundp exp)))
       exp)))
 
 (defconstructor protocol
