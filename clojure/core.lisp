@@ -189,14 +189,15 @@ defmulti)."
          (ifn-apply ,name args))
        ',name)))
 
+(defmacro export-unless-private (name)
+  (unless (meta-ref name :|private|)
+    `(export ',name ,(package-name (symbol-package name)))))
+
 (define-clojure-macro #_def (name &body body)
-  (mvlet* ((private? (meta-ref name :|private|)))
-    `(progn
-       (defprivate ,name ,@body)
-       ,@(unsplice
-          (unless private?
-            `(export ',name ,(package-name (symbol-package name)))))
-       ',name)))
+  `(progn
+     (defprivate ,name ,@body)
+     (export-unless-private ,name)
+     ',name))
 
 (defun-1 #_ns-interns (ns)
   (let ((map (empty-map)))
@@ -492,14 +493,17 @@ nested)."
 (define-clojure-macro #_defmacro (name &body body)
   (mvlet ((body docstr (body+docs+attrs body))
           (forms (string-gensym 'forms)))
-    `(define-clojure-macro ,name (&whole #_&form
-                                         &body ,forms
-                                         &environment #_&env)
-       ,@(unsplice docstr)
-       (declare (ignorable #_&form #_&env))
-       (declojurize
-        (apply (#_fn ,@body)
-               (clojurize ,forms))))))
+    `(#_do
+      (define-clojure-macro ,name (&whole #_&form
+                                          &body ,forms
+                                          &environment #_&env)
+        ,@(unsplice docstr)
+        (declare (ignorable #_&form #_&env))
+        (declojurize
+         (apply (#_fn ,@body)
+                (clojurize ,forms))))
+      (export-unless-private ,name)
+      ',name)))
 
 (comment
   (|clojure.core|:|defmacro| foo () 'foo))
