@@ -662,7 +662,7 @@
        :cl
        `(do
          (defn ~name [] (test-var (var ~name)))
-         (set-test (var ~name) ~@body)))))
+         (set-test ~name ~@body)))))
 
 (defmacro deftest-
   "Like deftest but creates a private var."
