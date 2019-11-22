@@ -6,6 +6,8 @@
 (deftest trivial-test
   (is true))
 
+;;; Examples from the clojure.test documentation.
+
 (deftest addition
   (is (= 4 (+ 2 2)))
   (is (= 7 (+ 3 4))))
@@ -17,3 +19,15 @@
 (deftest arithmetic
   (addition)
   (subtraction))
+
+(deftest sanity-check
+  (is true)
+  (is (not false))
+  (is (not nil))
+  (is '())
+  (is (not= nil '()))
+  (is (= 0 0))
+  (is (not= 0 1))
+  (is (not= 1 0))
+  (is (= 1 1))
+  (is (not= 1 -1)))
