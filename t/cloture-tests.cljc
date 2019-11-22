@@ -38,3 +38,12 @@
   (is (not= '(1 2 3 4) [1 2 3]))
   (is (not= '(2 3 4) [1 2 3 4]))
   (is (not= '(1 2 3 4) [2 3 4])))
+
+(deftest read-map
+  (is (= '([:x 1] [:y 2] [:z 3])
+         (seq {:x 1 :y 2 :z 3})))
+  ;; Clojure's behavior differs from FSet here; worth fixing?
+  ;; (is (not= '([:x 1] [:y 2] [:z 3])
+  ;;           (seq {:y 2 :x 1  :z 3})))
+  (is (not= '([:x 1] [:y 2])
+            (seq {:x 1 :y 2 :z 3}))))
