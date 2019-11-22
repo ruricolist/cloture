@@ -52,3 +52,8 @@
   (let [sym (read-string "^:dynamic *bar*")]
     (is (symbol? sym))
     (is (get (meta sym) :|dynamic|))))
+
+(deftest let-test
+  (is (= 3 (let [x 1 y 2] (+ x y))))
+  (is (= 3 (let [x 2 y 1] (+ x y))))
+  (is (not= 3 (let [x 1 y 1] (+ x y)))))

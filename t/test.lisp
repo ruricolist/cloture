@@ -28,9 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test let
-  (is (= 3 #_(let [x 1 y 2] (+ x y)))))
-
 (test commas
   (is (equal '(:x :y :z) '#_(:X, :Y, :Z))))
 
