@@ -28,9 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test read-vector
-  (is (equal? (seq 1 2 3 :x) #_'[1 2 3 :X])))
-
 (test read-map
   (is (equal? (map (:x 1) (:y 2) (:z 3))
               #_{:X 1 :Y 2 :Z 3})))
