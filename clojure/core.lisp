@@ -164,6 +164,10 @@ defmulti)."
 
 (defconst clojure-var-prefix '*clojure-var-)
 
+(defun backing-var (symbol)
+  (assert (not (string^= clojure-var-prefix symbol)))
+  (symbolicate clojure-var-prefix symbol))
+
 (define-clojure-macro defprivate (name &body body)
   "Define a (private) var."
   (mvlet* ((docstring expr
@@ -173,25 +177,40 @@ defmulti)."
                (values docstring expr))
               ((list expr)
                (values nil expr))))
-           (dynamic? (meta-ref name :|dynamic|))
+           ;; TODO How does the reader magically know to assign
+           ;; :dynamic to the var, and not the symbol, or does the
+           ;; meta get moved?
+           (dynamic? (truthy? (meta-ref name :|dynamic|)))
            (meta-doc (meta-ref name :|doc|))
-           (doc (or docstring meta-doc)))
+           (doc (or docstring
+                    (and (stringp meta-doc)
+                         meta-doc)))
+           (backing-var (backing-var name)))
     `(progn
        ,(if dynamic?
-            (let ((backing-var (symbolicate clojure-var-prefix name)))
-              `(progn
-                 (expose-to-clojure ,name ,backing-var)
-                 (defparameter ,backing-var ,expr
-                   ,@(unsplice doc))))
-            `(def ,name ,expr
-               ,@(unsplice doc)))
+            `(progn
+               (expose-to-clojure ,name ,backing-var)
+               (defparameter ,backing-var ,expr
+                 ,@(unsplice doc)))
+            `(progn
+               ;; NB The symbol macro must comes first so EXPR can
+               ;; close over it.
+               (define-symbol-macro ,name ,backing-var)
+               (global-vars:define-global-parameter* ,backing-var ,expr
+                 ,@(unsplice doc))))
+       (eval-always
+         (setf (meta-ref ',backing-var :|ns|) ,(symbol-package name)
+               (meta-ref ',backing-var :|name|) ',name
+               (meta-ref ',backing-var :|dynamic|) ,(? dynamic?)))
        (defun ,name (&rest args)
          (ifn-apply ,name args))
        ',name)))
 
 (defmacro export-unless-private (name)
-  (unless (meta-ref name :|private|)
-    `(export ',name ,(package-name (symbol-package name)))))
+  (if (meta-ref name :|private|)
+      `(eval-always
+         (setf (meta-ref ',(backing-var name) :|private|) #_true))
+      `(export ',name ,(package-name (symbol-package name)))))
 
 (define-clojure-macro #_def (name &body body)
   `(progn
@@ -200,11 +219,12 @@ defmulti)."
      ',name))
 
 (defun-1 #_ns-interns (ns)
-  (let ((map (empty-map)))
-    (do-symbols (s ns)
-      (when-let (var (find-var s))
-        (withf map s var)))
-    map))
+  (let ((map (empty-map))
+        (ns (#_the-ns ns)))
+    (do-symbols (s ns map)
+      (when (eql (symbol-package s) ns)
+        (when-let (var (find-var s))
+          (withf map s var))))))
 
 (defmacro expose-to-clojure-1 (clj cl)
   "Export a Lisp special variable as a Clojure dynamic binding."
@@ -304,11 +324,6 @@ nested)."
 
 (define-clojure-macro #_fn (&body body*)
   (local
-    (defun fn-clause->binding (c args-sym)
-      `(nlet %recur ((,args-sym ,args-sym))
-         (#_let ,(seq (fn-clause-params c) args-sym)
-                ,@(require-body-for-splice (fn-clause->body c)))))
-
     (def (values body docstr) (body+docs+attrs body*))
     (def name
       (and (symbolp (car body))
@@ -320,31 +335,34 @@ nested)."
          (list (parse-clause body)))
         ((and clauses (type list))
          (mapcar #'parse-clause clauses))))
-    (def max-arity (reduce #'max clauses :key #'fn-clause-min-arity))
+    (when (no clauses)
+      (error "No clauses in fn body ~s" body*))
     (def variadic-clauses (filter #'fn-clause-rest clauses))
 
     (when (length> variadic-clauses 1)
-      (error (clojure-syntax-error "Only one variadic overloard in an fn.")))
+      (error (clojure-syntax-error "Only one variadic overload in an fn.")))
 
     (def variadic (first variadic-clauses))
-    (setf clauses (remove variadic clauses))
 
-    (def args-len (string-gensym 'len))
+    (def sorted-clauses
+      (concatenate 'list
+                   (sort-new (remove variadic clauses) #'< :key #'fn-clause-min-arity)
+                   (and variadic (list variadic))))
+
+    (defun fn-clause->trivia-clause (clause)
+      (mvlet* ((params (fn-clause-params clause))
+               (lambda-list (seq->lambda-list params :allow-patterns t))
+               (syms (nth-value 1 (obj->pattern params)))
+               (body (fn-clause->body clause)))
+        `((lambda-list ,@lambda-list)
+          (with-syms-fbound ,syms
+            ,@body))))
 
     (def dispatch
-      ;; TODO Only check length up to max arity (+1)?
-      `(let ((,args-len (length ,args-sym)))
-         (if (> ,args-len ,max-arity)
-             ,(if variadic
-                  (fn-clause->binding variadic args-sym)
-                  `(too-many-arguments ,max-arity ,args-sym))
-             ,@(unsplice
-                (when clauses
-                  `(ecase ,args-len
-                     ,@(loop for clause in clauses
-                             collect `(,(fn-clause-min-arity clause)
-                                       ,(fn-clause->binding clause args-sym)))))))))
-
+      `(nlet %recur ((,args-sym ,args-sym))
+         (match ,args-sym
+           ,@(mapcar #'fn-clause->trivia-clause sorted-clauses)
+           (otherwise (error (#_ArityException. (length ,args-sym) ',name))))))
     (if name
         `(named-lambda ,name (&rest ,args-sym)
            ,@(unsplice docstr)
@@ -664,8 +682,8 @@ nested)."
                   :protocol '#_IFn
                   :object ifn))))
 
-(defun #_ifn? (x)
-  (satisfies? '#_IFn x))
+(defun-1 #_ifn? (x)
+  (#_satisfies? '#_IFn x))
 
 (defprotocol #_ISeqable
   (#_seq (x)))
@@ -694,7 +712,7 @@ nested)."
 (defprotocol #_ISequential)
 
 (defun-1 #_sequential? (x)
-  (satisfies? '#_ISequential x))
+  (#_satisfies? '#_ISequential x))
 
 (defprotocol #_IAssociative
   (#_contains-key? (coll k))
@@ -807,15 +825,9 @@ nested)."
 
 (extend-type t
   #_Object
-  (#_toString (x) (princ-to-string x)))
-
-(defun-1 #_str (&rest args)
-  (with-output-to-string (s)
-    (dolist (arg args)
-      (unless (nil? arg)
-        (write-string (#_toString arg) s)))))
-
-(extend-type t
+  (#_toString (x) (princ-to-string x))
+  #_IEquiv
+  (#_equiv (x y) (? (equal? x y)))
   #_IComparable
   (#_compare
    (x y)
@@ -825,6 +837,16 @@ nested)."
      (:equal 0)))
   #_INext
   (#_next (x) (#_seq (#_rest x))))
+
+(extend-type package
+  #_IEquiv
+  (#_equiv (x y) (? (eql x y))))
+
+(defun-1 #_str (&rest args)
+  (with-output-to-string (s)
+    (dolist (arg args)
+      (unless (nil? arg)
+        (write-string (#_toString arg) s)))))
 
 (extend-type function
   #_Fn
@@ -845,13 +867,9 @@ nested)."
   (#_lookup (table key &optional (not-found #_nil))
             (gethash table key not-found)))
 
-(extend-protocol #_IEquiv
-  t
-  (#_equiv (self other) (? (equal? self other))))
-
 (extend-protocol #_IMeta
   t
-  (#_meta (x) (meta x)))
+  (#_meta (x) (or (meta x) #_nil)))
 
 (extend-protocol #_IWithMeta
   t
@@ -865,7 +883,7 @@ nested)."
   hash-table (#_count (x) (hash-table-count x)))
 
 (defun-1 #_counted? (x)
-  (satisfies? '#_ICounted x))
+  (#_satisfies? '#_ICounted x))
 
 (extend-type #_nil
   #_ISeq
@@ -880,7 +898,14 @@ nested)."
   #_ILookup
   (#_lookup (coll key &optional (default #_nil))
             (declare (ignore coll key))
-            default))
+            default)
+  #_IAssociative
+  (#_contains-key? (coll k)
+                   (declare (ignore k))
+                   #_false)
+  (#_assoc (coll k v) (fset:map (k v)))
+  #_IEquiv
+  (#_equiv (self other) (#_nil? other)))
 
 ;;; Lisp null, Clojure's empty list.
 (extend-type null
@@ -1021,7 +1046,7 @@ nested)."
   (#_pop (c) (if (empty? c) (error (clojure-program-error "Empty seq"))
                  (fset:subseq c 0 (1- (size c)))))
   #_IAssociative
-  (#_contains-key? (seq idx) (< -1 idx (size seq)))
+  (#_contains-key? (seq idx) (? (< -1 idx (size seq))))
   (#_assoc (seq idx value)
            (if (< idx (size seq))
                (with seq idx value)
@@ -1059,7 +1084,7 @@ nested)."
   #_IFn
   (#_invoke (x &rest args) (lookup x (only-elt args)))
   #_IAssociative
-  (#_contains-key? (map key) (fset:contains? map key))
+  (#_contains-key? (map key) (? (fset:contains? map key)))
   (#_assoc (map key value) (with map key value))
   #_IKVReduce
   (#_kv-reduce (map f init)
@@ -1111,7 +1136,7 @@ nested)."
 (defun-1 #_alter-meta! (obj f &rest args)
   (synchronized (obj)
     (setf (meta obj)
-          (ifn-apply f (meta obj) args))))
+          (ifn-apply f (#_meta obj) args))))
 
 (define-clojure-macro #_cond (&rest clauses)
   (ematch clauses
@@ -1171,11 +1196,12 @@ nested)."
     (match args
       ((list) #_true)
       ((list _) #_true)
-      ((list x y) (#_equiv x y))
+      ((list x y) (if (eql x y) #_true (#_equiv x y)))
       (otherwise
        (? (loop for x in args
                 for y in (rest args)
-                always (truthy? (#_equiv x y))))))))
+                always (or (eql x y)
+                           (truthy? (#_equiv x y)))))))))
 
 (defun not= (&rest args)
   (truthy? (apply #'#_not= args)))
@@ -1388,14 +1414,14 @@ nested)."
 (defun-1 #_vals (map)
   (collecting
     (do-map (k v map)
-      (declare (ignore v))
-      (collect k))))
+      (declare (ignore k))
+      (collect v))))
 
 (defun-1 #_keys (map)
   (collecting
     (do-map (k v map)
-      (declare (ignore k))
-      (collect v))))
+      (declare (ignore v))
+      (collect k))))
 
 (defun-1 #_nthnext (coll n)
   (assert (not (minusp n)))
@@ -1987,8 +2013,29 @@ nested)."
   #_IPending
   (#_realized? (p) (lparallel:fulfilledp p)))
 
+(defloop mapr (fn seq)
+  (when (seq? seq)
+    (progn
+      (funcall fn (#_first seq))
+      (mapr fn (#_rest seq)))))
+
+(defun maprest (fn seq)
+  (collecting (mapr (compose #'collect fn) seq)))
+
+(define-do-macro doseq ((var seq &optional ret) &body body)
+  `(mapr (lambda (,var) ,@body) ,seq))
+
 (define-clojure-macro #_doseq (binds &body body)
-  `(#_doall (#_for ,binds ,@body)))
+  (ematch (convert 'list binds)
+    ((list pat seq)
+     (with-unique-names (temp)
+       `(doseq (,temp ,seq)
+          (#_let ,(seq pat temp)
+                 ,@body))))
+    ((list* pat seq binds)
+     `(#_do-seq ,(seq pat seq)
+                (#_do-seq ,(convert 'seq binds)
+                          ,@body)))))
 
 (defun call/for (fn seq)
   (if (seq? seq)

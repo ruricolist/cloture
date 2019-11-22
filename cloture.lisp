@@ -11,6 +11,9 @@
 ;;; Lisp nil is reserved for the empty list.
 (defunit |clojure.core|:|nil|)
 
+(def true |clojure.core|:|true|)
+(def false |clojure.core|:|false|)
+
 (defmethod murmurhash:murmurhash ((self |clojure.core|:|true|) &key)
   (murmurhash:murmurhash '|clojure.core|:|true|))
 (defmethod murmurhash:murmurhash ((self |clojure.core|:|false|) &key)
@@ -44,7 +47,7 @@
 (defun ensure-meta (x)
   (etypecase x
     (map x)
-    (keyword (map (x t)))
+    (keyword (map (x true)))
     ;; TODO What should tags be? Strings or symbols?
     (symbol (map (:tag x)))
     (string (map (:tag x)))))
@@ -105,14 +108,21 @@
               (otherwise (values nil pats)))))
     (values pats rest all (length pats))))
 
-(defun seq->lambda-list (seq)
+(defun seq->lambda-list (seq &key allow-patterns)
   (multiple-value-bind (pats rest all)
       (dissect-seq-pattern (convert 'list seq))
     (assert (not (symbol-package all)))
-    (assert (every #'symbolp pats))
-    (assert (symbolp rest))
+    (if allow-patterns
+        (setf pats
+              (loop for pat in pats
+                    if (symbolp pat)
+                      collect pat
+                    else collect (obj->pattern pat)))
+        (progn
+          (assert (every #'symbolp pats))
+          (assert (symbolp rest))))
     (append pats
-            (and rest (list '|clojure.core|:&)))))
+            (and rest (list '&rest rest)))))
 
 (defun safe-elt (seq i)
   (if (>= i (length seq)) |clojure.core|:|nil|
@@ -191,6 +201,7 @@ Also return (as a second value) a list of all the symbols bound."
     (labels ((obj->pattern (obj)
                (etypecase obj
                  (keyword obj)
+                 ((eql |clojure.core|:&) obj)
                  (symbol
                   (enq obj syms)
                   obj)
@@ -262,10 +273,14 @@ Also return (as a second value) a list of all the symbols bound."
       (error (clojure-error "Not a var: ~a" sym))))
 
 (defun find-var (sym &optional env)
-  (let ((exp (macroexpand-1 (assure symbol sym) env)))
-    (unless (or (eql exp sym)
-                (not (symbolp exp)))
-      exp)))
+  ;; NB We do not look for a specific prefix, because the "var" could
+  ;; also be a pre-defined Lisp dynamic variable.
+  (unless (find #\/ (symbol-name sym))
+    (let ((exp (macroexpand-1 sym env)))
+      (unless (or (eql exp sym)
+                  (not (symbolp exp))
+                  (find #\/ (symbol-name exp)))
+        exp))))
 
 (defconstructor protocol
   (name symbol)

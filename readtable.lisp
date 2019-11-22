@@ -222,10 +222,12 @@
                                  &key (eof-error-p t)
                                       eof-value
                                       (start 0)
-                                      end)
-  (with-input-from-string (in string :start start :end end)
-    (read-clojure in :eof-error-p eof-error-p
-                     :eof-value eof-value)))
+                                      end
+                                      (package *package*))
+  (let ((*package* (find-package package)))
+    (with-input-from-string (in string :start start :end end)
+      (read-clojure in :eof-error-p eof-error-p
+                       :eof-value eof-value))))
 
 (defun slurp-clojure-stream (stream)
   (loop for form

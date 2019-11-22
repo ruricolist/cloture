@@ -17,7 +17,8 @@
                "atomics"
                "lparallel"
                "overlord"
-               "cl-interpol")
+               "cl-interpol"
+               "global-vars")
   :in-order-to ((test-op (test-op "cloture-test")))
   :serial t
   :components ((:file "package")
