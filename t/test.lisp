@@ -28,13 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test read-meta
-  (let ((sym
-          (let ((*package* (find-package "user")))
-            (read-clojure-from-string "^:dynamic *bar*"))))
-    (is (symbolp sym))
-    (is-true (meta-ref sym :|dynamic|))))
-
 (test let
   (is (= 3 #_(let [x 1 y 2] (+ x y)))))
 

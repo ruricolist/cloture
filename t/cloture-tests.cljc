@@ -47,3 +47,8 @@
   ;;           (seq {:y 2 :x 1  :z 3})))
   (is (not= '([:x 1] [:y 2])
             (seq {:x 1 :y 2 :z 3}))))
+
+(deftest read-meta
+  (let [sym (read-string "^:dynamic *bar*")]
+    (is (symbol? sym))
+    (is (get (meta sym) :|dynamic|))))
