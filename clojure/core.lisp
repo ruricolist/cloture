@@ -1335,6 +1335,7 @@ nested)."
 (defun-1 #_reverse (xs)
   (typecase xs
     (sequence (reverse xs))
+    (lazy-seq (#_reverse (lazy-seq->list xs)))
     (t (#_rseq xs))))
 
 (defun-1 #_ns-name (ns)
