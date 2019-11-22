@@ -1295,10 +1295,13 @@ nested)."
                   ,@args))))))
 
 (define-clojure-macro #_defmethod (name value params &body body)
-  `(progn
-     (add-clojure-method (symbol-function ',name) ,value
-                         (#_fn ,params ,@body))
-     ',name))
+  ;; Debugging is easier if we can see which dispatch value in the
+  ;; backtrace.
+  (let ((fn-name (gensym (string+ name " " value))))
+    `(progn
+       (add-clojure-method (symbol-function ',name) ,value
+                           (#_fn ,fn-name ,params ,@body))
+       ',name)))
 
 (defun-1 #_class (x)
   (class-of x))
@@ -1444,7 +1447,7 @@ nested)."
   `(time ,form))
 
 (defun-1 #_memoize (f)
-  (let ((table (make-clojure-hash-table))
+  (let ((table (make-egal-hash-table))
         (fun (ifn-function f)))
     (lambda (&rest args)
       (values
@@ -2077,3 +2080,13 @@ nested)."
   (if (nil? end)
       (fset:subseq v start)
       (fset:subseq v start end)))
+
+(defun-1 #_read-string (&rest args)
+  (ematch args
+    ((list string)
+     (#_read-string (empty-map) string))
+    ((list map string)
+     (let* ((*readtable* (find-readtable 'cloture))
+            (eof (#_lookup map :|eof| :|eofthrow|))
+            (eof-error? (eql :|eof| :|eofthrow|)))
+       (read-from-string string eof-error? eof)))))

@@ -361,15 +361,18 @@ Also convert the symbols for true, false, and nil to unit types."
                   (otherwise tree)))
               tree)))
 
-(defun hash-clojuresque (x)
+(defun egal-hash (x)
   ;; Use sxhash to reduce to the Lisp implementation's range.
   (sxhash (|clojure.core|:|hash| x)))
 
+(defun egal (x y)
+  (truthy? (|clojure.core|:= x y)))
+
 ;;; Hash tables that use Clojure's idea of equality.
 (define-custom-hash-table-constructor
-    make-clojure-hash-table
-  :test |clojure.core|:|=|
-  :hash-function hash-clojuresque)
+    make-egal-hash-table
+  :test egal
+  :hash-function egal-hash)
 
 (defclass multimethod ()
   ((name :initarg :name)
@@ -377,7 +380,7 @@ Also convert the symbols for true, false, and nil to unit types."
    (lock :initform (bt:make-lock) :reader monitor)
    (method-table
     :type hash-table
-    :initform (make-clojure-hash-table))
+    :initform (make-egal-hash-table))
    (default-value
     :initarg :default)
    ;; TODO
