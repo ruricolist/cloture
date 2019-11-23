@@ -32,12 +32,6 @@
   (signals error
     (read-clojure-from-string "#(#())")))
 
-(test autogensym
-  (destructuring-bind (sym val)
-      #_(eval `(let [x# 1] (list 'x# x#)))
-    (is (null (symbol-package sym)))
-    (is (eql val 1))))
-
 (test function-literal
   (is (= 1 (funcall #_#(do %) 1)))
   (is (= 1 #_(#(do %) 1)))

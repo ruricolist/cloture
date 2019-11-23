@@ -324,6 +324,11 @@
   (let [x :x]
     (is (= '#{:x} `#{~x}))))
 
+(deftest autogensym
+  (let [[sym val] (eval `(let [x# 1] (list 'x# x#)))]
+    (is (CL:NULL (CL:SYMBOL-PACKAGE sym)))
+    (is (= val 1))))
+
 (deftest eval-literal
   (is (= [(+ 1 1)] [2]))
   (is (= {:x (+ 1 1)} {:x 2})))
