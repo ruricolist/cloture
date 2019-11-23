@@ -408,16 +408,19 @@ Also convert the symbols for true, false, and nil to unit types."
       (format stream "~a ~a"
               name fn))))
 
+(defmethod find-method-from-value ((self multimethod) value)
+  (with-slots (name method-table default-value) self
+    (or (href method-table value)
+        (href method-table default-value)
+        (error 'no-such-method
+               :multi name
+               :value value))))
+
 (defmethod dispatch ((self multimethod) args)
   (with-slots (name method-table default-value fn) self
-    (let ((value (ifn-apply fn args)))
-      (if-let (method (href method-table value))
-        (apply method args)
-        (if-let (default-method (href method-table default-value))
-          (apply default-method args)
-          (error 'no-such-method
-                 :multi name
-                 :value value))))))
+    (let* ((value (ifn-apply fn args))
+           (method (find-method-from-value self value)))
+      (apply method args))))
 
 (defmethod initialize-instance :after ((self multimethod) &key)
   (with-slots (name method-table default-value fn) self
