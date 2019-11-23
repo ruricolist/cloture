@@ -27,21 +27,21 @@
                      collect `(lookup ,it ,i)
                      collect pat))))
 
-(defmethod murmurhash:murmurhash ((seq seq) &key (seed murmurhash:*default-seed*)
-                                                 mix-only)
-  (murmurhash:murmurhash
+(defmethod murmurhash ((seq seq) &key (seed *default-seed*)
+                                      mix-only)
+  (murmurhash
    (list* '%seq (size seq) (convert 'list seq))
    :seed seed :mix-only mix-only))
 
-(defmethod murmurhash:murmurhash ((set set) &key (seed murmurhash:*default-seed*)
-                                                 mix-only)
-  (murmurhash:murmurhash
+(defmethod murmurhash ((set set) &key (seed *default-seed*)
+                                      mix-only)
+  (murmurhash
    (list* '%set (size set) (convert 'list set))
    :seed seed :mix-only mix-only))
 
-(defmethod murmurhash:murmurhash ((map map) &key (seed murmurhash:*default-seed*)
-                                                 mix-only)
-  (murmurhash:murmurhash
+(defmethod murmurhash ((map map) &key (seed *default-seed*)
+                                      mix-only)
+  (murmurhash
    (list* '%set (size map) (map->alist map))
    :seed seed :mix-only mix-only))
 

@@ -14,15 +14,23 @@
 (def true |clojure.core|:|true|)
 (def false |clojure.core|:|false|)
 
-(defmethod murmurhash:murmurhash ((self |clojure.core|:|true|) &key)
-  (murmurhash:murmurhash '|clojure.core|:|true|))
-(defmethod murmurhash:murmurhash ((self |clojure.core|:|false|) &key)
-  (murmurhash:murmurhash '|clojure.core|:|false|))
-(defmethod murmurhash:murmurhash ((self |clojure.core|:|nil|) &key)
-  (murmurhash:murmurhash '|clojure.core|:|nil|))
+(defmethod murmurhash ((self |clojure.core|:|true|) &key)
+  (murmurhash '|clojure.core|:|true|))
+(defmethod murmurhash ((self |clojure.core|:|false|) &key)
+  (murmurhash '|clojure.core|:|false|))
+(defmethod murmurhash ((self |clojure.core|:|nil|) &key)
+  (murmurhash '|clojure.core|:|nil|))
 
 (defmethod fset:convert ((type (eql 'list)) (x |clojure.core|:|nil|) &key)
   '())
+
+(defun ns+name (symbol)
+  "Split SYMBOL's name into a namespace and name."
+  (let ((name (symbol-name symbol)))
+    (match name
+      ((ppcre "^(.[^/]+)/(.*)$" ns name)
+       (values ns name))
+      (otherwise (values nil name)))))
 
 (define-modify-macro withf (&rest item-or-tuple) with)
 (define-modify-macro lessf (&rest item-or-tuple) less)

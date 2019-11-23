@@ -857,7 +857,7 @@ nested)."
 
 (extend-protocol #_IHash
   t
-  (#_hash (x) (murmurhash:murmurhash x)))
+  (#_hash (x) (murmurhash x)))
 
 (extend-protocol #_ILookup
   map

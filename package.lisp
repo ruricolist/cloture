@@ -7,7 +7,8 @@
     ;; A namespace for readtables.
     #:named-readtables
     ;; Pattern matching.
-    #:trivia)
+    #:trivia
+    #:murmurhash)
   (:import-from #:trivia.ppcre #:ppcre)
   (:import-from #:cl-custom-hash-table
     #:define-custom-hash-table-constructor)
