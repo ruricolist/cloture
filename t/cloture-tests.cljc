@@ -68,3 +68,60 @@
 
 (deftest reader-conditional
   (is (= 1 #?(:cl 1 :clj 2))))
+
+(deftest destructure-simple
+  (is (= '(1 2 3)
+         (let [[x y z] [1 2 3]]
+           (list x y z))))
+  (is (not= '(1 2 3 4)
+            (let [[x y z] [1 2 3]]
+              (list x y z))))
+  (is (not= '(1 2)
+            (let [[x y z] [1 2 3]]
+              (list x y z))))
+  (is (= '(1 2 3)
+         (let [[x y z] '(1 2 3)]
+           (list x y z)))))
+
+(deftest destructure-as
+  (is (= '(1 2 3)
+         (let [[_ _ _ :as all] [1 2 3]]
+           all)))
+  (is (= '(1 2 3)
+         (let [[_ _ _ :as all] '(1 2 3)]
+           all))))
+
+(deftest destructure-rest
+  (is (= '(2 3)
+         (let [[_ & ys] [1 2 3]]
+           ys)))
+  (is (= '(2 3)
+         (let [[_ & ys] '(1 2 3)]
+           ys))))
+
+(deftest destructure-rest-and-as
+  (is (= '(1 2 3)
+         (let [[_ & _ :as all] [1 2 3]]
+           all)))
+  (is (= '(1 2 3)
+         (let [[_ & _ :as all] '(1 2 3)]
+           all))))
+
+(deftest destructure-nested
+  (is (= '(1 2 3 4 5 6)
+         (let [[[a] [[b]] c [x y z]] [[1] [[2]] 3 [4 5 6]]]
+           (list a b c x y z)))))
+
+(deftest destructure-short
+  (let [l1 (list nil)
+        l2 (let [[x] '()]
+             (list x))]
+    (is (= l1 l2))))
+
+(deftest destructure-lisp-vector
+  (is (= #=(CL:VECTOR 1 2 3 4 5)
+         (let [[_ _ _ _ _ :as all] #=(CL:VECTOR 1 2 3 4 5)]
+           all)))
+  (is (= '(1 2 3 4 5)
+         (let [[a b c d e] #=(CL:VECTOR 1 2 3 4 5)]
+           (list a b c d e)))))

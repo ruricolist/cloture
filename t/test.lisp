@@ -28,60 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test destructure-simple
-  (is (equal '(1 2 3) #_(let [[x y z] [1 2 3]]
-                          (list x y z))))
-
-  (is (equal '(1 2 3) #_(let [[x y z] '(1 2 3)]
-                          (list x y z)))))
-
-(test destructure-as
-  (is (equal '(1 2 3)
-             (convert 'list
-                      #_(let [[_ _ _ :as all] [1 2 3]]
-                          all))))
-  (is (equal '(1 2 3)
-             (convert 'list
-                      #_(let [[_ _ _ :as all] '(1 2 3)]
-                          all)))))
-
-(test destructure-rest
-  (is (clojure= '(2 3)
-                #_(let [[_ & ys] [1 2 3]]
-                    ys)))
-  (is (clojure= '(2 3)
-                #_(let [[_ & ys] '(1 2 3)]
-                    ys))))
-
-(test destructure-rest-and-as
-  (is (equal '(1 2 3)
-             (convert 'list
-                      #_(let [[_ & _ :as all] [1 2 3]]
-                          all))))
-  (is (equal '(1 2 3)
-             (convert 'list
-                      #_(let [[_ & _ :as all] '(1 2 3)]
-                          all)))))
-
-(test destructure-nested
-  (is (equal '(1 2 3 4 5 6)
-             #_(let [[[a] [[b]] c [x y z]] [[1] [[2]] 3 [4 5 6]]]
-                 (list a b c x y z)))))
-
-(test destructure-short
-  (let ((l1 #_(list nil))
-        (l2 #_(let [[x] '()]
-                (list x))))
-    (is (equal l1 l2))))
-
-(test destructure-lisp-vector
-  (is (equalp #(1 2 3 4 5)
-              #_(let [[_ _ _ _ _ :as all] #L(cl:vector 1 2 3 4 5)]
-                  all)))
-  (is (equal '(1 2 3 4 5)
-             #_(let [[a b c d e] #L(cl:vector 1 2 3 4 5)]
-                 (list a b c d e)))))
-
 #_(def client
     {:name "Super Co."
      :location "Philadelphia"
