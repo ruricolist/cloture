@@ -86,7 +86,8 @@
 (defun read-anon (stream char arg)
   (declare (ignore char arg))
   (if (boundp '*anon*)
-      (error (clojure-error "Anonymous function literals cannot be nested."))
+      (error (|clojure.core|:|IllegalStateException.|
+                            "Anonymous function literals cannot be nested."))
       (let* ((anon (make 'function-literal))
              (*anon* anon)
              (forms

@@ -332,3 +332,13 @@
 (deftest eval-literal
   (is (= [(+ 1 1)] [2]))
   (is (= {:x (+ 1 1)} {:x 2})))
+
+(deftest no-nest-anons
+  (is (thrown? IllegalStateException (read-string "#(#())"))))
+
+(deftest function-literal
+  (is (= 1 (CL:FUNCALL #(do %) 1)))
+  (is (= 1 (#(do %) 1)))
+  (is (= '(1) (#(list %) 1)))
+  (is (= '((1 2 3)) (#(list %&) 1 2 3)))
+  (is (= '(1 (2 3)) (#(list % %&) 1 2 3))))

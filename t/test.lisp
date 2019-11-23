@@ -28,17 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test no-nest-anons
-  (signals error
-    (read-clojure-from-string "#(#())")))
-
-(test function-literal
-  (is (= 1 (funcall #_#(do %) 1)))
-  (is (= 1 #_(#(do %) 1)))
-  (is (equal '(1) #_(#(list %) 1)))
-  (is (equal '((1 2 3)) #_(#(list %&) 1 2 3)))
-  (is (equal '(1 (2 3)) #_(#(list % %&) 1 2 3))))
-
 (test deref-syntax
   (is (equal '(|clojure.core|:|deref| :|x|)
              #_'@:x)))
