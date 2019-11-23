@@ -10,4 +10,7 @@
   (#_print-stack-trace c n))
 
 (defun-1 #_print-stack-trace (tr &optional n)
-  (uiop:print-backtrace :count n :condition tr))
+  (uiop:print-backtrace
+   :count (if (#_nil? n) most-positive-fixnum n)
+   :condition tr
+   :stream *standard-output*))
