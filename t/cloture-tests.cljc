@@ -342,3 +342,7 @@
   (is (= '(1) (#(list %) 1)))
   (is (= '((1 2 3)) (#(list %&) 1 2 3)))
   (is (= '(1 (2 3)) (#(list % %&) 1 2 3))))
+
+(deftest deref-syntax
+  (is (= '(clojure.core:deref :x)
+         '@:x)))
