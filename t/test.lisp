@@ -28,14 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test ->
-  (is (listp (#_-> '((1 2) (3 4)))))
-  (is (= 2 (#_-> '((1 2) (3 4)) first second)))
-  (is (= 3 (#_-> '((1 2) (3 4)) second first))))
-
-(test ->>
-  (= 3/4 (#_->> 5 (+ 3) (/ 2) (- 1))))
-
 (test loop-recur
   (let ((fact
           #_(fn [n]

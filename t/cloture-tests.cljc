@@ -214,3 +214,11 @@
   ;;           fst)
   ;;         '(1 2 3))))
   )
+
+(deftest test-thread-first
+  (is (seq (-> '((1 2) (3 4)))))
+  (is (= 2 (-> '((1 2) (3 4)) first second)))
+  (is (= 3 (-> '((1 2) (3 4)) second first))))
+
+(deftest test-thread-last
+  (= 3/4 (->> 5 (+ 3) (/ 2) (- 1))))
