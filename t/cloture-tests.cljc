@@ -291,3 +291,13 @@
   (is (= 'clojure.string:starts-with? 'starts-with?))
   (is (= 1 (get {'clojure.string:starts-with? 1}
                 'starts-with?))))
+
+(deftest re-find-test
+  (is (nil? (re-find #"sss" "Loch Ness")))
+  (is (= "ss" (re-find #"s+" "dress")))
+  (is (= ["success" "ucces" "s"] (re-find #"s+(.*)(s+)" "success"))))
+
+(deftest re-matches-test
+  (is (nil? (re-matches #"abc" "zzzabcxxx")))
+  (is (= "abc" (re-matches #"abc" "abc")))
+  (is (= ["abcxyz" "xyz"] (re-matches #"abc(.*)" "abcxyz"))))

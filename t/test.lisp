@@ -28,16 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test re-find
-  (is (nil? #_(re-find #"sss" "Loch Ness")))
-  (is (clojure= "ss" #_(re-find #"s+" "dress")))
-  (is (clojure= #_["success" "ucces" "s"] #_(re-find #"s+(.*)(s+)" "success"))))
-
-(test re-matches
-  (is (nil? #_(re-matches #"abc" "zzzabcxxx")))
-  (is (clojure= "abc" #_(re-matches #"abc" "abc")))
-  (is (clojure= #_["abcxyz" "xyz"] #_(re-matches #"abc(.*)" "abcxyz"))))
-
 (test qq-seq-ok
   #_(let [body '(x)]
       (5AM:IS
