@@ -246,3 +246,14 @@
 
 (deftest var-test
   (is (= '(var foo*) '#'foo*)))
+
+(deftest seq-test
+  (is (nil? (seq '())))
+  (is (nil? (seq {})))
+  (is (nil? (seq #{})))
+  (is (nil? (seq [])))
+  (is (ALEXANDRIA:SET-EQUAL '(1 2 3) (seq #{1 2 3})))
+  (is (not= '([:x 1] [:y 2])
+            (seq {:X 1 :Y 2})))
+  (is (= '([:x 1] [:y 2])
+         (seq {:x 1 :y 2}))))
