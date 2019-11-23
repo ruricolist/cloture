@@ -184,3 +184,33 @@
   (is (= "Joe is a Ranger wielding a Longbow"
          (let [{{:keys [class weapon]} :joe} multiplayer-game-state]
            (print-str "Joe is a" class "wielding a" weapon)))))
+
+(deftest fn-test
+  (let [bar
+        (fn bar
+          ([a b]
+           (bar a b 100))
+          ([a b c]
+           (* a b c)))]
+    (is (= 3000 (bar 5 6)))
+    (is (= 60 (bar 5 6 2)))))
+
+(deftest letfn-test-1
+  (letfn [(bar
+            ([a b]
+             (bar a b 100))
+            ([a b c]
+             (* a b c)))]
+    (is (= 3000 (bar 5 6)))
+    (is (= 60 (bar 5 6 2)))))
+
+(deftest letfn-test-2
+  (is (= 1
+         (letfn [(fst [xs] (CL:FIRST xs))]
+           (fst '(1 2 3)))))
+  ;; Waiting on a code walker.
+  ;; (is (= 1
+  ;;        ((letfn [(fst [xs] (CL:FIRST xs))]
+  ;;           fst)
+  ;;         '(1 2 3))))
+  )

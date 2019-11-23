@@ -28,16 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test fn
-  (let ((bar
-          #_(fn bar
-              ([a b]
-               (bar a b 100))
-              ([a b c]
-               (* a b c)))))
-    (is (= 3000 (funcall bar 5 6)))
-    (is (= 60 (funcall bar 5 6 2)))))
-
 (test ->
   (is (listp (#_-> '((1 2) (3 4)))))
   (is (= 2 (#_-> '((1 2) (3 4)) first second)))
@@ -85,16 +75,6 @@
   (is (equal? (list (seq :x 1)
                     (seq :y 2))
               #_(seq {:X 1 :Y 2}))))
-
-(test letfn
-  (is (= 1
-         #_(letfn [(fst [xs] #L(cl:first |xs|))]
-                  (fst '(1 2 3)))))
-  (is (= 1
-         (funcall
-          #_(letfn [(fst [xs] #L(cl:first |xs|))]
-                   fst)
-          '(1 2 3)))))
 
 (test read-nothing
   (is (equal '(1 2) '#_(1 2 #_3))))
