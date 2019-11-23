@@ -1,5 +1,5 @@
 (ns cloture.tests
-  (:require [clojure.test :refer :all]))
+  (:require [clojure.test :refer [deftest is]]))
 
 (deftest empty-test)
 
