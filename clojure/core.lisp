@@ -83,7 +83,7 @@ defmulti)."
 (defun-1 #_true? (x)
   (? (eql x #_true)))
 
-(defun-1 #_identical (x y)
+(defun-1 #_identical? (x y)
   (? (eq x y)))
 
 (defun-1 #_zero? (n) (? (zerop n)))
