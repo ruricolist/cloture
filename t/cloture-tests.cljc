@@ -233,3 +233,16 @@
               (recur (dec cnt) (* acc cnt)))))]
     (= (fact 10)
        (ALEXANDRIA:FACTORIAL 10))))
+
+(def ^{:dynamic true :private true} foo* 0)
+(defn ^:private get-foo [] foo*)
+
+(deftest binding-test
+  (is (= 0 foo*))
+  (is (= 1 (let [foo* 1] foo*)))
+  (is (= 0 (let [foo* 1] foo* (get-foo))))
+  (is (= 1 (binding [foo* 1] foo*)))
+  (is (= 1 (binding [foo* 1] (get-foo)))))
+
+(deftest var-test
+  (is (= '(var foo*) '#'foo*)))

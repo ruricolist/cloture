@@ -21,6 +21,9 @@
 (defmethod murmurhash:murmurhash ((self |clojure.core|:|nil|) &key)
   (murmurhash:murmurhash '|clojure.core|:|nil|))
 
+(defmethod fset:convert ((type (eql 'list)) (x |clojure.core|:|nil|) &key)
+  '())
+
 (define-modify-macro withf (&rest item-or-tuple) with)
 (define-modify-macro lessf (&rest item-or-tuple) less)
 

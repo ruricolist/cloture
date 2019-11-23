@@ -28,22 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-;;; You need `private' to prevent package variance on SBCL.
-#_(def ^{:dynamic true :private true} foo* 0)
-#_(defn ^:private get-foo [] foo*)
-
-(test binding
-  (is (= 0 #_foo*))
-  (is (= 1 #_(let [foo* 1] foo*)))
-  (is (= 0 #_(let [foo* 1] foo* (get-foo))))
-  (is (= 1 #_(binding [foo* 1] foo*)))
-  (is (= 1 #_(binding [foo* 1] (get-foo)))))
-
-(test var
-  (is (eql* (macroexpand-1 '#_foo*)
-            #_(var foo*)
-            #_#'foo*)))
-
 (test set
   (is (typep #_#{1 2 3} 'set)))
 
