@@ -28,11 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test fn-destructure
-  (is (equal '(1 2 3)
-             (funcall #_(fn [[x y z]] (list x y z))
-                      '(1 2 3)))))
-
 (test fn-lisp-1
   (is (eql -1
            (funcall #_(fn [x y] (x y))

@@ -346,3 +346,8 @@
 (deftest deref-syntax
   (is (= '(clojure.core:deref :x)
          '@:x)))
+
+(deftest fn-destructure
+  (is (= '(1 2 3)
+         (CL:FUNCALL (fn [[x y z]] (list x y z))
+                     '(1 2 3)))))
