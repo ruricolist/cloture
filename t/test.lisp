@@ -28,65 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-#_(def client
-    {:name "Super Co."
-     :location "Philadelphia"
-     :description "The worldwide leader in plastic tableware."})
-
-(test destructure-associative
-  (is (clojure= "Super Co. Philadelphia - The worldwide leader in plastic tableware."
-                #_(let [{name :name
-                              location :location
-                              description :description}
-                        client]
-                    (print-str name location "-" description)))))
-
-(test destructure-associative-missing
-  (is (nil? #_(let [{category :category} client] category))))
-
-(test destructure-associative-as
-  (is (clojure= #_client #_(let [{:as all} client] all))))
-
-(test destructure-associative-default
-  (is (clojure= "Category not found"
-                #_(let [{category :category, :or {category "Category not found"}} client]
-                    category))))
-
-(test destructure-keys
-  (is (clojure= "Super Co. Philadelphia - The worldwide leader in plastic tableware."
-                #_(let [{:keys [name location description]} client]
-                    (print-str name location "-" description)))))
-
-#_(def string-keys {"first-name" "John" "last-name" "Doe"})
-
-(test destructure-strs
-  (is (clojure= "John Doe"
-                #_(let [{:strs [first-name last-name]} string-keys]
-                    (print-str first-name last-name)))))
-
-#_(def symbol-keys {'first-name "Jane" 'last-name "Doe"})
-
-(test destructure-syms
-  (is (clojure= "Jane Doe"
-                #_(let [{:syms [first-name last-name]} symbol-keys]
-                    (print-str first-name last-name)))))
-
-#_(def multiplayer-game-state
-    {:joe {:class "Ranger"
-           :weapon "Longbow"
-           :score 100}
-     :jane {:class "Knight"
-            :weapon "Greatsword"
-            :score 140}
-     :ryan {:class "Wizard"
-            :weapon "Mystic Staff"
-            :score 150}})
-
-(test destructure-associative-nested
-  (is (clojure= "Joe is a Ranger wielding a Longbow"
-                #_(let [{{:keys [class weapon]} :joe} multiplayer-game-state]
-                    (print-str "Joe is a" class "wielding a" weapon)))))
-
 (test fn
   (let ((bar
           #_(fn bar

@@ -125,3 +125,62 @@
   (is (= '(1 2 3 4 5)
          (let [[a b c d e] #=(CL:VECTOR 1 2 3 4 5)]
            (list a b c d e)))))
+
+(def client
+  {:name "Super Co."
+   :location "Philadelphia"
+   :description "The worldwide leader in plastic tableware."})
+
+(deftest destructure-associative
+  (is (= "Super Co. Philadelphia - The worldwide leader in plastic tableware."
+         (let [{name :name
+                location :location
+                description :description}
+               client]
+           (print-str name location "-" description)))))
+
+(deftest destructure-associative-missing
+  (is (nil? (let [{category :category} client] category))))
+
+(deftest destructure-associative-as
+  (is (= client (let [{:as all} client] all))))
+
+(deftest destructure-associative-default
+  (is (= "Category not found"
+         (let [{category :category, :or {category "Category not found"}} client]
+           category))))
+
+(deftest destructure-keys
+  (is (= "Super Co. Philadelphia - The worldwide leader in plastic tableware."
+         (let [{:keys [name location description]} client]
+           (print-str name location "-" description)))))
+
+(def string-keys {"first-name" "John" "last-name" "Doe"})
+
+(deftest destructure-strs
+  (is (= "John Doe"
+         (let [{:strs [first-name last-name]} string-keys]
+           (print-str first-name last-name)))))
+
+(def symbol-keys {'first-name "Jane" 'last-name "Doe"})
+
+(deftest destructure-syms
+  (is (= "Jane Doe"
+         (let [{:syms [first-name last-name]} symbol-keys]
+           (print-str first-name last-name)))))
+
+(def multiplayer-game-state
+  {:joe {:class "Ranger"
+         :weapon "Longbow"
+         :score 100}
+   :jane {:class "Knight"
+          :weapon "Greatsword"
+          :score 140}
+   :ryan {:class "Wizard"
+          :weapon "Mystic Staff"
+          :score 150}})
+
+(deftest destructure-associative-nested
+  (is (= "Joe is a Ranger wielding a Longbow"
+         (let [{{:keys [class weapon]} :joe} multiplayer-game-state]
+           (print-str "Joe is a" class "wielding a" weapon)))))
