@@ -28,11 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test quoted-literals
-  (is (equal #_'(nil) #_(list nil)))
-  (is (equal #_'(true) #_(list true)))
-  (is (equal #_'(false) #_(list false))))
-
 (test lazy-seq-equality
   (is-truthy? #_(empty? (lazy-seq '())))
   (is-falsy? #_(seq (lazy-seq '())))

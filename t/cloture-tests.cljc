@@ -386,3 +386,8 @@
 (deftest defmulti-random
   (dotimes [i 5]
     (is (contains? #{"false" "true"} (rand-str)))))
+
+(deftest quoted-literals
+  (is (identical? (first '(nil))   (first (list nil))))
+  (is (identical? (first '(true))  (first (list true))))
+  (is (identical? (first '(false)) (first (list false)))))
