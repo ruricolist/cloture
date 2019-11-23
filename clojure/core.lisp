@@ -1783,11 +1783,15 @@ nested)."
 
 (define-clojure-macro #_try (&body forms)
   (flet ((catcher->handler (catcher)
-           (ematch catcher
-             ((list* '#_catch classname name exprs)
-              `(,classname (,name)
-                           ,@(unsplice (and (string= name '_) `(declare (ignorable ,name))))
-                           ,@exprs)))))
+           (multiple-value-bind (classname name exprs)
+               (ematch catcher
+                 ((list* '#_catch :|default| name exprs)
+                  (values 'error name exprs))
+                 ((list* '#_catch classname name exprs)
+                  (values classname name exprs)))
+             `(,classname (,name)
+                          ,@(unsplice (and (string= name '_) `(declare (ignorable ,name))))
+                          ,@exprs))))
     (let* ((catch-forms (keep '#_catch forms :key #'car-safe))
            (finally-forms (keep '#_finally forms :key #'car-safe))
            (exprs (remove-if (lambda (form)
