@@ -28,11 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test fn-lisp-1
-  (is (eql -1
-           (funcall #_(fn [x y] (x y))
-                    #'- 1))))
-
 (test equality
   (is (clojure= 0 0))
   (is (clojure= (#_hash 0) (#_hash 0)))

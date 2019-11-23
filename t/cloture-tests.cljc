@@ -351,3 +351,8 @@
   (is (= '(1 2 3)
          (CL:FUNCALL (fn [[x y z]] (list x y z))
                      '(1 2 3)))))
+
+(deftest fn-lisp-1
+  (is (= -1
+         (CL:FUNCALL (fn [x y] (x y))
+                     - 1))))
