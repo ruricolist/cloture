@@ -289,7 +289,7 @@ defmulti)."
   "Clojure let.
 Bear in mind Clojure let works like Lisp `let*' (bindings are
 nested)."
-  (let* ((bindings (convert 'list bindings)))
+  (let* ((bindings (convert 'list (assure seq bindings))))
     `(clojure-let ,bindings
        ,@body)))
 

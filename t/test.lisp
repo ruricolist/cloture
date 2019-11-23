@@ -29,38 +29,38 @@
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
 (test destructure-simple
-  (is (equal '(1 2 3) #_(let ([x y z] [1 2 3])
+  (is (equal '(1 2 3) #_(let [[x y z] [1 2 3]]
                           (list x y z))))
 
-  (is (equal '(1 2 3) #_(let ([x y z] '(1 2 3))
+  (is (equal '(1 2 3) #_(let [[x y z] '(1 2 3)]
                           (list x y z)))))
 
 (test destructure-as
   (is (equal '(1 2 3)
              (convert 'list
-                      #_(let ([_ _ _ :as all] [1 2 3])
+                      #_(let [[_ _ _ :as all] [1 2 3]]
                           all))))
   (is (equal '(1 2 3)
              (convert 'list
-                      #_(let ([_ _ _ :as all] '(1 2 3))
+                      #_(let [[_ _ _ :as all] '(1 2 3)]
                           all)))))
 
 (test destructure-rest
   (is (clojure= '(2 3)
-                #_(let ([_ & ys] [1 2 3])
+                #_(let [[_ & ys] [1 2 3]]
                     ys)))
   (is (clojure= '(2 3)
-                #_(let ([_ & ys] '(1 2 3))
+                #_(let [[_ & ys] '(1 2 3)]
                     ys))))
 
 (test destructure-rest-and-as
   (is (equal '(1 2 3)
              (convert 'list
-                      #_(let ([_ & _ :as all] [1 2 3])
+                      #_(let [[_ & _ :as all] [1 2 3]]
                           all))))
   (is (equal '(1 2 3)
              (convert 'list
-                      #_(let ([_ & _ :as all] '(1 2 3))
+                      #_(let [[_ & _ :as all] '(1 2 3)]
                           all)))))
 
 (test destructure-nested
