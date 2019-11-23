@@ -301,3 +301,25 @@
   (is (nil? (re-matches #"abc" "zzzabcxxx")))
   (is (= "abc" (re-matches #"abc" "abc")))
   (is (= ["abcxyz" "xyz"] (re-matches #"abc(.*)" "abcxyz"))))
+
+(deftest qq-seq-ok
+  (let [body '(x)]
+    (is (= `(let [x 1]
+              ~@body)
+           '(let [x 1] x)))))
+
+(deftest qq-seq-1
+  (is (= '[:x 1] `[~:x 1])))
+
+(deftest qq-seq-2
+  (let [x :x]
+    (is (= [:x] `[~x]))))
+
+(deftest qq-map
+  (let [form :form]
+    (is (= '{:expected :form}
+           `{:expected ~form}))))
+
+(deftest qq-set
+  (let [x :x]
+    (is (= '#{:x} `#{~x}))))

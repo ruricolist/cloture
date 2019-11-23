@@ -28,32 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test qq-seq-ok
-  #_(let [body '(x)]
-      (5AM:IS
-       (= `(let [x 1]
-             ~@body)
-          '(let [x 1] x)))))
-
-(test qq-seq-1
-  (is (clojure= #_'[:x 1] #_`[~:x 1])))
-
-(test qq-seq-2
-  #_(let [x :x]
-      (5AM:IS
-       (= [:x] `[~x]))))
-
-(test qq-map
-  #_(let [form :form]
-      (5AM:IS
-       (= '{:expected :form}
-          `{:expected ~form}))))
-
-(test qq-set
-  #_(let [x :x]
-      (5AM:IS
-       (= '#{:x} `#{~x}))))
-
 (test eval-vector
   (is (clojure= #_[(+ 1 1)] #_[2])))
 
