@@ -28,9 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test eval-vector
-  (is (clojure= #_[(+ 1 1)] #_[2])))
-
 (test no-nest-anons
   (signals error
     (read-clojure-from-string "#(#())")))

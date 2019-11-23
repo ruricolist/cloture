@@ -323,3 +323,7 @@
 (deftest qq-set
   (let [x :x]
     (is (= '#{:x} `#{~x}))))
+
+(deftest eval-literal
+  (is (= [(+ 1 1)] [2]))
+  (is (= {:x (+ 1 1)} {:x 2})))
