@@ -17,22 +17,28 @@
     `(defsubst ,ctor (msg)
        (make-condition ',name :message msg))))
 
-(defcondition #_Throwable (clojure-error) ())
+(defmacro defcondition* (name supers &body body)
+  `(progn
+     (defcondition ,name ,supers
+       ,@(if body body (list nil)))
+     (define-symbol-macro ,name (find-class ',name))))
+
+(defcondition* #_Throwable (clojure-error))
 (define-simple-error-constructor #_Throwable)
 
-(defcondition #_Exception (#_Throwable) ())
+(defcondition* #_Exception (#_Throwable) ())
 (define-simple-error-constructor #_Exception)
 
-(defcondition #_RuntimeException (#_Exception) ())
+(defcondition* #_RuntimeException (#_Exception) ())
 (define-simple-error-constructor #_RuntimeException)
 
-(defcondition #_IllegalArgumentException (#_RuntimeException) ())
+(defcondition* #_IllegalArgumentException (#_RuntimeException) ())
 (define-simple-error-constructor #_IllegalArgumentException)
 
-(defcondition #_IllegalStateException (#_RuntimeException) ())
+(defcondition* #_IllegalStateException (#_RuntimeException) ())
 (define-simple-error-constructor #_IllegalStateException)
 
-(defcondition #_ArityException (#_IllegalArgumentException)
+(defcondition* #_ArityException (#_IllegalArgumentException)
   ((actual :initarg :actual)
    (name :initarg :name))
   (:report (lambda (c s)
@@ -44,10 +50,10 @@
                   :actual actual
                   :name name))
 
-(defcondition #_Error (#_Exception) ())
+(defcondition* #_Error (#_Exception) ())
 (define-simple-error-constructor #_Error)
 
-(defcondition #_AssertionError (#_Exception) ())
+(defcondition* #_AssertionError (#_Exception) ())
 (define-simple-error-constructor #_AssertionError)
 
 (defcondition simple-clojure-error (clojure-condition simple-error) ())
