@@ -279,3 +279,9 @@
   (is (= "goodbye"
          (let [[hello] (list (constantly "goodbye"))]
            (hello)))))
+
+(deftest unqualified-symbol-equality
+  (is (not (identical? 'clojure.string:starts-with? 'starts-with?)))
+  (is (= 'clojure.string:starts-with? 'starts-with?))
+  (is (= 1 (get {'clojure.string:starts-with? 1}
+                'starts-with?))))

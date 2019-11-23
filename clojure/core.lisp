@@ -483,9 +483,9 @@ nested)."
     `(eval-always
        ;; Use define-package instead of defpackage so SBCL complain
        ;; about package variance.
-       (uiop:define-package ,(string name)
+       (define-clojure-package ,(string name)
          (:use)
-         ,@(unsplice docstr))
+         ,@(unsplice (and docstr `(:documentation ,docstr))))
        (in-package ,(string name))
        ,@(unsplice
           (unless (find :|refer-clojure| refs :key #'car)
@@ -1108,6 +1108,33 @@ nested)."
   #_ICollection
   (#_conj (set x) (with set x)))
 
+;;; In Clojure only keywords (all keywords) and /qualified/ symbols
+;;; are interned; unqualified symbols are not interned. Two
+;;; unqualified symbols are /never/ identical and, if they have the
+;;; same name, are always egal (under =). This matters when symbols
+;;; are used as keys in maps.
+
+(extend-type symbol
+  #_IEquiv
+  (#_equiv (self other)
+           (? (or (eq self other)
+                  (multiple-value-match (values self other)
+                    (((type keyword) (type keyword)) nil)
+                    (((type keyword) (type symbol))  nil)
+                    (((type symbol)  (type keyword)) nil)
+                    (((type symbol) (type symbol))
+                     (mvlet ((ns1 name1 (ns+name self))
+                             (ns2 name2 (ns+name other)))
+                       (and (equal ns1 ns2)
+                            (equal name1 name2))))
+                    (otherwise nil)))))
+  #_IHash
+  (#_hash (s)
+          (if (keywordp s) (murmurhash s)
+              (multiple-value-bind (ns name) (ns+name s)
+                (if ns (murmurhash s)
+                    (murmurhash (cons '%sym name)))))))
+
 (defun-1 #_instance? (class x)
   (? (typep x class)))
 
@@ -1375,7 +1402,7 @@ nested)."
       (intern name)))
 
 (defun-1 #_symbol? (x)
-  (? (symbolp x)))
+  (? (and (symbolp x) (not (keywordp x)))))
 
 (defun-1 #_fnil (f x &optional
                    (y #_nil y-supplied?)
@@ -2102,3 +2129,20 @@ nested)."
 
 (defun-1 #_map? (x)
   (? (typep x 'map)))
+
+(defun-1 #_qualified-symbol? (x)
+  (? (and (symbolp x)
+          (not (keywordp x))
+          (ns+name x))))
+
+(defun-1 #_qualified-keyword? (x)
+  (? (and (keywordp x) (ns+name x))))
+
+(defun-1 #_ident? (x)
+  (? (symbolp x)))
+
+(defun-1 #_qualified-ident? (x)
+  (? (and (symbolp x) (ns+name x))))
+
+(defun-1 #_simple-ident? (x)
+  (? (and (symbolp x) (ns+name x))))

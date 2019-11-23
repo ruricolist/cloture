@@ -1,4 +1,26 @@
-(defpackage "clojure.core"
+(in-package #:cloture)
+
+(defvar *clojure-packages*
+  (tg:make-weak-hash-table :weakness :key))
+
+(defun mark-clojure-package (package)
+  (let ((package (find-package package)))
+    (synchronized ('*clojure-packages*)
+      (setf (href *clojure-packages* package) t))))
+
+(defun clojure-package? (package)
+  (href *clojure-packages* (find-package package)))
+
+(defmacro declaim-clojure-packages (&rest packages)
+  `(eval-always
+     (mapc #'mark-clojure-package ',packages)))
+
+(defmacro define-clojure-package (name &body body)
+  `(progn
+     (uiop:define-package ,name ,@body)
+     (declaim-clojure-packages ,name)))
+
+(define-clojure-package "clojure.core"
   (:nicknames "clj")
   (:use)
   (:export . #.(append
@@ -52,28 +74,28 @@
                   ;; them (and Leiningen provides them).
                   "exit" "quit"))))
 
-(defpackage "clojure.pprint"
+(define-clojure-package "clojure.pprint"
   (:use)
   (:export . #.(serapeum:lines
                 (alexandria:read-file-into-string
                  (asdf:system-relative-pathname "cloture" "pprint-syms.txt")))))
 
-(defpackage "clojure.string"
+(define-clojure-package "clojure.string"
   (:use)
   (:export "starts-with?" "ends-with?"))
 
-(defpackage "clojure.template"
+(define-clojure-package "clojure.template"
   (:use)
   (:export "apply-template" "do-template"))
 
-(defpackage "clojure.stacktrace"
+(define-clojure-package "clojure.stacktrace"
   (:use)
   (:export "print-cause-trace" "print-stack-trace" "print-throwable" "root-cause"))
 
-(defpackage "user"
+(define-clojure-package "user"
   (:use "clojure.core"))
 
-(defpackage #:cloture.impl
+(define-clojure-package #:cloture.impl
   (:documentation "Package used for the Clojure shortcut reader macro.")
   (:use
     "clojure.core"
