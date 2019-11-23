@@ -1108,7 +1108,7 @@ nested)."
   #_ICollection
   (#_conj (set x) (with set x)))
 
-(defun-1 #_instance? (x class)
+(defun-1 #_instance? (class x)
   (? (typep x class)))
 
 (defun-1 #_type (x)
