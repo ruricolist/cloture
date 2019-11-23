@@ -362,3 +362,27 @@
   (is (= -1
          (CL:FUNCALL (fn [x y] (x y))
                      - 1))))
+
+(defmulti factorial identity)
+(defmethod factorial 0 [_]  1)
+(defmethod factorial :default [num]
+  (* num (factorial (dec num))))
+
+(deftest defmulti-identity
+  (is (= 1 (factorial 0)))
+  (is (= 1 (factorial 1)))
+  (is (= 6 (factorial 3)))
+  (is (= 5040 (factorial 7))))
+
+(defmulti rand-str
+  (fn [] (> (rand) 0.5)))
+
+(defmethod rand-str true
+  [] "true")
+
+(defmethod rand-str false
+  [] "false")
+
+(deftest defmulti-random
+  (dotimes [i 5]
+    (is (contains? #{"false" "true"} (rand-str)))))

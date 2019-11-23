@@ -867,7 +867,10 @@ nested)."
               (if val? val not-found)))
   hash-table
   (#_lookup (table key &optional (not-found #_nil))
-            (gethash table key not-found)))
+            (gethash table key not-found))
+  set
+  (#_lookup (set key &optional (not-found #_nil))
+            (if (fset:lookup set key) key not-found)))
 
 (extend-protocol #_IMeta
   t
@@ -1106,7 +1109,9 @@ nested)."
   #_IEmptyableCollection
   (#_empty (set) (fset:empty-set))
   #_ICollection
-  (#_conj (set x) (with set x)))
+  (#_conj (set x) (with set x))
+  #_IFn
+  (#_invoke (x &rest args) (lookup x (only-elt args))))
 
 ;;; In Clojure only keywords (all keywords) and /qualified/ symbols
 ;;; are interned; unqualified symbols are not interned. Two
@@ -2146,3 +2151,15 @@ nested)."
 
 (defun-1 #_simple-ident? (x)
   (? (and (symbolp x) (ns+name x))))
+
+(define-clojure-macro #_dotimes (bindings &body body)
+  (ematch bindings
+    ((seq i n)
+     `(dotimes (,i ,n)
+        (with-syms-fbound (,i)
+          ,@body)))))
+
+(defunit not-there)
+
+(defun-1 #_contains? (coll key)
+  (? (not (eq not-there (#_get coll key not-there)))))

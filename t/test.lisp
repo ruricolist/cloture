@@ -28,32 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(progn
-  #_(defmulti factorial identity)
-  #_(defmethod factorial 0 [_]  1)
-  #_(defmethod factorial :default [num]
-      (* num (factorial (dec num)))))
-
-;; (test defmulti-identity
-;;   (is (= 1 (#_factorial 0)))
-;;   (is (= 1 (#_factorial 1)))
-;;   (is (= 6 (#_factorial 3)))
-;;   (is (= 5040 (#_factorial 7))))
-
-(progn
-  #_(defmulti rand-str
-        (fn [] (> (rand) 0.5)))
-
-  #_(defmethod rand-str true
-      [] "true")
-
-  #_(defmethod rand-str false
-      [] "false"))
-
-(test defmulti-random
-  (loop repeat 5 do
-    (is (member (#_rand-str) '("false" "true") :test #'equal))))
-
 (test quoted-literals
   (is (equal #_'(nil) #_(list nil)))
   (is (equal #_'(true) #_(list true)))
