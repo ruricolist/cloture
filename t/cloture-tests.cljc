@@ -267,3 +267,15 @@
 (deftest read-nothing
   (is (= '(1 2) '(1 2 #_3)))
   (is (= '(1) '(1 #_#_2 3))))
+
+(def ^:private hello (fn hello [] "hello"))
+(def ^{:private true :dynamic true} *hello* (fn hello [] "hello"))
+
+(deftest lisp-1
+  (is (= "hello" (hello)))
+  (is (= "goodbye"
+         (let [hello (constantly "goodbye")]
+           (hello))))
+  (is (= "goodbye"
+         (let [[hello] (list (constantly "goodbye"))]
+           (hello)))))

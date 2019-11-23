@@ -28,16 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-#_(def ^:private hello (fn hello [] "hello"))
-#_(def ^{:private true :dynamic true} *hello* (fn hello [] "hello"))
-
-(test lisp-1
-  (is (equal "hello" #_(hello)))
-  (is (equal "goodbye" #_(let [hello (constantly "goodbye")]
-                           (hello))))
-  (is (equal "goodbye" #_(let [[hello] (list (constantly "goodbye"))]
-                           (hello)))))
-
 (test pop
   (is (equal? (seq 1 2) (#_pop (seq 1 2 3))))
   (is (equal? (seq 1) (#_pop (seq 1 2))))
