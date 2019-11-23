@@ -922,7 +922,7 @@ nested)."
   (#_conj (coll x) (list x))
   #_IStack
   (#_peek (c) #_nil)
-  (#_pop (c) (error (clojure-program-error "Pop on empty seq!")))
+  (#_pop (c) (error (#_IllegalStateException. "Pop on empty seq!")))
   #_ILookup
   (#_lookup (coll key &optional (default #_nil))
             (declare (ignore coll key))
@@ -1045,7 +1045,7 @@ nested)."
   #_IStack
   (#_peek (c) (if (empty? c) #_nil
                   (lookup c (1- (size c)))))
-  (#_pop (c) (if (empty? c) (error (clojure-program-error "Empty seq"))
+  (#_pop (c) (if (empty? c) (error (#_IllegalStateException. "Empty seq"))
                  (fset:subseq c 0 (1- (size c)))))
   #_IAssociative
   (#_contains-key? (seq idx) (? (< -1 idx (size seq))))

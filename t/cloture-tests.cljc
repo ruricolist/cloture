@@ -280,6 +280,12 @@
          (let [[hello] (list (constantly "goodbye"))]
            (hello)))))
 
+(deftest pop-test
+  (is (= [1 2] (pop [1 2 3])))
+  (is (= [1] (pop [1 2])))
+  (is (= [] (pop [1])))
+  (is (thrown? IllegalStateException (pop []))))
+
 (deftest unqualified-symbol-equality
   (is (not (identical? 'clojure.string:starts-with? 'starts-with?)))
   (is (= 'clojure.string:starts-with? 'starts-with?))

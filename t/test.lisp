@@ -28,12 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test pop
-  (is (equal? (seq 1 2) (#_pop (seq 1 2 3))))
-  (is (equal? (seq 1) (#_pop (seq 1 2))))
-  (is (equal? (seq) (#_pop (seq 1))))
-  (signals error (#_pop (seq))))
-
 (test re-find
   (is (nil? #_(re-find #"sss" "Loch Ness")))
   (is (clojure= "ss" #_(re-find #"s+" "dress")))
