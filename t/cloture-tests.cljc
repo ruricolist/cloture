@@ -57,3 +57,14 @@
   (is (= 3 (let [x 1 y 2] (+ x y))))
   (is (= 3 (let [x 2 y 1] (+ x y))))
   (is (not= 3 (let [x 1 y 1] (+ x y)))))
+
+(deftest commas
+  (is (= '() (,,,,,)))
+  (is (= '(:x :y :z) '(:x, :y, :z))))
+
+(deftest qq
+  (is (= '(:x) `(~:x)))
+  (is (not= '(:x) `(~:X))))
+
+(deftest reader-conditional
+  (is (= 1 #?(:cl 1 :clj 2))))

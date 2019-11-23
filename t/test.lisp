@@ -28,16 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test commas
-  (is (equal '(:x :y :z) '#_(:X, :Y, :Z))))
-
-(test qq
-  (is (equal '(:x) #_`(~:X))))
-
-(test reader-conditional
-  (is (null #_#?(:clj 1)))
-  (is (eql 1 #_#?(:cl 1 :clj 2))))
-
 (test destructure-simple
   (is (equal '(1 2 3) #_(let ([x y z] [1 2 3])
                           (list x y z))))
