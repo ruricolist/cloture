@@ -2096,3 +2096,9 @@ nested)."
             (eof (#_lookup map :|eof| :|eofthrow|))
             (eof-error? (eql :|eof| :|eofthrow|)))
        (read-from-string string eof-error? eof)))))
+
+(defun-1 #_set? (x)
+  (? (typep x 'set)))
+
+(defun-1 #_map? (x)
+  (? (typep x 'map)))

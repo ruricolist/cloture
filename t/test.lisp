@@ -28,8 +28,7 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test set
-  (is (typep #_#{1 2 3} 'set)))
+
 
 (test read-nothing
   (is (equal '(1 2) '#_(1 2 #_3))))

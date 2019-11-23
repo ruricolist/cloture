@@ -48,6 +48,12 @@
   (is (not= '([:x 1] [:y 2])
             (seq {:x 1 :y 2 :z 3}))))
 
+(deftest read-set
+  (is (set? #{1 2 3}))
+  (is (not (map? #{1 2 3})))
+  (is (not (set? {1 2})))
+  (is (map? {1 2})))
+
 (deftest read-meta
   (let [sym (read-string "^:dynamic *bar*")]
     (is (symbol? sym))
