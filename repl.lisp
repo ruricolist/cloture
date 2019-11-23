@@ -48,8 +48,9 @@
         (*package* (find-package "user")))
     (catch 'quit
       (loop (format t "~&~a=> " (package-name *package*))
+            (finish-output)
             (let ((form (read)))
-              (format t "~&~s~%" (eval form))
+              (format t "~s" (eval form))
               (finish-output))))))
 
 (defun-1 #_exit ()
