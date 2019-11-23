@@ -62,4 +62,6 @@
            #:declare-keywords
            #:proclaim-keywords
            #:nil?
-           #:not=))
+           #:not=
+
+           #:repl))
