@@ -113,13 +113,15 @@ defmulti)."
               (partition-declarations '(#_&env) decls))
              (forms (string-gensym 'forms))
              (env args (split-args-on args '&environment))
-             (whole args (split-args-on args '&whole)))
+             (whole args (split-args-on args '&whole))
+             (rest-or-body (if (memq '&body args) '&body '&rest))
+             )
       `(locally
            ;; Suppress SBCL warnings about &form and &env being suspicious variables.
            (declare #+sbcl (sb-ext:muffle-conditions style-warning))
          (defmacro ,name (,@(and whole `(&whole ,whole))
-                          &rest ,forms
-                                ,@(and env `(&environment ,env)))
+                          ,rest-or-body ,forms
+                          ,@(and env `(&environment ,env)))
            ,@(unsplice docs)
            ,@env-decls
            (declojurize
@@ -153,7 +155,7 @@ defmulti)."
 (define-clojure-macro #_if-not (test then &optional (else #_nil))
   `(if (falsy? ,test) ,then ,else))
 
-(define-clojure-macro #_do (&rest exprs)
+(define-clojure-macro #_do (&body exprs)
   `(progn ,@exprs))
 
 ;;; Here's how dynamic variables work. In Clojure `let' always
