@@ -53,7 +53,7 @@ In reader conditionals in `.cljc` files (and at the REPL), Cloture looks for a `
 
 ## Why “Cloture”?
 
-Beside the obvious: [cloture][] is a parliamentary procedure to end debate on a subject, and I would like to end certain debates: Clojure vs. CL, is Clojure a Lisp, etc.
+Beside the obvious: [cloture][] is a parliamentary procedure to end debate on a subject, and I would like to end certain debates. Yes, Common Lisp is “modern.” Yes, Clojure is a Lisp.
 
 [Clozure]: https://ccl.clozure.com/docs/ccl.html
 [cloture]: https://en.wikipedia.org/wiki/Cloture
