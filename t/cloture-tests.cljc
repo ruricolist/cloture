@@ -32,6 +32,12 @@
   (is (= 1 1))
   (is (not= 1 -1)))
 
+(deftest equality-sanity-check
+  (is (= 0 0))
+  (is (= (hash 0) (hash 0)))
+  (is (not= 0 1))
+  (is (not= (hash 0) (hash 1))))
+
 (deftest read-vector
   (is (= '(1 2 3 4) [1 2 3 4]))
   (is (not= '(1 2 3) [1 2 3 4]))

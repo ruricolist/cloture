@@ -28,12 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test equality
-  (is (clojure= 0 0))
-  (is (clojure= (#_hash 0) (#_hash 0)))
-  (is (not= 0 1))
-  (is (not= (#_hash 0) (#_hash 1))))
-
 (progn
   #_(defmulti factorial identity)
   #_(defmethod factorial 0 [_]  1)
