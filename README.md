@@ -8,7 +8,7 @@ Work so far has been focused on the critical path to get real Clojure code worki
 
 ## A note about FSet
 
-Cloture uses [FSet][] seqs, maps, and sets to implement Clojure vectors, maps, and sets, respectively. This involves a few hacks to FSet that might possibly affect other programs using FSet.
+Cloture uses [FSet][] seqs, maps, and sets to implement Clojure vectors, maps, and sets, respectively. This involves [a few hacks][fset-hacks] to FSet that might possibly affect other programs using FSet.
 
 ## Using Clojure from Lisp
 
@@ -18,9 +18,24 @@ Lisp’s nil is used only as the empty list; Clojure nil, true, and false are di
 
 Clojure files can be integrated into Lisp systems by making the system definition depend on Cloture `(:defsystem-depends-on ("cloture")` and using `"cloture:cljc"` as the file type.
 
+    (defsystem ...
+      :defsystem-depends-on ("cloture")
+      :components ((:file "cloture:cljc" "my-clojure-code")))
+
 ## Using Lisp from Clojure
 
-Since Clojure uses the Lisp reader, you can call Lisp functions just by uppercasing them. However, this can get clumsy, so there is a reader macro, `#L`, that switches back to the Lisp reader. (Note that it does *not* change the package.)
+Since Clojure uses the Lisp reader, you can call Lisp functions just by uppercasing them.
+
+    (letfn [(fst [xs] (CL:FIRST xs))]
+      (fst '(1 2 3)))
+
+You will also need to spell out `CL:QUOTE` and `CL:FUNCTION` (or refer them), as Clojure quote is not the same thing as CL quote and sharp-quote is used in Clojure for a different person.
+
+    (ns ...
+      (:require [CL :refer [QUOTE FUNCTION]]))
+
+All Lisp sequences (lists, vectors, and extensible sequences on
+implementations that support them) implement ISeq.
 
 ## Reader conditionals
 
@@ -32,10 +47,11 @@ In reader conditionals in `.cljc` files, Cloture looks for a `:cl` key.
 
 ## Why “Cloture”?
 
-Since I primarily use the [Clozure][] implementation of Common Lisp, and I am writing an implementation of Clojure, “[cloture][]” seemed like a name that would lead to no confusion whatsoever.
+Beside the obvious: [cloture][] is a parliamentary procedure to end debate on a subject, and I would like to end certain debates: Clojure vs. CL, is Clojure a Lisp, etc.
 
 [Clozure]: https://ccl.clozure.com/docs/ccl.html
 [cloture]: https://en.wikipedia.org/wiki/Cloture
 [EPL]: https://opensource.org/licenses/EPL-1.0
 [ClojureScript]: https://clojurescript.org/
 [FSet]: https://github.com/slburson/fset
+[fset-hacks]: https://github.com/ruricolist/cloture/blob/master/fset-hacks.lisp
