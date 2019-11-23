@@ -222,3 +222,14 @@
 
 (deftest test-thread-last
   (= 3/4 (->> 5 (+ 3) (/ 2) (- 1))))
+
+(deftest loop-recur
+  (let [fact
+        (fn [n]
+          (loop [cnt n
+                 acc 1]
+            (if (zero? cnt)
+              acc
+              (recur (dec cnt) (* acc cnt)))))]
+    (= (fact 10)
+       (ALEXANDRIA:FACTORIAL 10))))

@@ -28,17 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test loop-recur
-  (let ((fact
-          #_(fn [n]
-              (loop [cnt n
-                         acc 1]
-                    (if (zero? cnt)
-                        acc
-                        (recur (dec cnt) (* acc cnt)))))))
-    (= (funcall fact 10)
-       (factorial 10))))
-
 ;;; You need `private' to prevent package variance on SBCL.
 #_(def ^{:dynamic true :private true} foo* 0)
 #_(defn ^:private get-foo [] foo*)
