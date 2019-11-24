@@ -716,6 +716,9 @@ nested)."
   (#_contains-key? (coll k))
   (#_assoc (coll k v)))
 
+(defprotocol #_IMap
+  (#_dissoc (coll k &rest ks)))
+
 (defprotocol #_IKVReduce
   (#_kv-reduce (coll f init)))
 
@@ -1087,6 +1090,11 @@ nested)."
   #_IAssociative
   (#_contains-key? (map key) (? (fset:contains? map key)))
   (#_assoc (map key value) (with map key value))
+  #_IMap
+  (#_dissoc (map key &rest keys)
+            (reduce #'less
+                    (cons key keys)
+                    :initial-value map))
   #_IKVReduce
   (#_kv-reduce (map f init)
                (if (empty? map) map
@@ -1144,11 +1152,6 @@ nested)."
   (if (<= idx (size seq))
       (with seq idx val)
       (error (clojure-program-error "Idx ~a not valid for ~a" idx seq))))
-
-(defun-1 #_dissoc (map key &rest keys)
-  (reduce #'less
-          (cons key keys)
-          :initial-value map))
 
 (defun-1 #_alter-meta! (obj f &rest args)
   (synchronized (obj)

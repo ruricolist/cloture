@@ -48,6 +48,7 @@
                   "IIterable"
                   "IKVReduce"
                   "ILookup"
+                  "IMap"
                   "IMeta"
                   "INext"
                   "IReduce"
