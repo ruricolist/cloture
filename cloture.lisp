@@ -26,11 +26,12 @@
 
 (defun ns+name (symbol)
   "Split SYMBOL's name into a namespace and name."
-  (let ((name (symbol-name symbol)))
-    (match name
-      ((ppcre "^(.[^/]+)/(.*)$" ns name)
-       (values ns name))
-      (otherwise (values nil name)))))
+  (let* ((string (symbol-name symbol))
+         (pos (position #\/ string)))
+    (if (no pos)
+        (values nil string)
+        (values (nsubseq string pos)
+                (nsubseq string (1+ pos))))))
 
 (define-modify-macro withf (&rest item-or-tuple) with)
 (define-modify-macro lessf (&rest item-or-tuple) less)
