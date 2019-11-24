@@ -96,7 +96,3 @@
   (is-truthy?
    #_(= '(def x (fn x []))
         (macroexpand '(defn x [])))))
-
-(test empty?
-  (is-truthy? #_(empty? '()))
-  (is-truthy? #_(empty? nil)))

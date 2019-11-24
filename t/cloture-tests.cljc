@@ -270,6 +270,10 @@
   (is (= '([:x 1] [:y 2])
          (seq {:x 1 :y 2}))))
 
+(deftest test-empty?
+  (is (empty? '()))
+  (is (empty? nil)))
+
 (deftest read-nothing
   (is (= '(1 2) '(1 2 #_3)))
   (is (= '(1) '(1 #_#_2 3))))
