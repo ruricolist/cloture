@@ -393,3 +393,26 @@
   (is (identical? (first '(nil))   (first (list nil))))
   (is (identical? (first '(true))  (first (list true))))
   (is (identical? (first '(false)) (first (list false)))))
+
+(deftest empty-lazy-seq
+  (is (empty? (lazy-seq '())))
+  (is (not (seq (lazy-seq '()))))
+  (is (not (seq (lazy-seq nil)))))
+
+(deftest lazy-seq-equality
+  (is (= (lazy-seq (cons 1 (lazy-seq '(2))))
+         '(1 2)))
+  (is (not= (lazy-seq (cons 1 (lazy-seq '(2))))
+            '(1 3)))
+  (is (= (lazy-seq (cons 1 (lazy-seq '(2))))
+         (lazy-seq (cons 1 (lazy-seq '(2))))))
+  (is (not= (lazy-seq (cons 1 (lazy-seq '(2))))
+            (lazy-seq (cons 1 (lazy-seq '(3)))))))
+
+(deftest lazy-seq-unrealized
+  (let [tail (lazy-seq (list 2 3))
+        seq (lazy-seq (list 1 tail))]
+    (is (not (realized? seq)))
+    (= '(1) seq)                        ;Force just the first element.
+    (is (realized? seq))
+    (is (not (realized? tail)))))

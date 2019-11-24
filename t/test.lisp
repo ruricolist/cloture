@@ -28,24 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test lazy-seq-equality
-  (is-truthy? #_(empty? (lazy-seq '())))
-  (is-falsy? #_(seq (lazy-seq '())))
-  (is-falsy? #_(seq (lazy-seq nil)))
-  (is (clojure= #_(lazy-seq (cons 1 (lazy-seq '(2))))
-                '(1 2)))
-  (is-falsy?
-   #_(= (lazy-seq (cons 1 (lazy-seq '(2)))) '(1 3)))
-  (is (clojure= #_(lazy-seq (cons 1 (lazy-seq '(2))))
-                #_(lazy-seq (cons 1 (lazy-seq '(2))))))
-  (is (not= #_(lazy-seq (cons 1 (lazy-seq '(2))))
-            #_(lazy-seq (cons 1 (lazy-seq '(3))))))
-  (is-truthy?
-   #_(let [tail (lazy-seq (list 2 3))
-           seq (lazy-seq (list 1 tail))]
-       (= '(1) seq)
-       (not (realized? tail)))))
-
 #_(defn squares-odd [n]
     (cons (* n n) (lazy-seq (squares-odd (inc n)))))
 #_(defn squares-even [n]
