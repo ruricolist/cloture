@@ -123,11 +123,6 @@
 (defalias read-eval
   (get-dispatch-macro-character #\# #\.))
 
-(defun subread-cl (stream char arg)
-  (declare (ignore char arg))
-  (let ((*readtable* (find-readtable :standard)))
-    (subread stream)))
-
 (defun read-string-with-escapes (stream char)
   (unread-char char stream)
   (let ((interpol:*outer-delimiters* '(#\"))
@@ -166,9 +161,7 @@
   ;; Anonymous function.
   (:dispatch-macro-char #\# #\( 'read-anon)
   ;; Read eval.
-  (:dispatch-macro-char #\# #\= 'read-eval)
-  ;; Shortcut to read CL.
-  (:dispatch-macro-char #\# #\L 'subread-cl))
+  (:dispatch-macro-char #\# #\= 'read-eval))
 
 (defreadtable function-literal
   (:merge cloture)
