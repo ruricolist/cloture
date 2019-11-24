@@ -2146,3 +2146,9 @@ nested)."
 
 (defun-1 #_contains? (coll key)
   (? (not (eq not-there (#_get coll key not-there)))))
+
+(defun-1 #_aget (array idx &rest idxs)
+  (apply #'aref array idx idxs))
+
+(defun-1 #_aclone (array)
+  (copy-array array))
