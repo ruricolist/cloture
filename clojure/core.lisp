@@ -2058,9 +2058,9 @@ nested)."
           (#_let ,(seq pat temp)
                  ,@body))))
     ((list* pat seq binds)
-     `(#_do-seq ,(seq pat seq)
-                (#_do-seq ,(convert 'seq binds)
-                          ,@body)))))
+     `(#_doseq ,(seq pat seq)
+               (#_doseq ,(convert 'seq binds)
+                        ,@body)))))
 
 (defun call/for (fn seq)
   (if (seq? seq)

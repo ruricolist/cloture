@@ -484,6 +484,13 @@
              (pr x)))))
   (is (nil? (doseq [x '(1)]))))
 
+(deftest doseq-nested
+  (is (= "-1-2-3000123"
+         (with-out-str
+           (doseq [x [-1 0 1]
+                   y [1 2 3]]
+             (pr (* x y)))))))
+
 (deftest test-assoc-in
   (is (= {:x {:y {:z 1}}}
          (assoc-in {} [:x :y :z] 1))))
