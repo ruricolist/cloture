@@ -1,15 +1,16 @@
 (in-package #:cloture)
 
-(defvar *clojure-packages*
-  (tg:make-weak-hash-table :weakness :key))
+(eval-always
+  (defvar *clojure-packages*
+    (tg:make-weak-hash-table :weakness :key))
 
-(defun mark-clojure-package (package)
-  (let ((package (find-package package)))
-    (synchronized ('*clojure-packages*)
-      (setf (href *clojure-packages* package) t))))
+  (defun mark-clojure-package (package)
+    (let ((package (find-package package)))
+      (synchronized ('*clojure-packages*)
+        (setf (href *clojure-packages* package) t))))
 
-(defun clojure-package? (package)
-  (href *clojure-packages* (find-package package)))
+  (defun clojure-package? (package)
+    (href *clojure-packages* (find-package package))))
 
 (defmacro declaim-clojure-packages (&rest packages)
   `(eval-always
