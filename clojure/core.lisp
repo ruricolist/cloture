@@ -2041,6 +2041,16 @@ nested)."
   #_IPending
   (#_realized? (p) (lparallel:fulfilledp p)))
 
+(defun mapstrict (fn seq)
+  "Map FN over SEQ, a Clojure seq."
+  (nlet rec ((seq seq)
+             (acc nil))
+    (if (not (seq? seq))
+        (nreverse acc)
+        (rec (#_rest seq)
+             (cons (funcall fn (#_first seq))
+                   acc)))))
+
 (defloop mapr (fn seq)
   (when (seq? seq)
     (progn
@@ -2174,11 +2184,9 @@ nested)."
   (coerce x 'double-float))
 
 (defun-1 #_floats (xs)
-  (lret ((i 0)
-         (array (make-array (#_count xs) :element-type 'double-float)))
-    (doseq (x xs)
-      (setf (aref array (finc i))
-            (coerce x 'double-float)))))
+  (replace (make-array (#_count xs) :element-type 'double-float)
+           (mapstrict (op (coerce _ 'double-float))
+                      xs)))
 
 (defun-1 #_disj (set key)
   (fset:less (assure set set) key))
