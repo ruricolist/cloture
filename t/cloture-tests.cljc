@@ -420,3 +420,59 @@
     (= '(1) seq)                        ;Force just the first element.
     (is (realized? seq))
     (is (not (realized? tail)))))
+
+(defn squares-odd [n]
+  (cons (* n n) (lazy-seq (squares-odd (inc n)))))
+(defn squares-even [n]
+  (lazy-seq (cons (* n n) (squares-even (inc n)))))
+
+(deftest test-lazy-seq
+  (is (= (take 1 (squares-odd 1))
+         (take 1 (squares-even 1)))))
+
+(deftest test-cycle
+  (is (= '(1 2 3 1 2 3 1 2 3 1)
+         (take 10 (cycle '(1 2 3))))))
+
+(deftest test-concat
+  (is (= '(1 2 3 4 5 6)
+         (concat '(1 2 3) '(4 5 6)))))
+
+(deftest test-take
+  (is (= '(1 2 3 4 5 6)
+         (take 6 '(1 2 3 4 5 6)))))
+
+(deftest test-repeat
+  (is (= '(1 1 1 1 1)
+         (repeat 5 1)))
+  (is (= '(1 1 1)
+         (repeat 3 1))))
+
+(deftest test-filter
+  (is (= '(0 2 4 6 8)
+         (filter even? (range 10)))))
+
+(deftest test-map
+  (is (= (CL:MAP 'CL:LIST - (SERAPEUM:RANGE 5))
+         (map - (range 5))))
+  (is (= (CL:MAP 'CL:LIST - (SERAPEUM:RANGE 5) (SERAPEUM:RANGE 5 10))
+         (map - (range 5) (range 5 10)))))
+
+(deftest test-range
+  (is (empty? (take 10 (range 0 0 0))))
+  (is (= (CL:MAKE-LIST 5 :INITIAL-ELEMENT 0)
+         (take 5 (range 0 10 0))))
+  (is (= (SERAPEUM:RANGE 10)
+         (take 10 (range)))))
+
+(deftest test-drop-while
+  (is (= '(2 4 6)
+         (drop-while odd? '(1 3 5 2 4 6)))))
+
+(deftest test-interpose
+  (is (= '("one" "," "two" "," "three")
+         (interpose "," '("one" "two" "three")))))
+
+(deftest test-group-by
+  (let [map (group-by count ["a" "as" "asd" "aa" "asdf" "qwer"])]
+    (is (= (count map) 4))))
