@@ -28,11 +28,3 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-(test assoc-in
-  (is-truthy?
-   #_(= {:x {:y {:z 1}}} (assoc-in {} [:x :y :z] 1))))
-
-(test macroexpand
-  (is-truthy?
-   #_(= '(def x (fn x []))
-        (macroexpand '(defn x [])))))

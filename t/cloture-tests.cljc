@@ -482,3 +482,11 @@
          (with-out-str
            (doseq [x '(1 2 3)]
              (pr x))))))
+
+(deftest test-assoc-in
+  (is (= {:x {:y {:z 1}}}
+         (assoc-in {} [:x :y :z] 1))))
+
+(deftest test-macroexpand
+  (is (= '(def x (fn x []))
+         (macroexpand '(defn x [])))))
