@@ -293,10 +293,12 @@
   (is (thrown? IllegalStateException (pop []))))
 
 (deftest unqualified-symbol-equality
-  (is (not (identical? 'clojure.string:starts-with? 'starts-with?)))
-  (is (= 'clojure.string:starts-with? 'starts-with?))
-  (is (= 1 (get {'clojure.string:starts-with? 1}
-                'starts-with?))))
+  (is (not (identical? 'clojure.test::thrown? 'thrown?)))
+  (is (= 'clojure.test::thrown? 'thrown?))
+  (is (= 1 (get {'clojure.test::thrown? 1}
+                'thrown?)))
+  (is (= (hash 'clojure.test::thrown?)
+         (hash 'thrown?))))
 
 (deftest re-find-test
   (is (nil? (re-find #"sss" "Loch Ness")))
