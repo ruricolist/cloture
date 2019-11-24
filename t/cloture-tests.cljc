@@ -506,3 +506,10 @@
   (is (= "c" (name 'b/c)))
   (is (= "b/c" (name 'a/b/c)))
   (is (= "b/c" (name :a/b/c))))
+
+(deftest test-floats
+  (let [array (floats [])]
+    (is (= (CL:ARRAY-ELEMENT-TYPE array) 'CL:DOUBLE-FLOAT)))
+  (let [array (floats [1 2 3])]
+    (is (= (CL:ARRAY-ELEMENT-TYPE array) 'CL:DOUBLE-FLOAT))
+    (is (= array '(1.0 2.0 3.0)))))

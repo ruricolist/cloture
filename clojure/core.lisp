@@ -2168,3 +2168,14 @@ nested)."
 (-> #_int (t) integer)
 (defun-1 #_int (x)
   (coerce x 'integer))
+
+(-> #_float (t) double-float)
+(defun-1 #_float (x)
+  (coerce x 'double-float))
+
+(defun-1 #_floats (xs)
+  (lret ((i 0)
+         (array (make-array (#_count xs) :element-type 'double-float)))
+    (doseq (x xs)
+      (setf (aref array (finc i))
+            (coerce x 'double-float)))))
