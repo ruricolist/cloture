@@ -2179,3 +2179,6 @@ nested)."
     (doseq (x xs)
       (setf (aref array (finc i))
             (coerce x 'double-float)))))
+
+(defun-1 #_disj (set key)
+  (fset:less (assure set set) key))
