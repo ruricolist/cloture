@@ -2155,3 +2155,6 @@ nested)."
 
 (defun-1 #_vec (x)
   (convert 'seq x))
+
+(defun-1 #_partial (fn &rest args)
+  (apply #'partial fn args))
