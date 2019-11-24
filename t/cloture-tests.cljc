@@ -482,7 +482,7 @@
          (with-out-str
            (doseq [x '(1 2 3)]
              (pr x)))))
-  (is (nil? (doseq [x '(1)]))))
+  (is (nil? (doseq [_ '(1)]))))
 
 (deftest doseq-nested
   (is (= "-1-2-3000123"

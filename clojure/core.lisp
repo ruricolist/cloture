@@ -2061,7 +2061,10 @@ nested)."
   (collecting (mapr (compose #'collect fn) seq)))
 
 (define-do-macro doseq ((var seq &optional ret) &body body)
-  `(mapr (lambda (,var) ,@body) ,seq))
+  (let ((decls
+          (and (string= '_ var)
+               `((declare (ignore ,var))))))
+    `(mapr (lambda (,var) ,@decls ,@body) ,seq)))
 
 (define-clojure-macro #_doseq (binds &body body)
   (ematch (convert 'list binds)
