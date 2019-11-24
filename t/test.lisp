@@ -28,10 +28,6 @@
                                        `("~S returned the value ~S, which Clojure considers truthy" ',condition ,value)))
            (5am::add-result '5am::test-passed :test-expr ',condition)))))
 
-
-(test doseq
-  (is (equal "123" #_(with-out-str (doseq [x '(1 2 3)] (pr x))))))
-
 (test assoc-in
   (is-truthy?
    #_(= {:x {:y {:z 1}}} (assoc-in {} [:x :y :z] 1))))

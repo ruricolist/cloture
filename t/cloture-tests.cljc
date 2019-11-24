@@ -476,3 +476,9 @@
 (deftest test-group-by
   (let [map (group-by count ["a" "as" "asd" "aa" "asdf" "qwer"])]
     (is (= (count map) 4))))
+
+(deftest doseq-test
+  (is (= "123"
+         (with-out-str
+           (doseq [x '(1 2 3)]
+             (pr x))))))
