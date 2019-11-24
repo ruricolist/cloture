@@ -2152,3 +2152,6 @@ nested)."
 
 (defun-1 #_aclone (array)
   (copy-array array))
+
+(defun-1 #_vec (x)
+  (convert 'seq x))
