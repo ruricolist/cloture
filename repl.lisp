@@ -37,8 +37,9 @@
   (lret ((table (copy-pprint-dispatch nil)))
     (set-pprint-dispatch 'fset:seq #'pp-seq 0 table)
     (set-pprint-dispatch 'fset:map #'pp-map 0 table)
-    (set-pprint-dispatch '(cons (eql #_quote))
-                         #'pp-quote 0 table)))
+    (set-pprint-dispatch '(cons (eql #_quote)) #'pp-quote 0 table)
+    (set-pprint-dispatch '(cons (eql quote)) nil 0 table)
+    (set-pprint-dispatch '(cons (eql function)) nil 0 table)))
 
 (defun repl ()
   (let ((*print-pretty* t)
@@ -49,9 +50,10 @@
     (catch 'quit
       (loop (format t "~&~a=> " (package-name *package*))
             (finish-output)
-            (let ((form (read)))
-              (format t "~s" (eval form))
-              (finish-output))))))
+            (with-simple-restart (abort "Return to REPL")
+              (let ((form (read)))
+                (format t "~s" (eval form))
+                (finish-output)))))))
 
 (defun-1 #_exit ()
   (throw 'quit (values)))
