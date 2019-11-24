@@ -481,7 +481,8 @@
   (is (= "123"
          (with-out-str
            (doseq [x '(1 2 3)]
-             (pr x))))))
+             (pr x)))))
+  (is (nil? (doseq [x '(1)]))))
 
 (deftest test-assoc-in
   (is (= {:x {:y {:z 1}}}

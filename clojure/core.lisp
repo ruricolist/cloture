@@ -2054,7 +2054,7 @@ nested)."
   (ematch (convert 'list binds)
     ((list pat seq)
      (with-unique-names (temp)
-       `(doseq (,temp ,seq)
+       `(doseq (,temp ,seq #_nil)
           (#_let ,(seq pat temp)
                  ,@body))))
     ((list* pat seq binds)
