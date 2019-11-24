@@ -2161,3 +2161,7 @@ nested)."
 
 (define-clojure-macro while (test &body body)
   `(loop while (truthy? ,test) do ,@body))
+
+(-> #_int (t) integer)
+(defun-1 #_int (x)
+  (coerce x 'integer))
