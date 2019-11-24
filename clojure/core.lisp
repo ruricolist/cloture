@@ -400,11 +400,7 @@ nested)."
   (intern (string+ ns "/" symbol)))
 
 (defun unqualify-symbol (symbol)
-  (if (not (string*= "/" symbol)) symbol
-      (intern (ematch (symbol-name symbol)
-                ((ppcre "(.+?)/(.+)" _ symbol-name)
-                 symbol-name))
-              (symbol-package symbol))))
+  (nth-value 1 (ns+name symbol)))
 
 (defun-1 #_refer-clojure (&rest args)
   (apply #'#_refer :|clojure.core| args))

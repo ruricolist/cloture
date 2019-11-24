@@ -490,3 +490,11 @@
 (deftest test-macroexpand
   (is (= '(def x (fn x []))
          (macroexpand '(defn x [])))))
+
+(deftest test-name
+  (is (= "c" (name 'c)))
+  (is (= "c" (name :c)))
+  (is (= "c" (name :b/c)))
+  (is (= "c" (name 'b/c)))
+  (is (= "b/c" (name 'a/b/c)))
+  (is (= "b/c" (name :a/b/c))))
