@@ -82,6 +82,10 @@
                 (alexandria:read-file-into-string
                  (asdf:system-relative-pathname "cloture" "pprint-syms.txt")))))
 
+(define-clojure-package "clojure.set"
+  (:use)
+  (:export "select" "union" "difference" "intersection" "subset?" "superset?"))
+
 (define-clojure-package "clojure.string"
   (:use)
   (:export "starts-with?" "ends-with?"))
@@ -102,6 +106,7 @@
   (:use
     "clojure.core"
     "clojure.pprint"
+    "clojure.set"
     "clojure.string"
     "clojure.template"
     "clojure.stacktrace"))

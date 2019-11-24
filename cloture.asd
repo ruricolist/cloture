@@ -36,6 +36,7 @@
                 :components ((:file "core")
                              (:file "pprint")
                              (:file "template")
+                             (:file "set")
                              (:file "strings")
                              (:file "stacktrace")))
                (:file "repl")))
