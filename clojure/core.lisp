@@ -1120,19 +1120,6 @@ nested)."
 ;;; are used as keys in maps.
 
 (extend-type symbol
-  #_IEquiv
-  (#_equiv (self other)
-           (? (or (eq self other)
-                  (multiple-value-match (values self other)
-                    (((type keyword) (type keyword)) nil)
-                    (((type keyword) (type symbol))  nil)
-                    (((type symbol)  (type keyword)) nil)
-                    (((type symbol) (type symbol))
-                     (mvlet ((ns1 name1 (ns+name self))
-                             (ns2 name2 (ns+name other)))
-                       (and (equal ns1 ns2)
-                            (equal name1 name2))))
-                    (otherwise nil)))))
   #_IHash
   (#_hash (s)
           (if (keywordp s) (murmurhash s)
