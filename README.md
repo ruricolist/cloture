@@ -2,7 +2,7 @@
 
 Cloture is an implementation of Clojure in Common Lisp. It is designed to interoperate well with Common Lisp; e.g. Clojure is read by the Lisp reader and Clojure namespaces are Lisp packages.
 
-Cloture is in very early (pre-alpha) stages, but it has progressed far enough to load a (lightly edited) version of test.clj, allowing the test suite to actually be written in Clojure.
+Cloture is in very early (pre-alpha) stages, but it has progressed far enough to load a (lightly edited) version of [test.clj][], allowing the [test suite][] to actually be written in Clojure.
 
 Work so far has been focused on the critical path to get real Clojure code working in CL. But if there is interest from Clojurists I may work toward making it a more complete Clojure implementation.
 
@@ -61,3 +61,5 @@ Beside the obvious: [cloture][] is a parliamentary procedure to end debate on a 
 [ClojureScript]: https://clojurescript.org/
 [FSet]: https://github.com/slburson/fset
 [fset-hacks]: https://github.com/ruricolist/cloture/blob/master/fset-hacks.lisp
+[test.clj]: https://github.com/ruricolist/cloture/blob/master/clojure/test.cljc
+[test suite]: https://github.com/ruricolist/cloture/blob/master/t/cloture-tests.cljc
