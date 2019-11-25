@@ -30,7 +30,10 @@
   (is (not= 0 1))
   (is (not= 1 0))
   (is (= 1 1))
-  (is (not= 1 -1)))
+  (is (not= 1 -1))
+  (is (not= nil false))
+  ;; The empty list is a truthy value.
+  (is CL:NIL))
 
 (deftest equality-sanity-check
   (is (= 0 0))
