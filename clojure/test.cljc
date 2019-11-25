@@ -351,7 +351,7 @@
 (defn- file-and-line
   {:deprecated "1.8"}
   [^Throwable exception depth]
-  #?(:cl exception depth {:file nil :line nil}
+  #?(:cl (do exception depth {:file nil :line nil})
      :clj (let [stacktrace (.getStackTrace exception)]
             (if (< depth (count stacktrace))
               (let [^StackTraceElement s (nth stacktrace depth)]
@@ -361,7 +361,7 @@
 (defn- stacktrace-file-and-line
   [stacktrace]
   ;; TODO There must be some way to do this in CL (since Slime/Sly do it).
-  #?(:cl stacktrace {:file nil :line nil}
+  #?(:cl (do stacktrace {:file nil :line nil})
      :clj (if (seq stacktrace)
             (let [^StackTraceElement s (first stacktrace)]
               {:file (.getFileName s) :line (.getLineNumber s)})
