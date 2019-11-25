@@ -35,7 +35,7 @@ Since Clojure uses the Lisp reader, you can call Lisp functions just by uppercas
     (letfn [(fst [xs] (CL:FIRST xs))]
       (fst '(1 2 3)))
 
-You will also need to spell out `CL:QUOTE` and `CL:FUNCTION` (or refer them), as Clojure quote is not the same thing as CL quote and sharp-quote is used in Clojure for a different person.
+You will also need to spell out `CL:QUOTE` and `CL:FUNCTION` (or refer them), as Clojure quote is not the same thing as CL quote and sharp-quote is used in Clojure for a different purpose.
 
     (ns ...
       (:require [CL :refer [QUOTE FUNCTION]]))
