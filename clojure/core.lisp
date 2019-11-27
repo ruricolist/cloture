@@ -160,7 +160,7 @@ defmulti)."
   (assert (not (string^= clojure-var-prefix symbol)))
   (symbolicate clojure-var-prefix symbol))
 
-(define-clojure-macro defprivate (name &body body)
+(define-clojure-macro #_def- (name &body body)
   "Define a (private) var."
   (mvlet* ((docstring expr
             (ematch body
@@ -206,7 +206,7 @@ defmulti)."
 
 (define-clojure-macro #_def (name &body body)
   `(progn
-     (defprivate ,name ,@body)
+     (#_def- ,name ,@body)
      (export-unless-private ,name)
      ',name))
 
@@ -311,8 +311,8 @@ nested)."
 
 (define-clojure-macro #_defn- (name &body body)
   (mvlet ((body docs (body+docs+attrs body)))
-    `(defprivate ,name ,@(unsplice docs)
-       (#_fn ,name ,@body))))
+    `(#_def- ,name ,@(unsplice docs)
+             (#_fn ,name ,@body))))
 
 (define-clojure-macro #_fn (&body body*)
   (local

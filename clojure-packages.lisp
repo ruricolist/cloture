@@ -32,6 +32,7 @@
                 lambda-list-keywords
                 '("&" "var" "true" "false" "nil"
                   "quote" "if" "do" "def" "recur" "throw" "try" "catch" "finally"
+                  "def-"
                   "&env" "&form"
                   "invoke" "equiv" "lookup"
                   "contains-key?" "kv-reduce"
