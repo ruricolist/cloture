@@ -597,6 +597,9 @@ nested)."
 (defprotocol #_IEquiv
   (#_equiv (self other)))
 
+(defun conj (coll x)
+  (#_conj coll x))
+
 (defprotocol #_ICollection
   (#_conj (coll x)))
 
@@ -730,6 +733,9 @@ nested)."
 
 (defprotocol #_IReduce
   (#_internal-reduce (coll f &optional start)))
+
+(defprotocol #_IEditableCollection
+  (#_as-transient (coll)))
 
 (defgeneric-1 #_extends? (protocol atype)
   (:method ((protocol protocol) atype)
@@ -2268,3 +2274,57 @@ nested)."
 
 (defun-1 #_disj (set key)
   (fset:less (assure set set) key))
+
+(defclass transient ()
+  ((coll :initarg :coll :type t
+         :accessor transient-coll)
+   (persistent? :initform nil :type boolean
+                :accessor transient-persistent?)))
+
+(defclass transient-vector (transient)
+  ((coll :type seq))
+  (:default-initargs :coll (empty-seq)))
+
+(defclass transient-map (transient)
+  ((coll :type map))
+  (:default-initargs :coll (empty-map)))
+
+(defclass transient-set (transient)
+  ((coll :type set))
+  (:default-initargs :coll (empty-set)))
+
+(extend-protocol #_IEditableCollection
+  seq
+  (#_as-transient (seq)
+                  (make 'transient-vector :coll seq))
+  map
+  (#_as-transient (map)
+                  (make 'transient-map :coll map))
+  set
+  (#_as-transient (set)
+                  (make 'transient-set :coll set)))
+
+(defun-1 #_transient (coll)
+  (#_as-transient coll))
+
+(defun check-not-persistent (transient)
+  (when (transient-persistent? transient)
+    (error 'already-persistent
+           :transient transient)))
+
+(defun-1 #_persistent! (transient)
+  (check-not-persistent transient)
+  (with-slots (coll persistent?) transient
+    (prog1 (shiftf coll (#_empty coll))
+      (setf persistent? t))))
+
+(defun-1 #_conj! (&optional (coll nil coll-supplied?)
+                            (x nil x-supplied?))
+  (cond ((not coll-supplied?)
+         (make 'transient-vector :coll (seq)))
+        ((not x-supplied?)
+         coll)
+        (t
+         (prog1 coll
+           (setf (transient-coll coll)
+                 (conj (transient-coll coll) x))))))

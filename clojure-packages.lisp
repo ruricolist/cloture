@@ -46,6 +46,7 @@
                   "IComparable"
                   "ICounted"
                   "IDeref"
+                  "IEditableCollection" "as-transient"
                   "IEmptyableCollection"
                   "IEquiv"
                   "IFn"
@@ -79,6 +80,7 @@
                   "IllegalStateException" "IllegalStateException."
                   "AssertionError" "AssertionError."
                   "ArityException" "ArityException."
+                  "IllegalAccessError" "IllegalAccessError."
                   ".getClassName"
                   ;; These aren't part of Clojure but the REPL needs
                   ;; them (and Leiningen provides them).

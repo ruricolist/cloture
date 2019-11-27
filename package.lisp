@@ -21,6 +21,8 @@
     #:do-seq
     #:do-set
     #:with
+    #:empty-seq
+    #:empty-set
     #:empty-map
     #:convert
     #:seq

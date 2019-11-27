@@ -61,6 +61,16 @@
 (defcondition* #_AssertionError (#_Exception) ())
 (define-simple-error-constructor #_AssertionError)
 
+(defcondition* #_IllegalAccessError (#_Error) ()) ;Skipping some parents.
+(define-simple-error-constructor #_IllegalAccessError)
+
+(defcondition already-persistent (#_IllegalAccessError)
+  ((transient :initarg :transient))
+  (:report (lambda (c s)
+             (with-slots (transient) c
+               (format s "Transient ~a has already been persisted."
+                       transient)))))
+
 (defcondition simple-clojure-error (clojure-condition simple-error) ())
 (defcondition clojure-program-error (program-error clojure-error) ())
 (defcondition simple-clojure-program-error (clojure-program-error simple-condition) ())
