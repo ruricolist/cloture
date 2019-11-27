@@ -143,7 +143,7 @@ defmulti)."
   `(if (truthy? ,test) ,then ,else))
 
 (define-clojure-macro #_if-not (test then &optional (else #_nil))
-  `(if (falsy? ,test) ,then ,else))
+  `(#_if ,test ,else ,then))
 
 (define-clojure-macro #_do (&body exprs)
   `(progn ,@exprs))
