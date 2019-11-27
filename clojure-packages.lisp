@@ -10,7 +10,10 @@
         (setf (href *clojure-packages* package) t))))
 
   (defun clojure-package? (package)
-    (href *clojure-packages* (find-package package))))
+    (href *clojure-packages* (find-package package)))
+
+  (defun clojure-symbol? (symbol)
+    (clojure-package? (symbol-package symbol))))
 
 (defmacro declaim-clojure-packages (&rest packages)
   `(eval-always
