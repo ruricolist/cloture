@@ -192,7 +192,11 @@
   (declare (ignore char arg))
   (let* ((*package* (find-package :cloture.impl))
          (form (read-clojure stream :recursive t)))
-    form))
+    (if (and (symbolp form)
+             (eql (symbol-package form)
+                  (find-package :cloture.impl)))
+        (error "Read non-inherited symbol ~a in implementation package." form)
+        form)))
 
 (defun read-clojure-from-string (string
                                  &key (eof-error-p t)

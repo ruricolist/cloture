@@ -498,9 +498,7 @@ nested)."
                          ((list* :|require| args)
                           `(apply #_require (#_quote ,args)))
                          ((list* :|refer-clojure| args)
-                          `(apply #_refer-clojure (#_quote ,args)))
-                         ((list* :|refer-cl| args)
-                          `(apply #_refer-cl (#_quote ,args)))))
+                          `(apply #_refer-clojure (#_quote ,args)))))
        (find-package ,name))))
 
 (define-clojure-macro #_in-ns (name)
@@ -1183,7 +1181,7 @@ nested)."
 (defun-1 #_constantly (x)
   (constantly x))
 
-(defun-1 #_alter-var-root! (root f &rest args)
+(defun-1 #_alter-var-root (root f &rest args)
   (synchronized (root)
     (setf (symbol-value root)
           (ifn-apply f (symbol-value root) args))))
