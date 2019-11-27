@@ -3,10 +3,15 @@
 
 (defcondition clojure-condition () ())
 
+(defgeneric #_.getMessage (condition)
+  (:method ((c condition))
+    (princ-to-string c)))
+
 (defcondition clojure-error (error clojure-condition)
-  ((message :initarg :message :reader #_.getMessage)
+  ((message :initarg :message)
    (cause :initarg :cause :reader #_.getCause))
-  (:documentation "Sub-root of all Clojure conditions." )
+  (:documentation "Sub-root of all Clojure conditions.")
+  (:default-initargs :cause #_nil)
   (:report (lambda (c s)
              (with-slots (message) c
                (format s "~a" message)))))
