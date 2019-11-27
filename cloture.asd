@@ -37,6 +37,6 @@
                              (:file "pprint")
                              (:file "template")
                              (:file "set")
-                             (:file "strings")
+                             (:file "string")
                              (:file "stacktrace")))
                (:file "repl")))
