@@ -217,9 +217,10 @@
         until (eql form eof)
         collect form))
 
-(defun slurp-clojure-file (file)
-  (with-input-from-file (stream file)
-    (slurp-clojure-stream stream)))
+(defun slurp-clojure-file (file &key (package *package*))
+  (let ((*package* (find-package package)))
+    (with-input-from-file (stream file)
+      (slurp-clojure-stream stream))))
 
 (defun load-clojure (file &rest args)
   (with-clojure-reader ()
