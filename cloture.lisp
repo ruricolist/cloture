@@ -11,6 +11,10 @@
 ;;; Lisp nil is reserved for the empty list.
 (defunit |clojure.core|:|nil|)
 
+(fset:define-cross-type-compare-methods |clojure.core|:|nil|)
+(fset:define-cross-type-compare-methods |clojure.core|:|true|)
+(fset:define-cross-type-compare-methods |clojure.core|:|false|)
+
 (def true |clojure.core|:|true|)
 (def false |clojure.core|:|false|)
 

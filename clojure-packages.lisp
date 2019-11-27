@@ -55,7 +55,7 @@
                   "IMeta"
                   "INext"
                   "IPending"
-                  "IReduce"
+                  "IReduce" "internal-reduce"
                   "IReversible"
                   "ISeq"
                   "ISeqable"

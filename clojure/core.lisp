@@ -739,6 +739,9 @@ nested)."
 (defprotocol #_IDeref
   (#_deref (x)))
 
+(defprotocol #_IReduce
+  (#_internal-reduce (coll f &optional start)))
+
 (defgeneric-1 #_extends? (protocol atype)
   (:method ((protocol protocol) atype)
     (#_satisfies? (protocol-name protocol)
@@ -907,7 +910,10 @@ nested)."
                    #_false)
   (#_assoc (coll k v) (fset:map (k v)))
   #_IEquiv
-  (#_equiv (self other) (#_nil? other)))
+  (#_equiv (self other) (#_nil? other))
+  #_IReduce
+  (#_internal-reduce (coll f &optional (start nil start-supplied?))
+                     (if start-supplied? start (ifncall f))))
 
 ;;; Lisp null, Clojure's empty list.
 (extend-type null
@@ -928,7 +934,10 @@ nested)."
             (declare (ignore coll key))
             default)
   #_IEquiv
-  (#_equiv (n x) (or (null x) (#_empty? x))))
+  (#_equiv (n x) (or (null x) (#_empty? x)))
+  #_IReduce
+  (#_internal-reduce (coll f &optional (start nil start-supplied?))
+                     (if start-supplied? start (ifncall f))))
 
 (extend-type cons
   #_ISeq
@@ -960,7 +969,10 @@ nested)."
                   (if tail (first tail)
                       default)
                   (rec (rest tail)
-                       (1- i))))))
+                       (1- i)))))
+  #_IReduce
+  (#_internal-reduce (coll f &optional (start nil start-supplied?))
+                     (reduce-rests coll f start start-supplied?)))
 
 ;; A Lisp vector (or a string).
 (extend-type vector
@@ -1014,7 +1026,14 @@ nested)."
              (elt v n)))
   #_ILookup
   (#_lookup (coll key &optional (default #_nil))
-            (#_nth coll key default)))
+            (#_nth coll key default))
+
+  #_IReduce
+  (#_internal-reduce (coll f &optional (start nil start-supplied?))
+                     (multiple-value-call #'reduce f coll
+                       (if start-supplied?
+                           (values :initial-value start)
+                           (values)))))
 
 (extend-type string
   #_IEquiv
@@ -1062,7 +1081,13 @@ nested)."
                      init)))
   #_ILookup
   (#_lookup (coll key &optional (default #_nil))
-            (#_nth coll key default)))
+            (#_nth coll key default))
+  #_IReduce
+  (#_internal-reduce (coll f &optional (start nil start-supplied?))
+                     (multiple-value-call #'fset:reduce f coll
+                       (if start-supplied?
+                           (values :initial-value start)
+                           (values)))))
 
 (extend-type map
   #_ISeqable
@@ -1498,8 +1523,8 @@ nested)."
   (not (eq unrealized (memo-cell-value memo-cell))))
 
 (defstruct (delay
-            (:include memo-cell)
-            (:constructor make-delay (thunk))))
+             (:include memo-cell)
+             (:constructor make-delay (thunk))))
 
 (define-clojure-macro #_delay (&body body)
   `(make-delay (lambda () ,@body)))
@@ -1544,7 +1569,18 @@ nested)."
   (#_empty (seq) '())
   #_IEquiv
   (#_equiv (self other)
-           (#_= (force self) (force other))))
+           (#_= (force self) (force other)))
+  #_IReduce
+  (#_internal-reduce (coll f &optional (start nil start-supplied?))
+                     (let ((f (ifn-function f))
+                           (init start)
+                           (init? start-supplied?))
+                       (mapr (lambda (seq)
+                               (if (not init?)
+                                   (setf init (#_first seq)
+                                         init? t)
+                                   (setf init (funcall f init (#_first seq)))))
+                             coll))))
 
 (defun-1 #_cons (x y)
   (cons x y))
@@ -1768,16 +1804,61 @@ nested)."
 (defun-1 #_merge (&rest maps)
   (apply #_merge-with #'second maps))
 
-(defmethod fset:reduce ((f function) (n #_nil) &rest args &key &allow-other-keys)
-  (apply #'reduce f nil args))
+(defconstructor #_reduced
+  (value t))
 
-(defun-1 #_reduce (f &rest args)
-  (let ((f (ifn-function f)))
-    (ematch args
-      ((list val coll)
-       (fset:reduce f coll :initial-value val))
-      ((list coll)
-       (fset:reduce f coll)))))
+(extend-type #_reduced
+  #_IDeref
+  (#_deref (x)
+           (match x
+             ((#_reduced v) v))))
+
+(defun-1 #_reduced? (x)
+  (? (typep x '#_reduced)))
+
+(defun-1 #_unreduced (x)
+  (if (typep x '#_reduced)
+      (#_deref x)
+      x))
+
+(defun call/reduced (body-fn reduce-fn)
+  (let ((reduce-fn (ifn-function reduce-fn)))
+    (funcall body-fn
+             (lambda (&rest args)
+               (let ((result
+                       (ematch args
+                         ((list) (funcall reduce-fn))
+                         ((list init next)
+                          (funcall reduce-fn init next)))))
+                 (#_if (#_reduced? result)
+                       (return-from call/reduced
+                         (#_unreduced result))
+                       result))))))
+
+(defmacro with-reduced ((f reduce-fn) &body body)
+  (with-thunk (body f)
+    `(call/reduced ,body ,reduce-fn)))
+
+(defun-1 #_reduce (&rest args)
+  (ematch args
+    ((list f coll)
+     (with-reduced (f f)
+       (#_internal-reduce (#_seq coll) f)))
+    ((list f start coll)
+     (with-reduced (f f)
+       (#_internal-reduce (#_seq coll) f start)))))
+
+(defun reduce-rests (coll f start start?)
+  (let ((f (ifn-function f))
+        (init start)
+        (init? start?))
+    (mapr (lambda (elt)
+            (if (not init?)
+                (setf init elt
+                      init? t)
+                (setf init (funcall f init elt))))
+          coll)
+    init))
 
 (defun get-once-value (name)
   (let* ((unbound "unbound")
@@ -2051,9 +2132,8 @@ nested)."
 
 (defloop mapr (fn seq)
   (when (seq? seq)
-    (progn
-      (funcall fn (#_first seq))
-      (mapr fn (#_rest seq)))))
+    (funcall fn (#_first seq))
+    (mapr fn (#_rest seq))))
 
 (defun maprest (fn seq)
   (collecting (mapr (compose #'collect fn) seq)))

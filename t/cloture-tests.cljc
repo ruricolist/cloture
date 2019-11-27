@@ -516,3 +516,27 @@
   (let [array (floats [1 2 3])]
     (is (= (CL:ARRAY-ELEMENT-TYPE array) 'CL:DOUBLE-FLOAT))
     (is (= array '(1.0 2.0 3.0)))))
+
+(deftest test-reduce
+  (is (= 15 (reduce + [1 2 3 4 5])))
+  (is (= 0 (reduce + [])))
+  (is (= 1 (reduce + [1])))
+  (is (= 3 (reduce + [1 2])))
+  (is (= 1 (reduce + 1 [])))
+  (is (= 6 (reduce + 1 [2 3]))))
+
+(deftest test-reduced
+  (is (not (reduced? :x)))
+  (is (reduced? (reduced :x)))
+  (is (= :x (unreduced (reduced :x))))
+  (is (not (reduced? (unreduced (reduced :x)))))
+
+  (is (= 6 (reduce + #{1 2 3})))
+
+  (is (reduced? (reduce + (reduced :x) '())))
+
+  (is (= 6
+         (reduce (fn [x y]
+                   (when (> y 5)
+                     (reduced y)))
+                 (range)))))
