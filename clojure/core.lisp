@@ -787,6 +787,8 @@ nested)."
        ,@(loop for (type . methods) in specs
                collect `(#_extend-type ,type ,p ,@methods)))))
 
+;;; TODO A metaclass?
+
 (defclass clojure-class ()
   ())
 
@@ -802,6 +804,10 @@ nested)."
        (defclass ,type (clojure-class)
          (,@(loop for field in fields
                   collect `(,field :initarg ,field))))
+       (define-symbol-macro ,type (find-class ',type))
+       ,@(loop for field in fields
+               collect `(defun-1 ,(symbolicate ".-" field) (x)
+                          (slot-value x ',field)))
        (defun-1 ,constructor-name ,fields
          (make-instance ',type
                         ,@(loop for field in fields
@@ -811,6 +817,7 @@ nested)."
            (with-slots ,fields self
              (format stream "~{~a~^ ~}"
                      (list ,@fields)))))
+       ;; TODO Should fields shadow arguments?
        ,@(loop for (protocol-name . methods) in specs
                do (check-protocol protocol-name methods)
                append (loop for (fn-name arg-seq . body) in methods
