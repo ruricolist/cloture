@@ -130,8 +130,7 @@ defmulti)."
                   ,@body)))))))))
 
 (defun-1 #_macroexpand-1 (form)
-  (if (special-form? form) form
-      (clojurize (macroexpand-1 form))))
+  (clojurize (clojure-macroexpand-1 form)))
 
 (defun-1 #_macroexpand (form)
   (loop for f = form then exp

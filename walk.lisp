@@ -76,3 +76,30 @@ returned by Clojure's quote."
                  (error "Improper list in Clojure tree."))
                 (otherwise tree)))
             tree))
+
+(defun clojure-macroexpand-1 (form &optional env)
+  "Like `macroexpand-1', but bottoms out if it hits a Clojure special form or a call that is not in Clojure."
+  (if (special-form? form)
+      (values form nil)
+      (multiple-value-bind (exp exp?)
+          (macroexpand-1 form env)
+        (if (not exp?) form
+            (match exp
+              ((list* (and sym (type symbol)) _)
+               (if (clojure-symbol? sym)
+                   (values exp t)
+                   (values form nil)))
+              ((and sym (type symbol))
+               (if (clojure-symbol? sym)
+                   (values exp t)
+                   (values form nil)))
+              (otherwise (values exp exp?)))))))
+
+(defun clojure-macroexpand (form &optional env)
+  (nlet lp ((form form)
+            (expanded? nil))
+    (multiple-value-bind (exp exp?)
+        (clojure-macroexpand-1 form env)
+      (if exp?
+          (lp exp t)
+          (values form expanded?)))))
