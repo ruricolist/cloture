@@ -188,29 +188,11 @@
   (with-clojure-reader ()
     (read stream eof-error-p eof-value recursive)))
 
-(defun resolve-slash-symbol (symbol)
-  (if (keywordp symbol) symbol
-      (match (symbol-name symbol)
-        ((ppcre "(.+?)/(.+)" package-name symbol-name)
-         (let* ((package
-                  (or (find-package package-name)
-                    (error (clojure-reader-error "No such package as ~s" package-name)))))
-           (find-external-symbol symbol-name package :error t)))
-        (otherwise symbol))))
-
-(defun fixup-symbols (tree)
-  ;; TODO descend into maps, vectors, etc.
-  (leaf-map (lambda (x)
-              (if (symbolp x)
-                  (resolve-slash-symbol x)
-                  x))
-            tree))
-
 (defun subread-clojure (stream char arg)
   (declare (ignore char arg))
   (let* ((*package* (find-package :cloture.impl))
          (form (read-clojure stream :recursive t)))
-    (fixup-symbols form)))
+    form))
 
 (defun read-clojure-from-string (string
                                  &key (eof-error-p t)
