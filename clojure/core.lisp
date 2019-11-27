@@ -10,11 +10,6 @@
 
 (declaim (inline . #_(cons < > >= <= + - / * mod rem)))
 
-(defconst special-forms
-  '#_(quote
-      if do def let binding var
-      loop recur throw try))
-
 (defconst empty-list '())
 
 (defmacro defun-1 (name args &body body)
@@ -133,11 +128,6 @@ defmulti)."
                   ,@decls
                   (declare #+sbcl (sb-ext:unmuffle-conditions style-warning))
                   ,@body)))))))))
-
-(defun special-form? (form)
-  (and (consp form)
-       (symbolp (car form))
-       (member (car form) special-forms)))
 
 (defun-1 #_macroexpand-1 (form)
   (if (special-form? form) form

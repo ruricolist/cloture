@@ -317,51 +317,10 @@ Also return (as a second value) a list of all the symbols bound."
       (runs specs :test (lambda (x y) (declare (ignore x))
                           (not (symbolp y))))))
 
-(defun declojurize (tree)
-  "Replace literal objects (outside quasiquotes) with constructors."
-  (map-tree (named-lambda rec (tree)
-              (match tree
-                ((type seq)
-                 `([]
-                   ,@(mapcar (op (map-tree #'rec _))
-                             (convert 'list tree))))
-                ((type set)
-                 `(|#{}|
-                   ,@(mapcar (op (map-tree #'rec _))
-                             (convert 'list tree))))
-                ((type map)
-                 `(|{}|
-                   ,@(mapcar (op (map-tree #'rec _))
-                             (map->list tree))))
-                (otherwise tree)))
-            tree))
-
-(defun clojurize (tree)
-  "Replace calls to constructors with literal objects.
-Also convert the symbols for true, false, and nil to unit types."
-  (map-tree (named-lambda rec (tree)
-              (match tree
-                ((list* '[] elts)
-                 (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
-                   (convert 'seq elts)))
-                ((list* '|#{}| elts)
-                 (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
-                   (convert 'set elts)))
-                ((list* '{} elts)
-                 (let ((elts (mapcar (op (map-tree #'rec _)) elts)))
-                   (list->map elts)))
-                ('|clojure.core|:|true|  |clojure.core|:|true|)
-                ('|clojure.core|:|false| |clojure.core|:|false|)
-                ('|clojure.core|:|nil|   |clojure.core|:|nil|)
-                ((list* _ (and _ (not (type list))))
-                 (error "Improper list in Clojure tree."))
-                (otherwise tree)))
-            tree))
-
 (defun autogensym? (x)
   (and (symbolp x)
-    (not (keywordp x))
-    (string$= "#" x)))
+       (not (keywordp x))
+       (string$= "#" x)))
 
 (defun autogensyms (tree)
   (let ((table (make-hash-table))

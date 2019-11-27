@@ -29,6 +29,7 @@
                (:file "cloture")
                (:file "quasiquote")
                (:file "readtable")
+               (:file "walk")
                (:file "asdf")
                (:file "errors")
                (:module "clojure"
