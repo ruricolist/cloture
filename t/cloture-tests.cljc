@@ -540,3 +540,7 @@
                    (when (> y 5)
                      (reduced y)))
                  (range)))))
+
+(deftest test-get-in
+  (is (= {:a 1 :b 2}
+         (get-in {:a 1 :b 2} nil :nothing))))
