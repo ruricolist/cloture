@@ -32,7 +32,9 @@
        (member (car form) special-forms)))
 
 (defun declojurize (tree)
-  "Replace literal objects (outside quasiquotes) with constructors."
+  "Replace literal objects (outside quasiquotes) with constructors.
+Code is declojurized (for compilation by Lisp) when it is returned
+from Clojure macros."
   (map-tree (named-lambda rec (tree)
               (match tree
                 ((type seq)
@@ -52,7 +54,10 @@
 
 (defun clojurize (tree)
   "Replace calls to constructors with literal objects.
-Also convert the symbols for true, false, and nil to unit types."
+Also convert the symbols for true, false, and nil to unit types.
+
+Code is \"clojurized\" before being passed to Clojure macros, and when
+returned by Clojure's quote."
   (map-tree (named-lambda rec (tree)
               (match tree
                 ((list* '[] elts)
