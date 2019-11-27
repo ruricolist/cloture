@@ -2,9 +2,28 @@
 (in-readtable clojure-shortcut)
 
 (defconst special-forms
-  '#_(quote
-      if do def let binding var
-      loop recur throw try))
+  '#_(
+      &
+      catch
+      def
+      do
+      finally
+      fn
+      if
+      let
+      letfn
+      loop
+      monitor-enter
+      monitor-exit
+      new
+      quote
+      recur
+      reify
+      set!
+      throw
+      try
+      var
+      |.|))
 
 (defun special-form? (form)
   (and (consp form)
