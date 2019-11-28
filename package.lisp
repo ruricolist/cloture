@@ -41,7 +41,7 @@
            #:slurp-clojure-file
            #:load-clojure
            #:compile-clojure
-           #:load-compile-clojure
+           #:compile-load-clojure
            #:clojure-shortcut
            #:clj
            #:cljc

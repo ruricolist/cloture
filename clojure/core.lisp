@@ -555,41 +555,53 @@ nested)."
           :key #'ensure-list
           :initial-value x))
 
+(eval-always
+  (defun gfname (name lambda-list)
+    (intern (string+ name "/" (length lambda-list))
+            (symbol-package name)))
+
+  (defun check-protocol-lambda-list (lambda-list)
+    (unless lambda-list
+      (error (clojure-syntax-error "Protocol function cannot be nullary.")))
+    (when (intersection lambda-list lambda-list-keywords)
+      (error (clojure-syntax-error "Protocol functions cannot destructure.")))))
+
 (defmacro defprotocol (name &body specs)
-  (mvlet ((sigs doc (body+docs+attrs specs)))
-    `(progn
-       (eval-always
-         (setf (symbol-protocol ',name)
-               (protocol ',name ',sigs))
-         ,@(unsplice
-            (when doc
-              `(setf (documentation ',name 'protocol)
-                     ,doc))))
-       ,@(loop for (name lambda-list docs) in sigs
-               do (unless lambda-list
-                    (error (clojure-syntax-error "Protocol function cannot be nullary.")))
-               collect `(defgeneric-1 ,(symbol-drop-leading-dash name) ,lambda-list
-                          ,@(unsplice (and docs `(:documentation ,docs)))))
-       (define-symbol-macro ,name (symbol-protocol ',name)))))
+  (flet ((expand-multiple-arities (sigs)
+           (let* ((lambda-lists (mapcar #'second sigs)))
+             (mapc #'check-protocol-lambda-list lambda-lists)
+             (mvlet* ((docs (some #'third sigs))
+                      (args (string-gensym 'args))
+                      (gfnames
+                       (mapcar (op (apply #'gfname (firstn 2 _))) sigs)))
+               `(progn
+                  ;; TODO Compiler macro for compile-time dispatching.
+                  (defun-1 ,(caar sigs) (&rest ,args)
+                    ,@(unsplice docs)
+                    (ematch ,args
+                      ,@(loop for lambda-list across (sort-new lambda-lists #'< :key #'length)
+                              for gfname in gfnames
+                              collect `((list ,@lambda-list)
+                                        (,gfname ,@lambda-list)))))
+                  ,@(loop for gfname in gfnames
+                          for lambda-list in lambda-lists
+                          collect `(defgeneric ,gfname ,lambda-list)))))))
+    (mvlet ((sigs doc (body+docs+attrs specs)))
+      `(progn
+         (eval-always
+           (setf (symbol-protocol ',name)
+                 (protocol ',name ',sigs))
+           ,@(unsplice
+              (when doc
+                `(setf (documentation ',name 'protocol)
+                       ,doc))))
+         ,@(let ((sigs (assort sigs :key #'car)))
+             (loop for fn-arities in sigs
+                   collect (expand-multiple-arities fn-arities)))
+         (define-symbol-macro ,name (symbol-protocol ',name))))))
 
 (define-clojure-macro #_defprotocol (name &body specs)
-  (mvlet* ((specs docs (body+docs+attrs specs))
-           (sigs
-            (collecting
-              (dolist (spec specs)
-                (ematch spec
-                  ((list* name sigs)
-                   (receive (sigs docs)
-                       (if (stringp (lastcar sigs))
-                           (let ((docs (lastcar sigs))
-                                 (sigs (butlast sigs)))
-                             (values sigs docs))
-                           (values sigs nil))
-                     (assert (notany #'fset:empty? sigs))
-                     (collect (list name '(x &rest args) docs)))))))))
-    `(defprotocol ,name
-       ,@(unsplice docs)
-       ,@sigs)))
+  `(defprotocol ,name ,@specs))
 
 (defprotocol #_Object
   (#_toString (o)))
@@ -597,11 +609,11 @@ nested)."
 (defprotocol #_IEquiv
   (#_equiv (self other)))
 
-(defun conj (coll x)
-  (#_conj coll x))
-
 (defprotocol #_ICollection
   (#_conj (coll x)))
+
+(defun conj (coll x)
+  (#_conj coll x))
 
 (defprotocol #_ISeq
   (#_first (seq))
@@ -627,7 +639,8 @@ nested)."
   (#_next (seq)))
 
 (defprotocol #_IIndexed
-  (#_nth (seq n &optional not-found)))
+  (#_nth (seq n))
+  (#_nth (seq n not-found)))
 
 (defun indexed? (x)
   (satisfies? '#_IIndexed x))
@@ -641,7 +654,23 @@ nested)."
   (#_satisfies? '#_Fn x))
 
 (defprotocol #_IFn
-  (#_invoke (x &rest args)))
+  (#_invoke (x))
+  (#_invoke (x y))
+  (#_invoke (x y z))
+  (#_invoke (x y z a))
+  (#_invoke (x y z a b))
+  (#_invoke (x y z a b c))
+  (#_invoke (x y z a b c d))
+  (#_invoke (x y z a b c d e))
+  (#_invoke (x y z a b c d e f))
+  (#_invoke (x y z a b c d e f g))
+  (#_invoke (x y z a b c d e f g h))
+  (#_invoke (x y z a b c d e f g h i))
+  (#_invoke (x y z a b c d e f g h i j))
+  (#_invoke (x y z a b c d e f g h i j k))
+  (#_invoke (x y z a b c d e f g h i j k l))
+  (#_invoke (x y z a b c d e f g h i j k l m))
+  (#_invoke (x y z a b c d e f g h i j k l m n)))
 
 (defun ifncall (ifn &rest args)
   ;; TODO avoid consing.
@@ -683,7 +712,8 @@ nested)."
   (#_hash (x)))
 
 (defprotocol #_ILookup
-  (#_lookup (obj key &optional not-found)))
+  (#_lookup (obj key))
+  (#_lookup (obj key not-found)))
 
 (defun lookupable? (x)
   (satisfies? '#_ILookup x))
@@ -706,8 +736,11 @@ nested)."
   (#_contains-key? (coll k))
   (#_assoc (coll k v)))
 
+(defun-1 dissoc (coll k &rest ks)
+  (#_-dissoc coll k ks))
+
 (defprotocol #_IMap
-  (#_dissoc (coll k &rest ks)))
+  (#_-dissoc (coll k ks)))
 
 (defprotocol #_IKVReduce
   (#_kv-reduce (coll f init)))
@@ -732,10 +765,14 @@ nested)."
   (#_deref (x)))
 
 (defprotocol #_IReduce
-  (#_internal-reduce (coll f &optional start)))
+  (#_internal-reduce (coll f))
+  (#_internal-reduce (coll f start)))
 
 (defprotocol #_IEditableCollection
   (#_as-transient (coll)))
+
+(defprotocol #_IVector
+  (#_assoc-n (coll n val)))
 
 (defgeneric-1 #_extends? (protocol atype)
   (:method ((protocol protocol) atype)
@@ -752,28 +789,32 @@ nested)."
   (truthy? (#_satisfies? protocol x)))
 
 (defmacro extend-type (type &body specs)
-  (let ((specs (split-specs specs)))
-    `(progn
-       ,@(loop for (p . methods) in specs
-               do (check-protocol p methods)
-               collect `(progn
-                          (defmethod #_satisfies? ((protocol (eql ',p)) (x ,type))
-                            #_true)
-                          ,@(loop for (fn-name lambda-list . body) in methods
-                                  for this = (first lambda-list)
-                                  collect `(defmethod ,fn-name ((,this ,type)
-                                                                ,@(rest lambda-list))
-                                             ,@body)))))))
+  (labels ((expand-single-arity (spec)
+             (mvlet* ((fn-name lambda-list body
+                       (values (first spec) (second spec) (cddr spec)))
+                      (this (first lambda-list)))
+               (check-protocol-lambda-list lambda-list)
+               `(defmethod ,fn-name ((,this ,type)
+                                     ,@(rest lambda-list))
+                  ,@body)))
+           (expand-multiple-arities (arities)
+             (loop for (fn-name lambda-list . body) in arities
+                   for gfname = (gfname fn-name lambda-list)
+                   do (check-protocol-lambda-list lambda-list)
+                   collect (expand-single-arity (list* gfname lambda-list body)))))
+    (let ((specs (split-specs specs)))
+      `(progn
+         ,@(loop for (p . methods) in specs
+                 do (check-protocol p methods)
+                 collect `(progn
+                            (defmethod #_satisfies? ((protocol (eql ',p)) (x ,type))
+                              #_true)
+                            ,@(let ((arities (assort methods :key #'car)))
+                                (loop for group in arities
+                                      append (expand-multiple-arities group)))))))))
 
 (define-clojure-macro #_extend-type (type &body specs)
-  (with-unique-names (this args)
-    (let ((specs (split-specs specs)))
-      `(extend-type ,type
-         ,@(loop for (p . methods) in specs
-                 append (cons p
-                              (loop for (fn-name . body) in methods
-                                    collect `(,fn-name (,this &rest ,args)
-                                                       (apply (fn ,@body) ,this ,args)))))))))
+  `(extend-type ,type ,@specs))
 
 (defmacro extend-protocol (p &body specs)
   (let ((specs (split-specs specs)))
@@ -782,10 +823,7 @@ nested)."
                collect `(extend-type ,type ,p ,@methods)))))
 
 (define-clojure-macro #_extend-protocol (p &body specs)
-  (let ((specs (split-specs specs)))
-    `(progn
-       ,@(loop for (type . methods) in specs
-               collect `(#_extend-type ,type ,p ,@methods)))))
+  `(extend-protocol ,p ,@specs))
 
 ;;; TODO A metaclass?
 
@@ -817,13 +855,14 @@ nested)."
            (with-slots ,fields self
              (format stream "~{~a~^ ~}"
                      (list ,@fields)))))
-       ;; TODO Should fields shadow arguments?
+       ;; TODO Should fields really shadow arguments?
        ,@(loop for (protocol-name . methods) in specs
                do (check-protocol protocol-name methods)
                append (loop for (fn-name arg-seq . body) in methods
                             for lambda-list = (seq->lambda-list arg-seq)
+                            for gfname = (gfname fn-name lambda-list)
                             for this = (first lambda-list)
-                            collect `(defmethod ,fn-name ((,this ,type) ,@(rest lambda-list))
+                            collect `(defmethod ,gfname ((,this ,type) ,@(rest lambda-list))
                                        (with-slots ,fields ,this
                                          ,@body)))))))
 
@@ -855,7 +894,9 @@ nested)."
 (extend-type function
   #_Fn
   #_IFn
-  (#_invoke (fn &rest args) (ifn-apply fn args)))
+  (#_invoke (fn x) (ifn-apply fn x))
+  (#_invoke (fn x y) (ifn-apply fn x y))
+  (#_invoke (fn x y z) (ifn-apply fn x y z)))
 
 (extend-protocol #_IHash
   t
@@ -863,15 +904,21 @@ nested)."
 
 (extend-protocol #_ILookup
   map
-  (#_lookup (map key &optional (not-found #_nil))
+  (#_lookup (map key)
+            (#_lookup map key #_nil))
+  (#_lookup (map key not-found)
             (multiple-value-bind (val val?)
                 (fset:lookup map key)
               (if val? val not-found)))
   hash-table
-  (#_lookup (table key &optional (not-found #_nil))
+  (#_lookup (table key)
+            (gethash table key #_nil))
+  (#_lookup (table key not-found)
             (gethash table key not-found))
   set
-  (#_lookup (set key &optional (not-found #_nil))
+  (#_lookup (set key)
+            (#_lookup set key #_nil))
+  (#_lookup (set key not-found)
             (if (fset:lookup set key) key not-found)))
 
 (extend-protocol #_IMeta
@@ -903,9 +950,8 @@ nested)."
   #_ICollection
   (#_conj (coll x) (list x))
   #_ILookup
-  (#_lookup (coll key &optional (default #_nil))
-            (declare (ignore coll key))
-            default)
+  (#_lookup (coll key) (declare (ignore key)) #_nil)
+  (#_lookup (coll key default) (declare (ignore key)) default)
   #_IAssociative
   (#_contains-key? (coll k)
                    (declare (ignore k))
@@ -914,8 +960,8 @@ nested)."
   #_IEquiv
   (#_equiv (self other) (#_nil? other))
   #_IReduce
-  (#_internal-reduce (coll f &optional (start nil start-supplied?))
-                     (if start-supplied? start (ifncall f))))
+  (#_internal-reduce (coll f) (ifncall f))
+  (#_internal-reduce (coll f start) (declare (ignore f)) start))
 
 ;;; Lisp null, Clojure's empty list.
 (extend-type null
@@ -932,14 +978,13 @@ nested)."
   (#_peek (c) #_nil)
   (#_pop (c) (error (#_IllegalStateException. "Pop on empty seq!")))
   #_ILookup
-  (#_lookup (coll key &optional (default #_nil))
-            (declare (ignore coll key))
-            default)
+  (#_lookup (coll key default) (declare (ignore key)) default)
+  (#_lookup (coll key) (declare (ignore key)) #_nil)
   #_IEquiv
   (#_equiv (n x) (or (null x) (#_empty? x)))
   #_IReduce
-  (#_internal-reduce (coll f &optional (start nil start-supplied?))
-                     (if start-supplied? start (ifncall f))))
+  (#_internal-reduce (coll f start) (declare (ignore f)) start)
+  (#_internal-reduce (coll f) (ifncall f)))
 
 (extend-type cons
   #_ISeq
@@ -956,15 +1001,17 @@ nested)."
   (#_pop (c) (cdr c))
   #_IEquiv
   (#_equiv (self other)
-           (when (equal self other)
-             (return-from #_equiv #_true))
-           (if (seq? other)
-               (#_and
-                (#_equiv (car self) (#_first other))
-                (#_equiv (cdr self) (#_rest other)))
-               #_false))
+           (if (equal self other)
+               #_true
+               (if (seq? other)
+                   (#_and
+                    (#_equiv (car self) (#_first other))
+                    (#_equiv (cdr self) (#_rest other)))
+                   #_false)))
   #_ILookup
-  (#_lookup (coll key &optional (default #_nil))
+  (#_lookup (coll key)
+            (#_lookup coll key #_nil))
+  (#_lookup (coll key default)
             (nlet rec ((tail coll)
                        (i key))
               (if (not (plusp i))
@@ -973,8 +1020,8 @@ nested)."
                   (rec (rest tail)
                        (1- i)))))
   #_IReduce
-  (#_internal-reduce (coll f &optional (start nil start-supplied?))
-                     (reduce-rests coll f start start-supplied?)))
+  (#_internal-reduce (coll f) (reduce-rests coll f nil nil))
+  (#_internal-reduce (coll f start) (reduce-rests coll f start t)))
 
 ;; A Lisp vector (or a string).
 (extend-type vector
@@ -988,14 +1035,14 @@ nested)."
   #_IReversible
   (#_rseq (x) (reverse x))
   #_IIndexed
-  (#_nth (v n &optional (not-found nil not-found-supplied?))
-         (if (and (>= n (length v))
-                  not-found-supplied?)
+  (#_nth (v n) (#_nth v n #_nil))
+  (#_nth (v n not-found)
+         (if (>= n (length v))
              not-found
              (aref v n)))
   #_ILookup
-  (#_lookup (coll key &optional (default #_nil))
-            (#_nth coll key default))
+  (#_lookup (coll key) (#_nth coll key #_nil))
+  (#_lookup (coll key default) (#_nth coll key default))
   #_IEquiv
   (#_equiv (self other)
            (if (and (vectorp other)
@@ -1017,25 +1064,21 @@ nested)."
   #_IEmptyableCollection
   (#_empty (x) (subseq x 0 0))
   #_IFn
-  (#_invoke (x &rest args) (elt x (only-elt args)))
+  (#_invoke (x arg) (elt x arg))
   #_IReversible
   (#_rseq (x) (reverse x))
   #_IIndexed
-  (#_nth (v n &optional (not-found nil not-found-supplied?))
-         (if (and (>= n (length v))
-                  not-found-supplied?)
+  (#_nth (v n) (#_nth v n #_nil))
+  (#_nth (v n not-found)
+         (if (>= n (length v))
              not-found
              (elt v n)))
   #_ILookup
-  (#_lookup (coll key &optional (default #_nil))
-            (#_nth coll key default))
-
+  (#_lookup (coll key) (#_nth coll key #_nil))
+  (#_lookup (coll key default) (#_nth coll key default))
   #_IReduce
-  (#_internal-reduce (coll f &optional (start nil start-supplied?))
-                     (multiple-value-call #'reduce f coll
-                       (if start-supplied?
-                           (values :initial-value start)
-                           (values)))))
+  (#_internal-reduce (coll f) (reduce f coll))
+  (#_internal-reduce (coll f start) (reduce f coll :initial-value start)))
 
 (extend-type string
   #_IEquiv
@@ -1044,6 +1087,11 @@ nested)."
                    (string= x y)))))
 
 (extend-type fset:seq
+  #_IVector
+  (#_assoc-n (coll val n)
+             (if (< n (size coll))
+                 (with coll n val)
+                 (error (clojure-program-error "Bad index for ~a" coll))))
   #_ISeq
   (#_first (x) (if (empty? x) #_nil (fset:first x)))
   (#_rest (x) (if (empty? x) () (fset:subseq x 1)))
@@ -1054,13 +1102,13 @@ nested)."
   #_ICollection
   (#_conj (seq x) (fset:with-last seq x))
   #_IFn
-  (#_invoke (x &rest args) (fset:lookup x (only-elt args)))
+  (#_invoke (x args) (fset:lookup x (only-elt args)))
   #_IReversible
   (#_rseq (x) (fset:reverse x))
   #_IIndexed
-  (#_nth (v n &optional (not-found nil not-found-supplied?))
-         (if (and (>= n (size v))
-                  not-found-supplied?)
+  (#_nth (v n) (#_nth v n #_nil))
+  (#_nth (v n not-found)
+         (if (>= n (size v))
              not-found
              (fset:lookup v n)))
   #_IStack
@@ -1071,9 +1119,8 @@ nested)."
   #_IAssociative
   (#_contains-key? (seq idx) (? (< -1 idx (size seq))))
   (#_assoc (seq idx value)
-           (if (< idx (size seq))
-               (with seq idx value)
-               (error (clojure-program-error "Bad index for ~a" seq))))
+           (if (numberp idx)
+               (#_assoc-n seq idx value)))
   #_IKVReduce
   (#_kv-reduce (seq f init)
                (if (empty? seq) seq
@@ -1082,14 +1129,13 @@ nested)."
                        (setf init (ifncall f init (finc k) v)))
                      init)))
   #_ILookup
-  (#_lookup (coll key &optional (default #_nil))
-            (#_nth coll key default))
+  (#_lookup (coll key) (#_nth coll key #_nil))
+  (#_lookup (coll key default) (#_nth coll key default))
   #_IReduce
-  (#_internal-reduce (coll f &optional (start nil start-supplied?))
-                     (multiple-value-call #'fset:reduce f coll
-                       (if start-supplied?
-                           (values :initial-value start)
-                           (values)))))
+  (#_internal-reduce (coll f)
+                     (fset:reduce f coll))
+  (#_internal-reduce (coll f start)
+                     (fset:reduce f coll :initial-value start)))
 
 (extend-type map
   #_ISeqable
@@ -1111,15 +1157,15 @@ nested)."
   #_ICollection
   (#_conj (map x) (apply #'fset:with map (convert 'list (#_seq x))))
   #_IFn
-  (#_invoke (x &rest args) (lookup x (only-elt args)))
+  (#_invoke (x args) (lookup x (only-elt args)))
   #_IAssociative
   (#_contains-key? (map key) (? (fset:contains? map key)))
   (#_assoc (map key value) (with map key value))
   #_IMap
-  (#_dissoc (map key &rest keys)
-            (reduce #'less
-                    (cons key keys)
-                    :initial-value map))
+  (#_-dissoc (map key keys)
+             (reduce #'less
+                     (cons key keys)
+                     :initial-value map))
   #_IKVReduce
   (#_kv-reduce (map f init)
                (if (empty? map) map
@@ -1140,7 +1186,7 @@ nested)."
   #_ICollection
   (#_conj (set x) (with set x))
   #_IFn
-  (#_invoke (x &rest args) (lookup x (only-elt args))))
+  (#_invoke (x args) (lookup x (only-elt args))))
 
 ;;; In Clojure only keywords (all keywords) and /qualified/ symbols
 ;;; are interned; unqualified symbols are not interned. Two
@@ -1226,15 +1272,20 @@ nested)."
 (defun-1 #_unchecked-add-int (x y)
   (+ x y))
 
-(defun-1 #_unchecked-multiply-int (x y)
-  (- x y))
+(defun-1 #_unchecked-multiply-int (a b)
+  (let* ((ahi (logand (ash a -16) #xFFFF))
+         (alo (logand a #xFFFF))
+         (bhi (logand (ash b -16) #xFFFFFF))
+         (blo (logand b #xFFFF)))
+    (logior (+ (* aLo bLo)
+               (ash (ash (+ (* aHi bLo)
+                            (* aLo bHi))
+                         -16)
+                    0))
+            0)))
 
 (define-clojure-macro #_declare (&rest args)
-  `(progn
-     ,@(loop for arg in args
-             collect `(progn
-                        (defalias ,arg (constantly #_nil))
-                        (#_def arg #_nil)))))
+  (declare (ignore args)))
 
 (defun-1 #_= (&rest args)
   (assure clojure-boolean
@@ -1573,15 +1624,21 @@ nested)."
   (#_equiv (self other)
            (#_= (force self) (force other)))
   #_IReduce
-  (#_internal-reduce (coll f &optional (start nil start-supplied?))
+  (#_internal-reduce (coll f)
                      (let ((f (ifn-function f))
-                           (init start)
-                           (init? start-supplied?))
+                           (init nil)
+                           (init? nil))
                        (mapr (lambda (seq)
                                (if (not init?)
                                    (setf init (#_first seq)
                                          init? t)
                                    (setf init (funcall f init (#_first seq)))))
+                             coll)))
+  (#_internal-reduce (coll f start)
+                     (let ((f (ifn-function f))
+                           (init start))
+                       (mapr (lambda (seq)
+                               (setf init (funcall f init (#_first seq))))
                              coll))))
 
 (defun-1 #_cons (x y)
@@ -2268,7 +2325,9 @@ nested)."
 
 (-> #_int (t) integer)
 (defun-1 #_int (x)
-  (coerce x 'integer))
+  (etypecase x
+    (character (char-code x))
+    (number (coerce x 'integer))))
 
 (-> #_float (t) double-float)
 (defun-1 #_float (x)
