@@ -1269,21 +1269,6 @@ nested)."
 (defun-1 #_special-symbol? (s)
   (? (memq s special-forms)))
 
-(defun-1 #_unchecked-add-int (x y)
-  (+ x y))
-
-(defun-1 #_unchecked-multiply-int (a b)
-  (let* ((ahi (logand (ash a -16) #xFFFF))
-         (alo (logand a #xFFFF))
-         (bhi (logand (ash b -16) #xFFFFFF))
-         (blo (logand b #xFFFF)))
-    (logior (+ (* aLo bLo)
-               (ash (ash (+ (* aHi bLo)
-                            (* aLo bHi))
-                         -16)
-                    0))
-            0)))
-
 (define-clojure-macro #_declare (&rest args)
   (declare (ignore args)))
 
