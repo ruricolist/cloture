@@ -841,11 +841,9 @@ nested)."
     `(progn
        (defclass ,type (clojure-class)
          (,@(loop for field in fields
-                  collect `(,field :initarg ,field))))
+                  collect `(,field :initarg ,field
+                                   :reader ,(symbolicate ".-" field)))))
        (define-symbol-macro ,type (find-class ',type))
-       ,@(loop for field in fields
-               collect `(defun-1 ,(symbolicate ".-" field) (x)
-                          (slot-value x ',field)))
        (defun-1 ,constructor-name ,fields
          (make-instance ',type
                         ,@(loop for field in fields
