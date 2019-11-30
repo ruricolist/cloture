@@ -129,6 +129,15 @@ defmulti)."
                   (declare #+sbcl (sb-ext:unmuffle-conditions style-warning))
                   ,@body)))))))))
 
+(defmacro defmethod* (name args &body body)
+  "Like defmethod, but make sure Clojure literals don't appear as type specifiers.
+This is an issue for specializing on Clojure's nil, true, or false."
+  `(defmethod ,name ,(sublis `((,#_nil . #_nil)
+                               (,#_true . #_true)
+                               (,#_false . #_false))
+                      args)
+     ,@body))
+
 (defun-1 #_macroexpand-1 (form)
   (clojurize (clojure-macroexpand-1 form)))
 
@@ -557,29 +566,32 @@ nested)."
 
 (eval-always
   (defun gfname (name lambda-list)
-    (intern (string+ name "/" (length lambda-list))
+    (intern (string+ name "/" (size lambda-list))
             (symbol-package name)))
 
   (defun check-protocol-lambda-list (lambda-list)
+    (setf lambda-list (convert 'list lambda-list))
     (unless lambda-list
       (error (clojure-syntax-error "Protocol function cannot be nullary.")))
     (when (intersection lambda-list lambda-list-keywords)
       (error (clojure-syntax-error "Protocol functions cannot destructure.")))))
 
-(defmacro defprotocol (name &body specs)
+(define-clojure-macro #_defprotocol (name &body specs)
   (flet ((expand-multiple-arities (sigs)
            (let* ((lambda-lists (mapcar #'second sigs)))
              (mapc #'check-protocol-lambda-list lambda-lists)
              (mvlet* ((docs (some #'third sigs))
                       (args (string-gensym 'args))
                       (gfnames
-                       (mapcar (op (apply #'gfname (firstn 2 _))) sigs)))
+                       (mapcar (op (apply #'gfname (firstn 2 _))) sigs))
+                      (lambda-lists
+                       (mapcar (op (convert 'list _)) lambda-lists)))
                `(progn
                   ;; TODO Compiler macro for compile-time dispatching.
                   (defun-1 ,(caar sigs) (&rest ,args)
                     ,@(unsplice docs)
                     (ematch ,args
-                      ,@(loop for lambda-list across (sort-new lambda-lists #'< :key #'length)
+                      ,@(loop for lambda-list across (sort-new lambda-lists #'< :key #'size)
                               for gfname in gfnames
                               collect `((list ,@lambda-list)
                                         (,gfname ,@lambda-list)))))
@@ -600,8 +612,8 @@ nested)."
                    collect (expand-multiple-arities fn-arities)))
          (define-symbol-macro ,name (symbol-protocol ',name))))))
 
-(define-clojure-macro #_defprotocol (name &body specs)
-  `(defprotocol ,name ,@specs))
+(defmacro defprotocol (name &body specs)
+  `(#_defprotocol ,name ,@specs))
 
 (defprotocol #_Object
   (#_toString (o)))
@@ -788,15 +800,30 @@ nested)."
 (defun satisfies? (protocol x)
   (truthy? (#_satisfies? protocol x)))
 
-(defmacro extend-type (type &body specs)
+(define-symbol-macro %this (error "No this!"))
+
+(define-clojure-macro #_extend-type (type &body specs)
   (labels ((expand-single-arity (spec)
              (mvlet* ((fn-name lambda-list body
                        (values (first spec) (second spec) (cddr spec)))
-                      (this (first lambda-list)))
+                      (lambda-list (convert 'list lambda-list))
+                      (lambda-list ignored
+                       (with-collectors (ll ign)
+                         (dolist (var lambda-list)
+                           (if (string= '_ var)
+                               (let ((gensym (string-gensym var)))
+                                 (ll gensym)
+                                 (ign gensym))
+                               (ll var)))))
+                      (this (first lambda-list))
+                      (body decls (parse-body body)))
                (check-protocol-lambda-list lambda-list)
-               `(defmethod ,fn-name ((,this ,type)
-                                     ,@(rest lambda-list))
-                  ,@body)))
+               `(defmethod* ,fn-name ((,this ,type)
+                                      ,@(rest lambda-list))
+                  (declare (ignore ,@ignored))
+                  ,@decls
+                  (symbol-macrolet ((%this ,this))
+                    ,@body))))
            (expand-multiple-arities (arities)
              (loop for (fn-name lambda-list . body) in arities
                    for gfname = (gfname fn-name lambda-list)
@@ -807,14 +834,14 @@ nested)."
          ,@(loop for (p . methods) in specs
                  do (check-protocol p methods)
                  collect `(progn
-                            (defmethod #_satisfies? ((protocol (eql ',p)) (x ,type))
+                            (defmethod* #_satisfies? ((protocol (eql ',p)) (x ,type))
                               #_true)
                             ,@(let ((arities (assort methods :key #'car)))
                                 (loop for group in arities
                                       append (expand-multiple-arities group)))))))))
 
-(define-clojure-macro #_extend-type (type &body specs)
-  `(extend-type ,type ,@specs))
+(defmacro extend-type (type &body specs)
+  `(#_extend-type ,type ,@specs))
 
 (defmacro extend-protocol (p &body specs)
   (let ((specs (split-specs specs)))
@@ -833,7 +860,6 @@ nested)."
 (define-clojure-macro #_deftype (type fields &body opts+specs)
   (mvlet* ((fields (convert 'list fields))
            (opts specs (parse-leading-keywords opts+specs))
-           (specs (split-specs specs))
            (constructor-name
             (intern (string+ type ".")
                     (symbol-package type))))
@@ -848,21 +874,14 @@ nested)."
          (make-instance ',type
                         ,@(loop for field in fields
                                 append `(',field ,field))))
-       (defmethod print-object ((self ,type) stream)
+       (defmethod* print-object ((self ,type) stream)
          (print-unreadable-object (self stream :type t)
            (with-slots ,fields self
              (format stream "~{~a~^ ~}"
                      (list ,@fields)))))
-       ;; TODO Should fields really shadow arguments?
-       ,@(loop for (protocol-name . methods) in specs
-               do (check-protocol protocol-name methods)
-               append (loop for (fn-name arg-seq . body) in methods
-                            for lambda-list = (seq->lambda-list arg-seq)
-                            for gfname = (gfname fn-name lambda-list)
-                            for this = (first lambda-list)
-                            collect `(defmethod ,gfname ((,this ,type) ,@(rest lambda-list))
-                                       (with-slots ,fields ,this
-                                         ,@body)))))))
+       (symbol-macrolet ,(loop for field in fields
+                               collect `(,field (slot-value %this ',field)))
+         (#_extend-type ,type ,@specs)))))
 
 (extend-type t
   #_Object
@@ -948,18 +967,16 @@ nested)."
   #_ICollection
   (#_conj (coll x) (list x))
   #_ILookup
-  (#_lookup (coll key) (declare (ignore key)) #_nil)
-  (#_lookup (coll key default) (declare (ignore key)) default)
+  (#_lookup (coll _) #_nil)
+  (#_lookup (coll _ default) default)
   #_IAssociative
-  (#_contains-key? (coll k)
-                   (declare (ignore k))
-                   #_false)
+  (#_contains-key? (coll _) #_false)
   (#_assoc (coll k v) (fset:map (k v)))
   #_IEquiv
   (#_equiv (self other) (#_nil? other))
   #_IReduce
   (#_internal-reduce (coll f) (ifncall f))
-  (#_internal-reduce (coll f start) (declare (ignore f)) start))
+  (#_internal-reduce (coll _ start) start))
 
 ;;; Lisp null, Clojure's empty list.
 (extend-type null
@@ -976,12 +993,12 @@ nested)."
   (#_peek (c) #_nil)
   (#_pop (c) (error (#_IllegalStateException. "Pop on empty seq!")))
   #_ILookup
-  (#_lookup (coll key default) (declare (ignore key)) default)
-  (#_lookup (coll key) (declare (ignore key)) #_nil)
+  (#_lookup (coll _ default) default)
+  (#_lookup (coll _) #_nil)
   #_IEquiv
   (#_equiv (n x) (or (null x) (#_empty? x)))
   #_IReduce
-  (#_internal-reduce (coll f start) (declare (ignore f)) start)
+  (#_internal-reduce (coll _ start) start)
   (#_internal-reduce (coll f) (ifncall f)))
 
 (extend-type cons

@@ -549,3 +549,31 @@
   (let [x (transient {})]
     (persistent! x)
     (is (thrown? IllegalAccessError (persistent! x)))))
+
+(defprotocol IFoo
+  (foo [x])
+  (foo [x y])
+  (foo [x y z]))
+
+(deftype Foomatic []
+  IFoo
+  (foo [_] 1)
+  (foo [_ _] 2)
+  (foo [_ _ _] 3))
+
+(deftest test-polymorphic-defprotocol
+  (let [foomatic (Foomatic.)]
+    (is (= 1 (foo foomatic)))
+    (is (= 2 (foo foomatic 1)))
+    (is (= 3 (foo foomatic 1 2)))))
+
+(defprotocol IPersonName
+  (person-name [person]))
+
+(deftype Person [name]
+  IPersonName
+  (person-name [self] name))
+
+(deftest test-deftype-slots
+  (let [name "John Q. Person"]
+    (is (= name (person-name (Person. name))))))
