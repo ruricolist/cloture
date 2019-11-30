@@ -1,7 +1,5 @@
 # Cloture
 
-[![Build Status](https://travis-ci.org/ruricolist/cloture.svg?branch=master)](https://travis-ci.org/ruricolist/cloture)
-
 Cloture is an implementation of Clojure in Common Lisp. It is designed to interoperate well with Common Lisp; e.g. Clojure is read by the Lisp reader and Clojure namespaces are Lisp packages.
 
 Cloture is in very early (pre-alpha) stages, but it has progressed far enough to load a (lightly edited) version of [test.clj][], allowing the [test suite][] to actually be written in Clojure.
