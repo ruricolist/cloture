@@ -69,15 +69,6 @@ defmulti)."
 (defun nil? (x)
   (eql x #_nil))
 
-(defun-1 #_nil? (x)
-  (? (eql x #_nil)))
-
-(defun-1 #_false? (x)
-  (? (eql x #_false)))
-
-(defun-1 #_true? (x)
-  (? (eql x #_true)))
-
 (defun-1 #_identical? (x y)
   (? (eq x y)))
 
@@ -149,9 +140,6 @@ This is an issue for specializing on Clojure's nil, true, or false."
 
 (define-clojure-macro #_if (test then &optional (else #_nil))
   `(if (truthy? ,test) ,then ,else))
-
-(define-clojure-macro #_if-not (test then &optional (else #_nil))
-  `(#_if ,test ,else ,then))
 
 (define-clojure-macro #_do (&body exprs)
   `(progn ,@exprs))
@@ -541,27 +529,6 @@ nested)."
 (comment
   (|clojure.core|:|defmacro| foo () 'foo))
 
-(define-clojure-macro #_and (&rest forms)
-  (if (null forms) #_true
-      (with-unique-names (val)
-        `(let ((,val ,(first forms)))
-           (#_if-not ,val
-                     ,val
-                     (#_and ,@(rest forms)))))))
-
-(define-clojure-macro #_or (&rest forms)
-  (if (null forms) #_nil
-      (with-unique-names (val)
-        `(let ((,val ,(first forms)))
-           (#_if ,val ,val
-                 (#_or ,@(rest forms)))))))
-
-(define-clojure-macro #_when (test &body body)
-  `(#_if ,test (#_do ,@body)))
-
-(define-clojure-macro #_when-not (test &body body)
-  `(#_if-not ,test (#_do ,@body)))
-
 (defun-1 #_apply (fn &rest args)
   (apply #'ifn-apply fn args))
 
@@ -644,11 +611,6 @@ nested)."
 
 (defprotocol #_ICollection
   (#_-conj (coll x)))
-
-(defn #_conj
-  ((coll x) (#_-conj coll x))
-  ((coll x . xs)
-   (reduce #_-conj (cons x xs) :initial-value coll)))
 
 (defun conj (coll x &rest xs)
   (apply #_conj coll x xs))
@@ -773,9 +735,6 @@ nested)."
 (defprotocol #_IAssociative
   (#_contains-key? (coll k))
   (#_assoc (coll k v)))
-
-(defun-1 dissoc (coll k &rest ks)
-  (#_-dissoc coll k ks))
 
 (defprotocol #_IMap
   (#_-dissoc (coll k ks)))
@@ -1292,9 +1251,6 @@ nested)."
 (defun-1 #_gensym (&optional (prefix-string "G__"))
   (gensym prefix-string))
 
-(defun-1 #_get (map key &optional not-found)
-  (#_lookup map key not-found))
-
 (defun-1 #_constantly (x)
   (constantly x))
 
@@ -1330,9 +1286,6 @@ nested)."
 
 (defun not= (&rest args)
   (truthy? (apply #'#_not= args)))
-
-(defun-1 #_not= (&rest args)
-  (#_not (apply #'#_= args)))
 
 (defun-1 #_== (&rest args)
   (apply #'= args))
@@ -1434,8 +1387,6 @@ nested)."
 (defun-1 #_class? (x)
   (typep x 'class))
 
-(defun-1 #_identity (x) x)
-
 (defun-1 #_rand (&optional (n 1))
   (random (coerce n 'double-float)))
 
@@ -1457,9 +1408,6 @@ nested)."
 (defun-1 #_all-ns ()
   (list-all-packages))
 
-(defun-1 #_empty? (xs)
-  (#_not (#_seq xs)))
-
 (defun-1 #_reverse (xs)
   (typecase xs
     (sequence (reverse xs))
@@ -1479,19 +1427,6 @@ nested)."
 (defun-1 #_resolve (sym)
   (#_ns-resolve #_*ns* sym))
 
-(define-clojure-macro #_if-let (bindings &body (then &optional else))
-  (ematch bindings
-    ((seq binds test)
-     (with-unique-names (temp)
-       `(let ((,temp ,test))
-          (#_if ,temp
-                (#_let ,(seq binds temp)
-                       ,then)
-                ,else))))))
-
-(define-clojure-macro #_when-let (bindings &body body)
-  `(#_if-let ,bindings (#_do ,@body)))
-
 (defun-1 #_symbol (ns &optional name)
   (if (not (nil? name))
       (intern name (#_the-ns ns))
@@ -1499,28 +1434,6 @@ nested)."
 
 (defun-1 #_symbol? (x)
   (? (and (symbolp x) (not (keywordp x)))))
-
-(defun-1 #_fnil (f x &optional
-                   (y #_nil y-supplied?)
-                   (z #_nil z-supplied?))
-  (cond (z-supplied?
-         (lambda (arg1 arg2 arg3 &rest args)
-           (ifn-apply f
-                      (if (nil? arg1) x arg1)
-                      (if (nil? arg2) y arg2)
-                      (if (nil? arg3) z arg3)
-                      args)))
-        (y-supplied?
-         (lambda (arg1 arg2 &rest args)
-           (ifn-apply f
-                      (if (nil? arg1) x arg1)
-                      (if (nil? arg2) y arg2)
-                      args)))
-        (t
-         (lambda (arg1 &rest args)
-           (ifn-apply f
-                      (if (nil? arg1) x arg1)
-                      args)))))
 
 (defun-1 #_new (class &rest args)
   (apply #'make-instance class args))
@@ -1551,22 +1464,6 @@ nested)."
     (do-map (k v map)
       (declare (ignore v))
       (collect k))))
-
-(defun-1 #_nthnext (coll n)
-  (assert (not (minusp n)))
-  (nlet nthnext ((coll coll)
-                 (n n))
-    (if (zerop n)
-        (#_seq coll)
-        (nthnext (#_next coll) (1- n)))))
-
-(defun-1 #_nthrest (coll n)
-  (assert (not (minusp n)))
-  (nlet rec ((coll coll)
-             (n n))
-    (if (zerop n)
-        (#_seq coll)
-        (rec (#_next coll) (1- n)))))
 
 (define-clojure-macro #_time (form)
   `(time ,form))
