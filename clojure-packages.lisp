@@ -41,6 +41,7 @@
                   "contains-key?" "kv-reduce"
                   "new"
                   "Fn"
+                  "set!"
                   "IAssociative"
                   "ICollection" "-conj"
                   "IComparable"

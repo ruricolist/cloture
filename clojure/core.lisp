@@ -2309,3 +2309,6 @@ nested)."
          (prog1 coll
            (setf (transient-coll coll)
                  (conj (transient-coll coll) x))))))
+
+(define-clojure-macro #_set! (x val)
+  `(setf ,x ,val))
