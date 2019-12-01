@@ -643,10 +643,15 @@ nested)."
   (#_equiv (self other)))
 
 (defprotocol #_ICollection
-  (#_conj (coll x)))
+  (#_-conj (coll x)))
 
-(defun conj (coll x)
-  (#_conj coll x))
+(defn #_conj
+  ((coll x) (#_-conj coll x))
+  ((coll x . xs)
+   (reduce #_-conj (cons x xs) :initial-value coll)))
+
+(defun conj (coll x &rest xs)
+  (apply #_conj coll x xs))
 
 (defprotocol #_ISeq
   (#_first (seq))
@@ -986,7 +991,7 @@ nested)."
   #_IEmptyableCollection
   (#_empty (x) #_nil)
   #_ICollection
-  (#_conj (coll x) (list x))
+  (#_-conj (coll x) (list x))
   #_ILookup
   (#_lookup (coll _) #_nil)
   (#_lookup (coll _ default) default)
@@ -1009,7 +1014,7 @@ nested)."
   #_IEmptyableCollection
   (#_empty (x) nil)
   #_ICollection
-  (#_conj (coll x) (list x))
+  (#_-conj (coll x) (list x))
   #_IStack
   (#_peek (c) #_nil)
   (#_pop (c) (error (#_IllegalStateException. "Pop on empty seq!")))
@@ -1031,7 +1036,7 @@ nested)."
   #_IEmptyableCollection
   (#_empty (x) nil)
   #_ICollection
-  (#_conj (coll x) (cons x coll))
+  (#_-conj (coll x) (cons x coll))
   #_IStack
   (#_peek (c) (car c))
   (#_pop (c) (cdr c))
@@ -1136,7 +1141,7 @@ nested)."
   #_IEmptyableCollection
   (#_empty (seq) (fset:empty-seq))
   #_ICollection
-  (#_conj (seq x) (fset:with-last seq x))
+  (#_-conj (seq x) (fset:with-last seq x))
   #_IFn
   (#_invoke (x args) (fset:lookup x (only-elt args)))
   #_IReversible
@@ -1191,7 +1196,10 @@ nested)."
   #_IEmptyableCollection
   (#_empty (map) (fset:empty-map))
   #_ICollection
-  (#_conj (map x) (apply #'fset:with map (convert 'list (#_seq x))))
+  (#_-conj (map x)
+           (if (satisfies? '#_IMap x)
+               (#_merge map x)
+               (apply #'fset:with map (convert 'list x))))
   #_IFn
   (#_invoke (x args) (lookup x (only-elt args)))
   #_IAssociative
@@ -1220,7 +1228,7 @@ nested)."
   #_IEmptyableCollection
   (#_empty (set) (fset:empty-set))
   #_ICollection
-  (#_conj (set x) (with set x))
+  (#_-conj (set x) (with set x))
   #_IFn
   (#_invoke (x args) (lookup x (only-elt args))))
 
@@ -1654,13 +1662,15 @@ nested)."
                                    (setf init (#_first seq)
                                          init? t)
                                    (setf init (funcall f init (#_first seq)))))
-                             coll)))
+                             coll)
+                       init))
   (#_internal-reduce (coll f start)
                      (let ((f (ifn-function f))
                            (init start))
                        (mapr (lambda (seq)
                                (setf init (funcall f init (#_first seq))))
-                             coll))))
+                             coll)
+                       init)))
 
 (defun-1 #_cons (x y)
   (cons x y))
@@ -2407,3 +2417,9 @@ nested)."
          (prog1 coll
            (setf (transient-coll coll)
                  (conj (transient-coll coll) x))))))
+
+(defn #_into
+  (() (seq))
+  ((to) to)
+  ((to from)
+   (#_apply #_conj to (#_seq from))))

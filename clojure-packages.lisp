@@ -42,7 +42,7 @@
                   "new"
                   "Fn"
                   "IAssociative"
-                  "ICollection"
+                  "ICollection" "-conj"
                   "IComparable"
                   "ICounted"
                   "IDeref"

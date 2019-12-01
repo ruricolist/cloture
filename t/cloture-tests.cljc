@@ -577,3 +577,13 @@
 (deftest test-deftype-slots
   (let [name "John Q. Person"]
     (is (= name (person-name (Person. name))))))
+
+(deftest test-into
+  (is (= [] (into)))
+  (is (= [1 2 3] (into [1 2 3])))
+  (is (= {:x 1 :y 2} (into {:x 1} {:y 2})))
+  (is (= {:x 1} (into {} [[:x 1]])))
+  (is (= {:x 1} (into {} [{:x 1}])))
+  (is (= [[:x 1] [:y 2]] (into [] {:x 1 :y 2})))
+  (is (= '(3 2 1) (into () '(1 2 3))))
+  (is (= [1 2 3 4 5 6] (into [1 2 3] '(4 5 6)))))
