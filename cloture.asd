@@ -40,4 +40,4 @@
                              (:file "set")
                              (:file "string")
                              (:file "stacktrace")))
-               (:file "repl")))
+               (:file "clojure-repl")))
