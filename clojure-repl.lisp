@@ -41,6 +41,9 @@
     (set-pprint-dispatch '(cons (eql quote)) nil 0 table)
     (set-pprint-dispatch '(cons (eql function)) nil 0 table)))
 
+(defun compile-and-eval (form)
+  (funcall (compile nil (eval `(lambda () ,form)))))
+
 (defun repl ()
   (let ((*print-pretty* t)
         (*print-pprint-dispatch*
@@ -52,7 +55,7 @@
             (finish-output)
             (with-simple-restart (abort "Return to REPL")
               (let ((form (read)))
-                (format t "~s" (eval form))
+                (format t "~s" (compile-and-eval form))
                 (finish-output)))))))
 
 (defun-1 #_exit ()
