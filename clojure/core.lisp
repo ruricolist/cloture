@@ -1856,12 +1856,10 @@ nested)."
 
 (defun-1 #_interpose (sep coll)
   (if (not (seq? coll)) '()
-      (if (not (seq? (#_rest coll)))
-          coll
-          (#_concat
-           (list (#_first coll)
-                 sep)
-           (#_interpose sep (#_next coll))))))
+      (if (not (seq? (#_rest coll))) coll
+          (#_concat (list (#_first coll)
+                          sep)
+                    (#_interpose sep (#_next coll))))))
 
 (defun-1 #_group-by (fn seq)
   (let* ((fn (ifn-function fn))
