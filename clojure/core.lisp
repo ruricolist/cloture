@@ -2272,14 +2272,6 @@ nested)."
                     (#_assoc m key (rec (#_lookup m key) keys)))))))
       (rec m ks))))
 
-(defun-1 #_get-in (m ks &optional not-found)
-  (nlet get-in ((m m)
-                (ks ks))
-    (if (not (seq? ks)) m
-        (let ((k (#_first ks))
-              (ks (#_rest ks)))
-          (get-in (#_lookup m k not-found) ks)))))
-
 (defun-1 #_subvec (v start &optional end)
   (if (nil? end)
       (fset:subseq v start)
@@ -2415,9 +2407,3 @@ nested)."
          (prog1 coll
            (setf (transient-coll coll)
                  (conj (transient-coll coll) x))))))
-
-(defn #_into
-  (() (seq))
-  ((to) to)
-  ((to from)
-   (#_apply #_conj to (#_seq from))))

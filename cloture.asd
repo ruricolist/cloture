@@ -35,6 +35,7 @@
                (:module "clojure"
                 :serial t
                 :components ((:file "core")
+                             (:file "core2")
                              (:file "pprint")
                              (:file "template")
                              (:file "set")
