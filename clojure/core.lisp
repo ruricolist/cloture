@@ -1177,6 +1177,11 @@ nested)."
                        (setf init (ifncall f init k v)))
                      init))))
 
+(extend-type hash-table
+  #_IKVReduce
+  (#_kv-reduce (ht f init)
+               (hash-fold f init ht)))
+
 (extend-type set
   #_ISeqable
   (#_seq (set)
