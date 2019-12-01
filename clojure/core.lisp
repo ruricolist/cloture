@@ -317,6 +317,27 @@ nested)."
     `(#_def ,name ,@(unsplice docs)
             (#_fn ,name ,@body))))
 
+;;; TODO more useful lambda list for whole function.
+(defmacro defn (name &body clauses)
+  (with-unique-names (args)
+    `(defun-1 ,name (&rest ,args)
+       (apply (case-lambda ,@clauses)
+              ,args))))
+
+(defmacro case-lambda (&body clauses)
+  (with-unique-names (args)
+    `(lambda (&rest ,args)
+       (ematch ,args
+         ;; TODO check order.
+         ,@(loop for (vars . body) in clauses
+                 collect (if (proper-list-p vars)
+                             `((list ,@vars) ,@body)
+                             (let ((last (last vars)))
+                               `((list* ,@(butlast vars)
+                                        ,(car last)
+                                        ,(cdr last))
+                                 ,@body))))))))
+
 (define-clojure-macro #_defn- (name &body body)
   (mvlet ((body docs (body+docs+attrs body)))
     `(#_def- ,name ,@(unsplice docs)
@@ -1657,10 +1678,9 @@ nested)."
     (and (seq? seq)
          (doall (#_next seq)))))
 
-(defun-1 #_doall (&rest args)
-  (ematch args
-    ((list seq) (doall seq) seq)
-    ((list n seq) (doall-n n seq) seq)))
+(defn #_doall
+  ((seq) (doall seq) seq)
+  ((n seq) (doall-n n seq) seq))
 
 (defun-1 #_dorun (&rest args)
   ;; TODO avoid consing
@@ -1760,44 +1780,39 @@ nested)."
                        (lazy-seq (cons (fn) (repeatedly fn (1- n)))))))
           (rec n)))))
 
-(defun-1 #_repeatedly (&rest args)
-  (ematch args
-    ((list n fn)
-     (repeatedly fn n))
-    ((list fn)
-     (repeatedly fn))))
+(defn #_repeatedly
+  ((n fn)
+   (repeatedly fn n))
+  ((fn)
+   (repeatedly fn)))
 
-(defun-1 #_repeat (n-or-x &optional x)
-  (multiple-value-bind (n x)
-      (if (nil? x)
-          (values nil n-or-x)
-          (values n-or-x x))
-    (if (null n)
-        (#_repeatedly (#_constantly x))
-        (#_repeatedly n (#_constantly x)))))
+(defn #_repeat
+  ((x)
+   (#_repeatedly (#_constantly x)))
+  ((n x)
+   (#_repeatedly n (#_constantly x))))
 
 (defunit infinity)
 
-(defun-1 #_range (&rest args)
-  (ematch args
-    ((list start (and _ (eql start)) _)
-     '())
-    ((list start _ 0)
-     (#_repeat start))
-    ((list start (and end (eq infinity)) step)
-     (let ((next (+ start step)))
-       (lazy-seq (cons start (#_range next end step)))))
-    ((list start end step)
-     (let ((next (+ start step)))
-       (if (< next end)
-           (lazy-seq (cons start (#_range next end step)))
-           (list start))))
-    ((list start end)
-     (#_range start end 1))
-    ((list end)
-     (#_range 0 end 1))
-    ((list)
-     (#_range 0 infinity 1))))
+(defn #_range
+  ((start (and _ (eql start)) _)
+   '())
+  ((start _ 0)
+   (#_repeat start))
+  ((start (and end (eq infinity)) step)
+   (let ((next (+ start step)))
+     (lazy-seq (cons start (#_range next end step)))))
+  ((start end step)
+   (let ((next (+ start step)))
+     (if (< next end)
+         (lazy-seq (cons start (#_range next end step)))
+         (list start))))
+  ((start end)
+   (#_range start end 1))
+  ((end)
+   (#_range 0 end 1))
+  (()
+   (#_range 0 infinity 1)))
 
 (defun-1 #_pr (&rest xs)
   (format t "~{~s~^ ~}" xs)
@@ -1898,14 +1913,13 @@ nested)."
   (with-thunk (body f)
     `(call/reduced ,body ,reduce-fn)))
 
-(defun-1 #_reduce (&rest args)
-  (ematch args
-    ((list f coll)
-     (with-reduced (f f)
-       (#_internal-reduce (#_seq coll) f)))
-    ((list f start coll)
-     (with-reduced (f f)
-       (#_internal-reduce (#_seq coll) f start)))))
+(defn #_reduce
+  ((f coll)
+   (with-reduced (f f)
+     (#_internal-reduce (#_seq coll) f)))
+  ((f start coll)
+   (with-reduced (f f)
+     (#_internal-reduce (#_seq coll) f start))))
 
 (defun reduce-rests (coll f start start?)
   (let ((f (ifn-function f))
@@ -2263,15 +2277,14 @@ nested)."
       (fset:subseq v start)
       (fset:subseq v start end)))
 
-(defun-1 #_read-string (&rest args)
-  (ematch args
-    ((list string)
-     (#_read-string (empty-map) string))
-    ((list map string)
-     (let* ((*readtable* (find-readtable 'cloture))
-            (eof (#_lookup map :|eof| :|eofthrow|))
-            (eof-error? (eql :|eof| :|eofthrow|)))
-       (read-from-string string eof-error? eof)))))
+(defn #_read-string
+  ((string)
+   (#_read-string (empty-map) string))
+  ((map string)
+   (let* ((*readtable* (find-readtable 'cloture))
+          (eof (#_lookup map :|eof| :|eofthrow|))
+          (eof-error? (eql :|eof| :|eofthrow|)))
+     (read-from-string string eof-error? eof))))
 
 (defun-1 #_set? (x)
   (? (typep x 'set)))
