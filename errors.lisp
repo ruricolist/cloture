@@ -71,6 +71,12 @@
                (format s "Transient ~a has already been persisted."
                        transient)))))
 
+(defcondition not-yet-implemented (#_Throwable)
+  ((what :initarg :what))
+  (:report (lambda (c s)
+             (with-slots (what) c
+               (format s "Not yet implemented: ~a" what)))))
+
 (defcondition simple-clojure-error (clojure-condition simple-error) ())
 (defcondition clojure-program-error (program-error clojure-error) ())
 (defcondition simple-clojure-program-error (clojure-program-error simple-condition) ())
