@@ -1005,11 +1005,7 @@ nested)."
   (#_equiv (self other)
            (if (equal self other)
                #_true
-               (if (seq? other)
-                   (#_and
-                    (#_equiv (car self) (#_first other))
-                    (#_equiv (cdr self) (#_rest other)))
-                   #_false)))
+               (? (coll= self other))))
   #_ILookup
   (#_lookup (coll key)
             (#_lookup coll key #_nil))
@@ -1048,14 +1044,9 @@ nested)."
   #_IEquiv
   (#_equiv (self other)
            (if (and (vectorp other)
-                    (vector= self other :test #'#_=))
+                 (vector= self other :test #'#_=))
                #_true
-               (if (emptyp self)
-                   (#_empty? other)
-                   (#_and (#_equiv (#_first self)
-                                   (#_first other))
-                          (#_equiv (#_rest self)
-                                   (#_rest other)))))))
+               (? (coll= self other)))))
 
 (extend-type sequence
   #_ISeq
@@ -1080,7 +1071,9 @@ nested)."
   (#_lookup (coll key default) (#_nth coll key default))
   #_IReduce
   (#_internal-reduce (coll f) (reduce f coll))
-  (#_internal-reduce (coll f start) (reduce f coll :initial-value start)))
+  (#_internal-reduce (coll f start) (reduce f coll :initial-value start))
+  #_IEquiv
+  (#_equiv (self other) (? (coll= self other))))
 
 (extend-type string
   #_ISeqable
@@ -1139,7 +1132,9 @@ nested)."
   (#_internal-reduce (coll f)
                      (fset:reduce f coll))
   (#_internal-reduce (coll f start)
-                     (fset:reduce f coll :initial-value start)))
+                     (fset:reduce f coll :initial-value start))
+  #_IEquiv
+  (#_equiv (self other) (? (coll= self other))))
 
 (extend-type map
   #_ISeqable
@@ -1556,8 +1551,7 @@ nested)."
   #_IEmptyableCollection
   (#_empty (seq) '())
   #_IEquiv
-  (#_equiv (self other)
-           (#_= (force self) (force other)))
+  (#_equiv (self other) (? (coll= (force self) (force other))))
   #_IReduce
   (#_internal-reduce (coll f)
                      (let ((f (ifn-function f))
@@ -2131,6 +2125,15 @@ Analogous to `mapc'."
   "Map FN over SEQS, Clojure seqs, collecting a list.
 Analogous to `mapcar'."
   (collecting (apply #'mapf (compose #'collect fn) seqs)))
+
+(defun coll= (self other)
+  (if (seq? self)
+      (if (seq? other)
+          (and
+            (truthy? (#_= (#_first self) (#_first other)))
+            (truthy? (#_= (#_rest self) (#_rest other))))
+          nil)
+      (not (seq? other))))
 
 (define-do-macro doseq ((var seq &optional ret) &body body)
   (let ((decls
