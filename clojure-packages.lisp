@@ -42,6 +42,7 @@
                   "new"
                   "Fn"
                   "set!"
+                  "imul"
                   "IAssociative"
                   "ICollection" "-conj"
                   "IComparable"

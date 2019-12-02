@@ -2312,3 +2312,11 @@ nested)."
 
 (define-clojure-macro #_set! (x val)
   `(setf ,x ,val))
+
+(defun-1 #_mix-collection-hash (hash-basis count)
+  ;; TODO export from cl-murmurhash
+  (murmurhash::hash-integer count hash-basis t))
+
+(defun-1 #_imul (x y)
+  (declare (type (unsigned-byte 32) x y))
+  (logand (* x y) #xffffffff))
