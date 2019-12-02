@@ -1561,18 +1561,18 @@ nested)."
                      (let ((f (ifn-function f))
                            (init nil)
                            (init? nil))
-                       (mapr (lambda (seq)
+                       (mapf (lambda (item)
                                (if (not init?)
-                                   (setf init (#_first seq)
+                                   (setf init item
                                          init? t)
-                                   (setf init (funcall f init (#_first seq)))))
+                                   (setf init (funcall f init item))))
                              coll)
                        init))
   (#_internal-reduce (coll f start)
                      (let ((f (ifn-function f))
                            (init start))
-                       (mapr (lambda (seq)
-                               (setf init (funcall f init (#_first seq))))
+                       (mapf (lambda (item)
+                               (setf init (funcall f init item)))
                              coll)
                        init)))
 
@@ -1602,14 +1602,14 @@ nested)."
   (values))
 
 (defun lazy-seq->list (lazy-seq)
-  (maprest #'identity lazy-seq))
+  (mapfirst #'identity lazy-seq))
 
 (defmethod convert ((type (eql 'list)) (seq lazy-seq) &key)
   (lazy-seq->list seq))
 
 (defmethod convert ((type (eql 'seq)) (seq lazy-seq) &key)
   (let ((seq (empty-seq)))
-    (mapr (op (withf seq _)) seq)
+    (mapfirst (op (withf seq _)) seq)
     seq))
 
 (defun-1 #_concat (&rest seqs)
@@ -1837,7 +1837,7 @@ nested)."
   (let ((f (ifn-function f))
         (init start)
         (init? start?))
-    (mapr (lambda (elt)
+    (mapf (lambda (elt)
             (if (not init?)
                 (setf init elt
                       init? t)
@@ -2105,29 +2105,36 @@ nested)."
   #_IPending
   (#_realized? (p) (lparallel:fulfilledp p)))
 
-(defun mapstrict (fn seq)
-  "Map FN over SEQ, a Clojure seq."
-  (nlet rec ((seq seq)
-             (acc nil))
-    (if (not (seq? seq))
-        (nreverse acc)
-        (rec (#_rest seq)
-             (cons (funcall fn (#_first seq))
-                   acc)))))
+(defun mapr (fn &rest seqs)
+  "Map FN over each rest of SEQ, returning nothing.
+Analogous to `mapl'."
+  (let ((fn (ifn-function fn)))
+    (nlet mapr ((seqs seqs))
+      (if (every #'seq? seqs)
+          (apply fn seqs)
+          (return-from mapr nil))
+      (mapr (mapcar #'#_rest seqs)))))
 
-(defloop mapr (fn seq)
-  (when (seq? seq)
-    (funcall fn (#_first seq))
-    (mapr fn (#_rest seq))))
+(defun maprest (fn &rest seqs)
+  "Map FN over each rest of SEQS, collecting a list.
+Analogous to `maplist'."
+  (collecting (mapr (compose #'collect fn) seqs)))
 
-(defun maprest (fn seq)
-  (collecting (mapr (compose #'collect fn) seq)))
+(defun mapf (fn &rest seqs)
+  "Map FN over SEQS, Clojure seqs, for side effects.
+Analogous to `mapc'."
+  (apply #'mapr (compose fn #'#_first) seqs))
+
+(defun mapfirst (fn &rest seqs)
+  "Map FN over SEQS, Clojure seqs, collecting a list.
+Analogous to `mapcar'."
+  (collecting (apply #'mapf (compose #'collect fn) seqs)))
 
 (define-do-macro doseq ((var seq &optional ret) &body body)
   (let ((decls
           (and (string= '_ var)
-               `((declare (ignore ,var))))))
-    `(mapr (lambda (,var) ,@decls ,@body) ,seq)))
+            `((declare (ignore ,var))))))
+    `(mapf (lambda (,var) ,@decls ,@body) ,seq)))
 
 (define-clojure-macro #_doseq (binds &body body)
   (ematch (convert 'list binds)
@@ -2252,8 +2259,8 @@ nested)."
 
 (defun-1 #_floats (xs)
   (replace (make-array (#_count xs) :element-type 'double-float)
-           (mapstrict (op (coerce _ 'double-float))
-                      xs)))
+           (mapfirst (op (coerce _ 'double-float))
+                     xs)))
 
 (defun-1 #_disj (set key)
   (fset:less (assure set set) key))
