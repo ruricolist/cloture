@@ -573,16 +573,18 @@ nested)."
                       (gfnames
                        (mapcar (op (apply #'gfname (firstn 2 _))) sigs))
                       (lambda-lists
-                       (mapcar (op (convert 'list _)) lambda-lists)))
+                       (mapcar (op (convert 'list _)) lambda-lists))
+                      (fn-name (caar sigs)))
                `(progn
                   ;; TODO Compiler macro for compile-time dispatching.
-                  (defun-1 ,(caar sigs) (&rest ,args)
+                  (defun-1 ,fn-name (&rest ,args)
                     ,@(unsplice docs)
                     (ematch ,args
                       ,@(loop for lambda-list across (sort-new lambda-lists #'< :key #'size)
                               for gfname in gfnames
                               collect `((list ,@lambda-list)
                                         (,gfname ,@lambda-list)))))
+                  (export-unless-private ,fn-name)
                   ,@(loop for gfname in gfnames
                           for lambda-list in lambda-lists
                           collect `(defgeneric ,gfname ,lambda-list)))))))
