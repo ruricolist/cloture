@@ -1263,11 +1263,11 @@ nested)."
     (setf (symbol-value root)
           (ifn-apply f (symbol-value root) args))))
 
-(defvar *assert* t)
+(defvar *assert* #_true)
 (expose-to-clojure #_*assert* *assert*)
 
 (define-clojure-macro #_assert (test &optional message)
-  `(when *assert*
+  `(when (truthy? *assert*)
      (assert ,test () ,@(unsplice message))))
 
 (defun-1 #_special-symbol? (s)
