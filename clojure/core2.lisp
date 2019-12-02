@@ -115,3 +115,9 @@
   ([to] to)
   ([to from]
    (apply conj to (seq from))))
+
+(defn max
+  ([x] x)
+  ([x y] (if (< x y) y x))
+  ([x y & more]
+   (reduce max (max x y) more)))
