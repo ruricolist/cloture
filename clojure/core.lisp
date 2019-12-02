@@ -1083,6 +1083,8 @@ nested)."
   (#_internal-reduce (coll f start) (reduce f coll :initial-value start)))
 
 (extend-type string
+  #_ISeqable
+  (#_seq (s) (coerce s 'list))
   #_IEquiv
   (#_equiv (x y)
            (? (and (stringp y)
