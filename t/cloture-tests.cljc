@@ -281,6 +281,9 @@
   (is (= '(1 2) '(1 2 #_3)))
   (is (= '(1) '(1 #_#_2 3))))
 
+(deftest read-conditional
+  (is (= [] [#?(:foo true)])))
+
 (def ^:private hello (fn hello [] "hello"))
 (def ^{:private true :dynamic true} *hello* (fn hello [] "hello"))
 
