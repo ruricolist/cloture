@@ -1602,15 +1602,15 @@ nested)."
   (values))
 
 (defun lazy-seq->list (lazy-seq)
-  (nlet rec ((seq lazy-seq)
-             (acc '()))
-    (if (not (seq? seq))
-        (nreverse acc)
-        (rec (#_rest seq)
-             (cons (#_first seq) acc)))))
+  (maprest #'identity lazy-seq))
 
 (defmethod convert ((type (eql 'list)) (seq lazy-seq) &key)
   (lazy-seq->list seq))
+
+(defmethod convert ((type (eql 'seq)) (seq lazy-seq) &key)
+  (let ((seq (empty-seq)))
+    (mapr (op (withf seq _)) seq)
+    seq))
 
 (defun-1 #_concat (&rest seqs)
   (labels ((rec (seqs)
