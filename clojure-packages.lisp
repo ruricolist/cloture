@@ -85,6 +85,10 @@
                   "ArityException" "ArityException."
                   "IllegalAccessError" "IllegalAccessError."
                   ".getClassName"
+                  "Integer/MAX_VALUE"
+                  "Integer/MIN_VALUE"
+                  "Long/MIN_VALUE"
+                  "Long/MAX_VALUE"
                   ;; These aren't part of Clojure but the REPL needs
                   ;; them (and Leiningen provides them).
                   "exit" "quit"))))

@@ -2331,6 +2331,103 @@ Analogous to `mapcar'."
   ;; TODO export from cl-murmurhash
   (murmurhash::hash-integer count hash-basis t))
 
+(defconst int-length 32)
+
+(defconst long-length 64)
+
+(deftype int ()
+  '(signed-byte #.int-length))
+
+(deftype long ()
+  '(signed-byte #.long-length))
+
+(defsubst mask-signed-field (size int)
+  #+sbcl (sb-c::mask-signed-field size int)
+  #-sbcl
+  (cond ((zerop size)
+         0)
+        ((logbitp (1- size) int)
+         (dpb int (byte size 0) -1))
+        (t
+         (ldb (byte size 0) int))))
+
+(defsubst mask-int (int)
+  (mask-signed-field int-length int))
+(defsubst mask-long (int)
+  (mask-signed-field long-length int))
+
+(defvar *unchecked-math* #_false)
+(expose-to-clojure #_*unchecked-math* *unchecked-math*)
+
+(declaim
+ (inline
+  #_unchecked-add
+  #_unchecked-add-int
+  #_unchecked-dec
+  #_unchecked-dec-int
+  #_unchecked-divide-int
+  #_unchecked-inc
+  #_unchecked-inc-int
+  #_unchecked-multiply
+  #_unchecked-multiply-int
+  #_unchecked-negate
+  #_unchecked-negate-int
+  #_unchecked-subtract
+  #_unchecked-subtract-int))
+
+(defun-1 #_unchecked-add (x y)
+  (declare (long x y))
+  (mask-long (+ x y)))
+
+(defun-1 #_unchecked-add-int (x y)
+  (declare (int x y))
+  (mask-int (+ x y)))
+
+(defun-1 #_unchecked-subtract (x y)
+  (declare (long x y))
+  (#_unchecked-add x (- y)))
+
+(defun-1 #_unchecked-subtract-int (x y)
+  (declare (int x y))
+  (#_unchecked-add-int x (- y)))
+
+(defun-1 #_unchecked-dec (x)
+  (declare (long x))
+  (#_unchecked-subtract x 1))
+
+(defun-1 #_unchecked-dec-int (x)
+  (declare (int x))
+  (#_unchecked-subtract-int x 1))
+
+(defun-1 #_unchecked-inc (x)
+  (declare (long x))
+  (#_unchecked-add x 1))
+
+(defun-1 #_unchecked-inc-int (x)
+  (declare (int x))
+  (#_unchecked-add-int x 1))
+
+(defun-1 #_unchecked-multiply (x y)
+  (declare (long x y))
+  (mask-long (* x y)))
+
+(defun-1 #_unchecked-multiply-int (x y)
+  (declare (int x y))
+  (mask-int (* x y)))
+
+(defun-1 #_unchecked-negate (x)
+  (declare (long x))
+  (mask-long (- x)))
+
+(defun-1 #_unchecked-negate-int (x)
+  (declare (int x))
+  (mask-int (- x)))
+
+;;; TODO Constants.
+(defconst #_Integer/MAX_VALUE (1- (expt 2 31)))
+(defconst #_Integer/MIN_VALUE (expt -2 31))
+(defconst #_Long/MAX_VALUE (1- (expt 2 63)))
+(defconst #_Long/MIN_VALUE (expt -2 63))
+
 (defun-1 #_imul (x y)
-  (declare (type (unsigned-byte 32) x y))
-  (logand (* x y) #xffffffff))
+  (#_unchecked-multiply-int x y))
