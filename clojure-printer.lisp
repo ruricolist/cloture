@@ -2,7 +2,7 @@
 (in-readtable clojure-shortcut)
 
 (defun self-evaluating? (x)
-  (typep x '(or keyword number)))
+  (typep x '(or keyword number string)))
 
 (defun maybe-quote (x)
   (if (self-evaluating? x) x
