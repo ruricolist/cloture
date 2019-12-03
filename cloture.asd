@@ -31,6 +31,7 @@
                (:file "readtable")
                (:file "walk")
                (:file "asdf")
+               (:file "clojure-printer")
                (:file "errors")
                (:module "clojure"
                 :serial t
