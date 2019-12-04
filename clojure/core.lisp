@@ -253,7 +253,7 @@ This is an issue for specializing on Clojure's nil, true, or false."
       `(macrolet ,(loop for sym in syms
                         collect `(,sym (&rest ,args)
                                        (list* 'ifncall ',sym ,args)))
-         ,@body))))()
+         ,@body))))
 
 (define-clojure-macro clojure-let (bindings &body body)
   (match bindings
