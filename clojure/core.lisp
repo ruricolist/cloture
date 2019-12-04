@@ -615,7 +615,7 @@ nested)."
   (#_-conj (coll x)))
 
 (defun conj (coll x &rest xs)
-  (apply #_conj coll x xs))
+  (apply #'#_conj coll x xs))
 
 (defprotocol #_ISeq
   (#_first (seq))
