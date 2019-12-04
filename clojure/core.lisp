@@ -1021,7 +1021,9 @@ nested)."
                        (1- i)))))
   #_IReduce
   (#_internal-reduce (coll f) (reduce-rests coll f nil nil))
-  (#_internal-reduce (coll f start) (reduce-rests coll f start t)))
+  (#_internal-reduce (coll f start) (reduce-rests coll f start t))
+  #_IHash
+  (#_hash (coll) (#_hash-ordered-coll coll)))
 
 ;; A Lisp vector (or a string).
 (extend-type vector
@@ -1048,7 +1050,9 @@ nested)."
            (if (and (vectorp other)
                  (vector= self other :test #'#_=))
                #_true
-               (? (coll= self other)))))
+               (? (coll= self other))))
+  #_IHash
+  (#_hash (coll) (#_hash-ordered-coll coll)))
 
 (extend-type sequence
   #_ISeq
@@ -1075,7 +1079,9 @@ nested)."
   (#_internal-reduce (coll f) (reduce f coll))
   (#_internal-reduce (coll f start) (reduce f coll :initial-value start))
   #_IEquiv
-  (#_equiv (self other) (? (coll= self other))))
+  (#_equiv (self other) (? (coll= self other)))
+  #_IHash
+  (#_hash (coll) (#_hash-ordered-coll coll)))
 
 (extend-type string
   #_ISeqable
@@ -1083,7 +1089,9 @@ nested)."
   #_IEquiv
   (#_equiv (x y)
            (? (and (stringp y)
-                   (string= x y)))))
+                (string= x y))))
+  #_IHash
+  (#_hash (coll) (#_hash-ordered-coll coll)))
 
 (extend-type fset:seq
   #_IVector
@@ -1136,7 +1144,9 @@ nested)."
   (#_internal-reduce (coll f start)
                      (fset:reduce f coll :initial-value start))
   #_IEquiv
-  (#_equiv (self other) (? (coll= self other))))
+  (#_equiv (self other) (? (coll= self other)))
+  #_IHash
+  (#_hash (coll) (#_hash-ordered-coll coll)))
 
 (extend-type map
   #_ISeqable
@@ -1176,7 +1186,9 @@ nested)."
                    (progn
                      (do-map (k v map)
                        (setf init (ifncall f init k v)))
-                     init))))
+                     init)))
+  #_IHash
+  (#_hash (coll) (#_hash-unordered-coll coll)))
 
 (extend-type hash-table
   #_IKVReduce
@@ -1195,7 +1207,9 @@ nested)."
   #_ICollection
   (#_-conj (set x) (with set x))
   #_IFn
-  (#_invoke (x arg) (lookup x arg)))
+  (#_invoke (x arg) (lookup x arg))
+  #_IHash
+  (#_hash (coll) (#_hash-unordered-coll coll)))
 
 ;;; In Clojure only keywords (all keywords) and /qualified/ symbols
 ;;; are interned; unqualified symbols are not interned. Two

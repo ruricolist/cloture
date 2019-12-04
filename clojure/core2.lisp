@@ -121,3 +121,15 @@
   ([x y] (if (< x y) y x))
   ([x y & more]
    (reduce max (max x y) more)))
+
+(defn hash-ordered-coll [collection]
+  (-> (reduce (fn [acc e] (unchecked-add-int
+                           (unchecked-multiply-int 31 acc)
+                           (hash e)))
+              1
+              collection)
+      (mix-collection-hash (count collection))))
+
+(defn hash-unordered-coll [collection]
+  (-> (reduce unchecked-add-int 0 (map hash collection))
+      (mix-collection-hash (count collection))))
