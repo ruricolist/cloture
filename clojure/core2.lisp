@@ -5,14 +5,14 @@
 (in-package "clojure.core")
 (named-readtables:in-readtable cloture:cloture)
 
-(defn nil?
-  ([x] (identical? x nil)))
+(defn nil? [x]
+  (identical? x nil))
 
-(defn true?
-  ([x] (identical? x true)))
+(defn true? [x]
+  (identical? x true))
 
-(defn false?
-  ([x] (identical? x false)))
+(defn false? [x]
+  (identical? x false))
 
 (defn identity [x] x)
 
