@@ -656,23 +656,24 @@ nested)."
   (#_satisfies? '#_Fn x))
 
 (defprotocol #_IFn
-  (#_invoke (x))
-  (#_invoke (x y))
-  (#_invoke (x y z))
-  (#_invoke (x y z a))
-  (#_invoke (x y z a b))
-  (#_invoke (x y z a b c))
-  (#_invoke (x y z a b c d))
-  (#_invoke (x y z a b c d e))
-  (#_invoke (x y z a b c d e f))
-  (#_invoke (x y z a b c d e f g))
-  (#_invoke (x y z a b c d e f g h))
-  (#_invoke (x y z a b c d e f g h i))
-  (#_invoke (x y z a b c d e f g h i j))
-  (#_invoke (x y z a b c d e f g h i j k))
-  (#_invoke (x y z a b c d e f g h i j k l))
-  (#_invoke (x y z a b c d e f g h i j k l m))
-  (#_invoke (x y z a b c d e f g h i j k l m n)))
+  (#_invoke (fn))
+  (#_invoke (fn x))
+  (#_invoke (fn x y))
+  (#_invoke (fn x y z))
+  (#_invoke (fn x y z a))
+  (#_invoke (fn x y z a b))
+  (#_invoke (fn x y z a b c))
+  (#_invoke (fn x y z a b c d))
+  (#_invoke (fn x y z a b c d e))
+  (#_invoke (fn x y z a b c d e f))
+  (#_invoke (fn x y z a b c d e f g))
+  (#_invoke (fn x y z a b c d e f g h))
+  (#_invoke (fn x y z a b c d e f g h i))
+  (#_invoke (fn x y z a b c d e f g h i j))
+  (#_invoke (fn x y z a b c d e f g h i j k))
+  (#_invoke (fn x y z a b c d e f g h i j k l))
+  (#_invoke (fn x y z a b c d e f g h i j k l m))
+  (#_invoke (fn x y z a b c d e f g h i j k l m n)))
 
 (defun ifncall (ifn &rest args)
   ;; TODO avoid consing.
@@ -895,12 +896,13 @@ nested)."
       (unless (nil? arg)
         (write-string (#_toString arg) s)))))
 
-(extend-type function
-  #_Fn
-  #_IFn
-  (#_invoke (fn x) (ifn-apply fn x))
-  (#_invoke (fn x y) (ifn-apply fn x y))
-  (#_invoke (fn x y z) (ifn-apply fn x y z)))
+(progn
+  #.`(extend-type function
+       #_Fn
+       #_IFn
+       ,@(loop for tail on '(x y z a b c d e f g h i j k l m n)
+               collect `(#_invoke (fn ,@tail)
+                                  (ifncall fn ,@tail)))))
 
 (extend-protocol #_IHash
   t
