@@ -133,3 +133,22 @@
 (defn hash-unordered-coll [collection]
   (-> (reduce unchecked-add-int 0 (map hash collection))
       (mix-collection-hash (count collection))))
+
+(defn repeat
+  ([x] (repeatedly (constantly x)))
+  ([n x] (repeatedly n (constantly x))))
+
+(defn interpose [sep coll]
+  (if (not (seq coll)) '()
+      (if (not (seq (rest coll))) coll
+          (concat (list (first coll) sep)
+                  (interpose sep (next coll))))))
+
+(defn second [x] (first (next x)))
+(defn fnext [x] (first (next x)))
+(defn ffirst [x] (first (first x)))
+(defn nfirst [x] (next (first x)))
+(defn nnext [x] (next (next x)))
+
+(defn merge [& maps]
+  (apply merge-with second maps))

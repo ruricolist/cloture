@@ -631,12 +631,6 @@ nested)."
 (defun seq? (x)
   (truthy? (#_seq x)))
 
-(defun-1 #_second (x) (#_first (#_next x)))
-(defun-1 #_fnext (x) (#_first (#_next x)))
-(defun-1 #_ffirst (x) (#_first (#_first x)))
-(defun-1 #_nfirst (x) (#_next (#_first x)))
-(defun-1 #_nnext (x) (#_next (#_next x)))
-
 (defprotocol #_INext
   (#_next (seq)))
 
@@ -1712,12 +1706,6 @@ nested)."
   ((fn)
    (repeatedly fn)))
 
-(defn #_repeat
-  ((x)
-   (#_repeatedly (#_constantly x)))
-  ((n x)
-   (#_repeatedly n (#_constantly x))))
-
 (defunit infinity)
 
 (defn #_range
@@ -1770,13 +1758,6 @@ nested)."
   `(with-output-to-string (*standard-output*)
      ,@body))
 
-(defun-1 #_interpose (sep coll)
-  (if (not (seq? coll)) '()
-      (if (not (seq? (#_rest coll))) coll
-          (#_concat (list (#_first coll)
-                          sep)
-                    (#_interpose sep (#_next coll))))))
-
 (defun-1 #_group-by (fn seq)
   (let* ((fn (ifn-function fn))
          (seq (convert 'list seq))
@@ -1798,9 +1779,6 @@ nested)."
                       (withf map1 key val2)))))
             maps
             :initial-value (empty-map))))
-
-(defun-1 #_merge (&rest maps)
-  (apply #_merge-with #'second maps))
 
 (defconstructor #_reduced
   (value t))
