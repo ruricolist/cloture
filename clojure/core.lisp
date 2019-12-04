@@ -2447,3 +2447,9 @@ Analogous to `mapcar'."
 
 (defun-1 #_imul (x y)
   (#_unchecked-multiply-int x y))
+
+(defun-1 #_line-seq (stream)
+  (lazy-seq
+    (if-let (line (read-line stream nil nil))
+      (cons line (#_line-seq stream))
+      '())))
