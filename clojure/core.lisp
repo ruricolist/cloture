@@ -1099,7 +1099,7 @@ nested)."
   #_ICollection
   (#_-conj (seq x) (fset:with-last seq x))
   #_IFn
-  (#_invoke (x args) (fset:lookup x (only-elt args)))
+  (#_invoke (x arg) (fset:lookup x arg))
   #_IReversible
   (#_rseq (x) (fset:reverse x))
   #_IIndexed
@@ -1159,7 +1159,7 @@ nested)."
                (#_merge map x)
                (apply #'fset:with map (convert 'list x))))
   #_IFn
-  (#_invoke (x args) (lookup x (only-elt args)))
+  (#_invoke (x arg) (lookup x arg))
   #_IAssociative
   (#_contains-key? (map key) (? (fset:contains? map key)))
   (#_assoc (map key value) (with map key value))
@@ -1193,7 +1193,7 @@ nested)."
   #_ICollection
   (#_-conj (set x) (with set x))
   #_IFn
-  (#_invoke (x args) (lookup x (only-elt args))))
+  (#_invoke (x arg) (lookup x arg)))
 
 ;;; In Clojure only keywords (all keywords) and /qualified/ symbols
 ;;; are interned; unqualified symbols are not interned. Two
