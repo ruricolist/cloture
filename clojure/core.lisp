@@ -2469,3 +2469,7 @@ Analogous to `mapcar'."
          (fn (apply #'juxt fns)))
     (lambda (&rest args)
       (convert 'seq (apply fn args)))))
+
+(defn #_subs
+  ((s start) (subseq s start))
+  ((s start end) (subseq s start end)))
