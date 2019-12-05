@@ -41,7 +41,11 @@
 (defun read-regex (stream char arg)
   (declare (ignore arg))
   (unread-char char stream)
-  (let ((string (assure string (subread stream))))
+  (let ((string (assure string
+                  ;; Don't interpret backslash escapes.
+                  (let ((interpol::*regex-delimiters* '(#\"))
+                        (interpol:*outer-delimiters* '(#\")))
+                    (interpol:interpol-reader stream nil nil)))))
     (regex string)))
 
 (defun read-quote (stream char)
