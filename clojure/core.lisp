@@ -2463,3 +2463,9 @@ Analogous to `mapcar'."
     (if-let (line (read-line stream nil nil))
       (cons line (#_line-seq stream))
       '())))
+
+(defun-1 #_juxt (&rest fns)
+  (let* ((fns (mapcar #'ifn-function fns))
+         (fn (apply #'juxt fns)))
+    (lambda (&rest args)
+      (convert 'seq (apply fn args)))))
