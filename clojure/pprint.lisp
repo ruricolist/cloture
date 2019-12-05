@@ -10,7 +10,8 @@
   #_*print-right-margin*     *print-right-margin*)
 
 (defun-1 #_cl-format (writer format-in &rest args)
-  (format writer "~?" format-in args))
+  (let ((stream (if (nil? writer) nil writer)))
+    (format stream "~?" format-in args)))
 
 (defmacro #_formatter (format-in)
   `(formatter ,format-in))
