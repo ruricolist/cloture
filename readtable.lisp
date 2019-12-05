@@ -137,11 +137,19 @@
         (interpol::*regex-delimiters* nil))
     (interpol:interpol-reader stream nil nil)))
 
+(defun read-clojure-char (stream char)
+  (let ((next-char (read-char stream nil nil t)))
+    (if (eql char next-char)
+        (values)
+        next-char)))
+
 (defreadtable cloture
   (:fuze :standard cloture.qq:quasiquote-mixin)
   (:case :preserve)
   ;; Clojure quote.
   (:macro-char #\' 'read-quote)
+  ;; Clojure characters.
+  (:macro-char #\\ 'read-clojure-char)
   ;; Strings with escapes.
   (:macro-char #\" 'read-string-with-escapes)
   ;; Supress.

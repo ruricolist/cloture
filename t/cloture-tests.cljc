@@ -69,6 +69,10 @@
     (is (symbol? sym))
     (is (get (meta sym) :|dynamic|))))
 
+(deftest test-read-char
+  (is (= \{ (CL:CHARACTER "{")))
+  (is (= \{ '\{)))
+
 (deftest let-test
   (is (= 3 (let [x 1 y 2] (+ x y))))
   (is (= 3 (let [x 2 y 1] (+ x y))))
