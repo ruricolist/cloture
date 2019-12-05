@@ -105,7 +105,7 @@
 
 (define-clojure-package "clojure.string"
   (:use)
-  (:export "starts-with?" "ends-with?"))
+  (:export "starts-with?" "ends-with?" "join" "replace" "re-quote-replacement"))
 
 (define-clojure-package "clojure.template"
   (:use)
@@ -126,4 +126,5 @@
     "clojure.set"
     "clojure.string"
     "clojure.template"
-    "clojure.stacktrace"))
+    "clojure.stacktrace")
+  (:shadowing-import-from "clojure.core" "replace"))

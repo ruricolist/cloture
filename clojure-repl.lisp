@@ -11,7 +11,7 @@
       (catch 'quit
         (loop (format t "~&~a=> " (package-name *package*))
               (finish-output)
-              (with-simple-restart (abort "Return to REPL")
+              (with-simple-restart (abort "Return to Clojure REPL")
                 (let ((form (read)))
                   (format t "~s" (compile-and-eval form))
                   (finish-output))))))))

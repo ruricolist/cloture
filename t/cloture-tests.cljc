@@ -1,5 +1,6 @@
 (ns cloture.tests
-  (:require [clojure.test :refer [deftest is]]))
+  (:require [clojure.test :refer [deftest is]])
+  (:require [clojure.string :as s]))
 
 (deftest empty-test)
 
@@ -608,3 +609,7 @@
      Integer/MIN_VALUE)
   (= (unchecked-add-int Integer/MIN_VALUE -1)
      Integer/MAX_VALUE))
+
+(deftest test-string-replace
+  (is (= "lmostAay igPay atinLay"
+         (s/replace "Almost Pig Latin" #"\b(\w)(\w+)\b" "$2$1ay"))))
