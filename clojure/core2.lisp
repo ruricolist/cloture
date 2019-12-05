@@ -152,3 +152,13 @@
 
 (defn merge [& maps]
   (apply merge-with second maps))
+
+(defn assoc-in [m ks v]
+  (update-in m ks (constantly v)))
+
+(defn take [n xs]
+  (if (and (pos? n)
+           (seq xs))
+    (lazy-seq (cons (first xs)
+                    (take (dec n) (rest xs))))
+    '()))

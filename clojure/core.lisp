@@ -1671,13 +1671,6 @@ nested)."
                  (rec seq))))
     (rec seq)))
 
-(defun-1 #_take (n seq)
-  (if (and (plusp n)
-           (seq? seq))
-      (lazy-seq (cons (#_first seq)
-                      (#_take (1- n) (#_rest seq))))
-      '()))
-
 (defun-1 #_drop-while (pred seq)
   (fbind ((pred (ifn-function pred)))
     (if (not (seq? seq)) '()
@@ -2196,8 +2189,6 @@ Analogous to `mapcar'."
                            ,@body))
                   ,form)))))
 
-(defun-1 #_assoc-in (m ks v)
-  (#_update-in m ks (constantly v)))
 
 (defun-1 #_update-in (m ks f &rest args)
   (let ((ks (convert 'list ks))
