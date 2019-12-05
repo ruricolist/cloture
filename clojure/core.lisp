@@ -1142,13 +1142,45 @@ nested)."
   #_IHash
   (#_hash (coll) (#_hash-ordered-coll coll)))
 
+(defconstructor map-entry
+  (key t)
+  (val t))
+
+(defun-1 #_map-entry? (x)
+  (? (typep x 'map-entry)))
+
+(defun-1 #_key (x)
+  (map-entry-key x))
+
+(defun-1 #_val (x)
+  (map-entry-val x))
+
+(extend-type map-entry
+  #_ISeqable
+  (#_seq (me)
+         (seq (map-entry-key me)
+              (map-entry-val me)))
+  #_ISeq
+  (#_first (me) (map-entry-key me))
+  (#_rest (me) (seq (map-entry-val me)))
+  #_IHash
+  (#_hash (me) (murmurhash (cons (#_key me) (#_val me))))
+  #_IEquiv
+  (#_equiv (self other) (coll= self other)))
+
+(defmethod fset:convert ((type (eql 'list))
+                         (self map-entry)
+                         &key)
+  (list (map-entry-key self)
+        (map-entry-val self)))
+
 (extend-type map
   #_ISeqable
   (#_seq (map)
          (if (empty? map) #_nil
              (collecting
                (do-map (k v map)
-                 (collect (seq k v))))))
+                 (collect (map-entry k v))))))
   #_ISeq
   (#_first (map)
            (if (empty? map) #_nil
