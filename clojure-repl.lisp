@@ -12,8 +12,10 @@
         (loop (format t "~&~a=> " (package-name *package*))
               (finish-output)
               (with-simple-restart (abort "Return to Clojure REPL")
-                (let ((form (read)))
-                  (format t "~s" (compile-and-eval form))
+                (let* ((form (read))
+                       (result (compile-and-eval form)))
+                  (shiftf *** ** * result)
+                  (format t "~s" result)
                   (finish-output))))))))
 
 (defun-1 #_exit ()
