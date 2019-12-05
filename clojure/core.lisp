@@ -2171,24 +2171,49 @@ Analogous to `mapcar'."
      `(#_doseq ,(seq pat seq)
                (#_doseq ,(convert 'seq binds)
                         ,@body)))))
+(defunion for-control
+  skip
+  halt)
 
 (defun call/for (fn seq)
   (if (seq? seq)
       (lazy-seq
-        (cons (funcall fn (#_first seq))
-              (call/for fn (#_rest seq))))
-      empty-list))
+        (nlet rec ((seq seq))
+          (if (seq? seq)
+              (let ((first (funcall fn (#_first seq))))
+                (if (eq skip first)
+                    (rec (#_rest seq))
+                    (if (eq halt first)
+                        '()
+                        (lazy-seq
+                          (cons first
+                                (call/for fn (#_rest seq)))))))
+              '())))
+      '()))
 
 (define-clojure-macro #_for (binds &body body)
   ;; TODO Fork cl-lc and actually implement list comprehensions.
-  (ematch binds
-    ((seq pat form)
-     (with-unique-names (temp)
-       `(call/for (lambda (,temp)
-                    (#_let ,(seq pat temp)
-                           ,@body))
-                  ,form)))))
-
+  (let ((binds (convert 'list (assure seq binds))))
+    (ematch binds
+      ((list* pat form more)
+       (mvlet ((kwargs more (parse-leading-keywords more))
+               (temp (string-gensym 'temp)))
+         (when more
+           (trivia.fail:fail))
+         (destructuring-bind (&key |let| (|while| #_true) (|when| #_true))
+             kwargs
+           (let ((binds
+                   (convert 'seq
+                            (list* pat temp
+                                   (convert 'list |let|)))))
+             `(call/for (lambda (,temp)
+                          (#_let ,binds
+                                 (#_if-not ,|while|
+                                           halt
+                                           (#_if ,|when|
+                                                 (#_do ,@body)
+                                                 skip))))
+                        ,form))))))))
 
 (defun-1 #_update-in (m ks f &rest args)
   (let ((ks (convert 'list ks))
