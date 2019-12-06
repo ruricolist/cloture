@@ -2521,10 +2521,10 @@ Analogous to `mapcar'."
         (nlet rec ((coll coll))
           (if (not (seq? coll)) '()
               (let ((first (#_first coll)))
-                (if (not (#_contains? seen first))
-                    (progn
-                      (withf seen first)
-                      (cons first (distinct-aux seen (#_rest coll))))
+                (if (not (lookup seen first))
+                    (cons first
+                          (distinct-aux (with seen first)
+                                        (#_rest coll)))
                     (rec (#_rest coll)))))))))
 
 (defun-1 #_distinct (coll)
