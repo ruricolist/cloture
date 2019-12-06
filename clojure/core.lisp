@@ -2519,6 +2519,8 @@ Analogous to `mapcar'."
                       (cons first (distinct-aux seen (#_rest coll))))
                     (rec (#_rest coll)))))))))
 
-(defn #_distinct
-  ((coll)
-   (distinct-aux (empty-set) coll)))
+(defun-1 #_distinct (coll)
+  (distinct-aux (empty-set) coll))
+
+(defun-1 #_integer? (x)
+  (typep x 'integer))
