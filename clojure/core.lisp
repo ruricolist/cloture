@@ -1629,7 +1629,15 @@ nested)."
                        (mapf (lambda (item)
                                (setf init (funcall f init item)))
                              coll)
-                       init)))
+                       init))
+  #_ICounted
+  (#_count (coll)
+           (let ((count 0))
+             (mapf (lambda (x)
+                     (declare (ignore x))
+                     (incf count))
+                   coll)
+             count)))
 
 (defun-1 #_cons (x y)
   (cons x y))
