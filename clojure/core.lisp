@@ -934,6 +934,7 @@ nested)."
   sequence (#_count (x) (length x))
   seq (#_count (x) (size x))
   map (#_count (x) (size x))
+  set (#_count (x) (size x))
   hash-table (#_count (x) (hash-table-count x)))
 
 (defun-1 #_counted? (x)
