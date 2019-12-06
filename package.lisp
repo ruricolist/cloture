@@ -67,4 +67,6 @@
            #:nil?
            #:not=
 
-           #:repl))
+           #:repl
+
+           #:regex))

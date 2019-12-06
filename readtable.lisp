@@ -35,8 +35,9 @@
     (subread stream)
     (values)))
 
-(defconstructor regex
-  (string string))
+(defunion regex
+  (raw-regex (string string))
+  (compiled-regex (string string) (function function)))
 
 (defun read-regex (stream char arg)
   (declare (ignore arg))
@@ -46,7 +47,7 @@
                   (let ((interpol::*regex-delimiters* '(#\"))
                         (interpol:*outer-delimiters* '(#\")))
                     (interpol:interpol-reader stream nil nil)))))
-    (regex string)))
+    (raw-regex string)))
 
 (defun read-quote (stream char)
   (declare (ignore char))

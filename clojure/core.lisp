@@ -1373,7 +1373,13 @@ nested)."
 (defun-1 #_bit-not (x)
   (lognot x))
 
+(defun compile-re (re)
+  (match-of regex re
+    ((raw-regex string) (ppcre:create-scanner string))
+    ((compiled-regex _ fn) fn)))
+
 (defun-1 #_re-find (re str)
+  (setf re (compile-re re))
   (ematch (multiple-value-list (ppcre:scan re str))
     ((list nil) #_nil)
     ((list start end (and _ (satisfies emptyp)) _)
@@ -1388,13 +1394,15 @@ nested)."
 
 (define-compiler-macro #_re-find (&whole call re str)
   (typecase re
-    (regex
-     (let ((re (regex-string re)))
-       `(#_re-find (load-time-value (ppcre:create-scanner ,re))
+    (raw-regex
+     (let ((re (raw-regex-string re)))
+       `(#_re-find (load-time-value
+                    (compiled-regex ,re (ppcre:create-scanner ,re)))
                    ,str)))
     (otherwise call)))
 
 (defun-1 #_re-matches (re str)
+  (setf re (compile-re re))
   (ematch (multiple-value-list (ppcre:scan-to-strings re str))
     ((list nil) #_nil)
     ((list string (and _ (satisfies emptyp)))
@@ -1404,15 +1412,17 @@ nested)."
 
 (define-compiler-macro #_re-matches (&whole call re str)
   (typecase re
-    (regex
-     (let* ((re (regex-string re))
+    (raw-regex
+     (let* ((re (raw-regex-string re))
             (re (string+ "^" re "$")))
-       `(#_re-find (load-time-value (ppcre:create-scanner ,re))
+       `(#_re-find (load-time-value
+                    (compiled-regex ,re (ppcre:create-scanner ,re)))
                    ,str)))
     (otherwise call)))
 
 (defun-1 #_re-pattern (s)
-  (ppcre:create-scanner (assure string s)))
+  (check-type s string)
+  (compiled-regex s (ppcre:create-scanner s)))
 
 (define-clojure-macro #_defmulti (name &body body)
   (mvlet* ((body docs (body+docs+attrs body)))

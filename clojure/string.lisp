@@ -53,10 +53,14 @@
      (substitute match replacement s))
     (((type string) (type string))
      (string-replace-all match s replacement))
-    (((type regex) _)
+    (((type raw-regex) _)
      (replace-aux s
                   (ppcre:create-scanner
-                   (regex-string match))
+                   (raw-regex-string match))
+                  replacement))
+    (((type compiled-regex) _)
+     (replace-aux s
+                  (compiled-regex-function match)
                   replacement))
     (((type function) (type string))
      (replace-aux s match (parse-replacement-string replacement)))
