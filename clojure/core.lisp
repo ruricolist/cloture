@@ -1253,6 +1253,8 @@ nested)."
                     (murmurhash (cons '%sym name)))))))
 
 (defun-1 #_instance? (class x)
+  (when (symbolp class)
+    (setf class (find-class class)))
   (? (typep x class)))
 
 (defun-1 #_type (x)
