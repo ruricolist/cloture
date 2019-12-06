@@ -162,3 +162,6 @@
     (lazy-seq (cons (first xs)
                     (take (dec n) (rest xs))))
     '()))
+
+(defn set [xs]
+  (reduce conj (empty-set) xs))
