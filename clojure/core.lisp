@@ -1236,7 +1236,11 @@ nested)."
   #_IFn
   (#_invoke (x arg) (lookup x arg))
   #_IHash
-  (#_hash (coll) (#_hash-unordered-coll coll)))
+  (#_hash (coll) (#_hash-unordered-coll coll))
+  #_IEquiv
+  (#_equiv (self other)
+           (#_and (#_set? other)
+                  (? (fset:equal? self other)))))
 
 ;;; In Clojure only keywords (all keywords) and /qualified/ symbols
 ;;; are interned; unqualified symbols are not interned. Two
