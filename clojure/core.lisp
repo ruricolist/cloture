@@ -36,7 +36,7 @@ default default is Clojure's nil instead of Lisp nil."
            (predicate? (string$= "?" name))
            (body (if predicate?
                      `((assure clojure-boolean
-                         ,@body))
+                         (progn ,@body)))
                      body)))
     `(progn
        (defun ,name ,args ,@body)
