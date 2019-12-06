@@ -617,3 +617,8 @@
 (deftest test-string-replace
   (is (= "lmostAay igPay atinLay"
          (s/replace "Almost Pig Latin" #"\b(\w)(\w+)\b" "$2$1ay"))))
+
+(deftest test-distinct
+  (let [l '(:x :y :z 1 2 3 :x :z :y 3 2 1)]
+    (is (= (count (set l))
+           (count (distinct l))))))

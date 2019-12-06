@@ -2506,3 +2506,19 @@ Analogous to `mapcar'."
 (defn #_subs
   ((s start) (subseq s start))
   ((s start end) (subseq s start end)))
+
+(defun distinct-aux (seen coll)
+  (if (not (seq? coll)) '()
+      (lazy-seq
+        (nlet rec ((coll coll))
+          (if (not (seq? coll)) '()
+              (let ((first (#_first coll)))
+                (if (not (#_contains? seen first))
+                    (progn
+                      (withf seen first)
+                      (cons first (distinct-aux seen (#_rest coll))))
+                    (rec (#_rest coll)))))))))
+
+(defn #_distinct
+  ((coll)
+   (distinct-aux (empty-set) coll)))
