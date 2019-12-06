@@ -1166,7 +1166,7 @@ nested)."
   #_IHash
   (#_hash (me) (murmurhash (cons (#_key me) (#_val me))))
   #_IEquiv
-  (#_equiv (self other) (coll= self other)))
+  (#_equiv (self other) (? (coll= self other))))
 
 (defmethod fset:convert ((type (eql 'list))
                          (self map-entry)
