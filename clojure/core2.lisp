@@ -165,3 +165,6 @@
 
 (defn set [xs]
   (reduce conj (empty-set) xs))
+
+(defn complement [f]
+  (fn [& args] (not (apply f args))))
