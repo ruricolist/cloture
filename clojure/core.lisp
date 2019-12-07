@@ -2535,3 +2535,11 @@ Analogous to `mapcar'."
 
 (defun-1 #_integer? (x)
   (typep x 'integer))
+
+(defun-1 #_every? (pred coll)
+  (let ((pred (ifn-function pred)))
+    (mapf (lambda (item)
+            (when (falsy? (funcall pred item))
+              (return-from #_every? #_false)))
+          coll)
+    #_true))
