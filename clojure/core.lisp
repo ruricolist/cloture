@@ -1323,7 +1323,10 @@ nested)."
   (? (memq s special-forms)))
 
 (define-clojure-macro #_declare (&rest args)
-  (declare (ignore args)))
+  `(progn
+     ,@(loop for arg in args
+             collect `(define-symbol-macro ,arg
+                          ,(backing-var arg)))))
 
 (defun-1 #_= (&rest args)
   (assure clojure-boolean
