@@ -374,6 +374,11 @@
   (is (= '(clojure.core:deref :x)
          '@:x)))
 
+(deftest test-pre-post-map
+  ;; Test that a solitary map in the body is not misinterpreted as a pre-post map.
+  (let [f (fn [x] {:x x})]
+    (is (= (f 1) {:x 1}))))
+
 (deftest fn-destructure
   (is (= '(1 2 3)
          (CL:FUNCALL (fn [[x y z]] (list x y z))

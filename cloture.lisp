@@ -404,7 +404,9 @@ Also return (as a second value) a list of all the symbols bound."
             body)
      (let ((pre (lookup cond-map :|pre|))
            (post (lookup cond-map :|post|)))
-       (values body pre post)))
+       (if (or pre post)
+           (values body pre post)
+           (trivia.fail:fail))))
     (otherwise
      (values body nil nil))))
 
