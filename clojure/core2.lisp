@@ -168,3 +168,6 @@
 
 (defn complement [f]
   (fn [& args] (not (apply f args))))
+
+(defn remove [pred coll]
+  (filter (complement pred) coll))
