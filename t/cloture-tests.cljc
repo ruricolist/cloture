@@ -70,8 +70,12 @@
     (is (get (meta sym) :|dynamic|))))
 
 (deftest test-read-char
-  (is (= \{ (CL:CHARACTER "{")))
-  (is (= \{ '\{)))
+  (is (= \\ (first "\\")))
+  (is (= \{ (first "{")))
+  (is (= \{ '\{))
+  (is (= \newline (first "\n")))
+  (is (= \tab (first "\t")))
+  (is (= \u03A9 (first "Ω"))))
 
 (deftest let-test
   (is (= 3 (let [x 1 y 2] (+ x y))))

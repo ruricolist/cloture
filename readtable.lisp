@@ -138,11 +138,34 @@
         (interpol::*regex-delimiters* nil))
     (interpol:interpol-reader stream nil nil)))
 
+(def char-names
+  '(("newline" . #\Newline)
+    ("space" . #\Space)
+    ("tab" . #\Tab)
+    ("formfeed" . #\Formfeed)
+    ("backspace" . #\Backspace)
+    ("return" . #\Return)))
+
 (defun read-clojure-char (stream char)
-  (let ((next-char (read-char stream nil nil t)))
-    (if (eql char next-char)
-        (values)
-        next-char)))
+  (let ((next-char (peek-char nil stream nil nil t)))
+    (cond ((eql char next-char)
+           (read-char stream nil nil t)
+           (values))
+          ((alpha-char-p next-char)
+           (let* ((name
+                    (loop for c = (peek-char nil stream nil nil t)
+                          while (and c (alphanumericp c))
+                          collect (read-char stream nil nil t)))
+                  (name (coerce name 'string)))
+             (cond ((= (length name) 1)
+                    (character name))
+                   ((string^= "u" name)
+                    (code-char (parse-integer name :start 1 :radix 16)))
+                   (t
+                    (or (assocdr name char-names :test #'equal)
+                      (error "Invalid char: ~s" name))))))
+          (t
+           (read-char stream nil nil t)))))
 
 (defreadtable cloture
   (:fuze :standard cloture.qq:quasiquote-mixin)
