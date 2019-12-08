@@ -631,3 +631,28 @@
   (let [l '(:x :y :z 1 2 3 :x :z :y 3 2 1)]
     (is (= (count (set l))
            (count (distinct l))))))
+
+(defrecord Foo [a b])
+(defrecord Bar [a b])
+
+(deftest test-defrecord
+  (is (= (Foo. 1 2) (->Foo 1 2) (map->Foo {:a 1 :b 2})))
+  (is (= (hash (->Foo 1 2)) (hash (map->Foo {:a 1 :b 2}))))
+  (is (not= (->Foo 1 2) (->Bar 1 2)))
+  (is (= '(:a :b) (keys (->Foo 1 2))))
+  (is (= '(1 2) (vals (->Foo 1 2))))
+  (is (= 1 (get (->Foo 1 2) :a)))
+  (is (= true (get (->Foo 1 2) :c true)))
+  (is (= 2 (count (->Foo 1 2))))
+  (is (= '([:a 1] [:b 2])
+         (map (fn [[k v]] [k v])
+              (->Foo 1 2))))
+  (is (= (type (->Foo 1 2))
+         (type (assoc (->Foo 1 2) :c 3))))
+  (is (= (type (->Foo 1 2))
+         (-> (->Foo 1 2)
+             (assoc :c 3)
+             (dissoc :c)
+             type)))
+  (is (not= (type (->Foo 1 2))
+            (type (dissoc (->Foo 1 2) :b)))))

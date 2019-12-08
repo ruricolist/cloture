@@ -836,8 +836,111 @@ nested)."
 
 ;;; TODO A metaclass?
 
-(defclass clojure-class ()
+(defclass clojure-object ()
   ())
+
+(defgeneric object-fields (object))
+
+(defmethod print-object ((self clojure-object) stream)
+  (print-unreadable-object (self stream :type t)
+    (format stream "~{~a~^ ~}" (object-fields self))))
+
+(defclass record-object (clojure-object)
+  ((fields :type list :reader record-fields)
+   (map :type map :accessor record-map
+        :initarg map))
+  (:default-initargs
+   map (empty-map)))
+
+(defmethod print-object ((self record-object) stream)
+  (print-unreadable-object (self stream :type t)
+    (format stream "~a" (record-map self))))
+
+(defgeneric ensure-map (map)
+  (:method ((map map)) map)
+  (:method ((record record-object)) (record-map record)))
+
+(defun-1 #_record? (x)
+  (? (typep x 'record-object)))
+
+(extend-type record-object
+  #_ICounted
+  (#_count (x) (#_count (record-map x)))
+  #_ILookup
+  (#_lookup (x key not-found)
+            (#_lookup (record-map x) key not-found))
+  (#_lookup (x key) (#_lookup x key #_nil))
+  #_ISeqable
+  (#_seq (x) (#_seq (record-map x)))
+  #_ISeq
+  (#_first (x) (#_first (record-map x)))
+  (#_rest (x) (#_rest (record-map x)))
+  #_INext
+  (#_next (x) (#_next (record-map x)))
+  #_IAssociative
+  (#_contains-key? (x key) (#_contains-key? (record-map x) key))
+  (#_assoc (x key value)
+           (make-instance (class-of x)
+                          'map (#_assoc (record-map x)
+                                        key value)))
+  #_IMap
+  (#_-dissoc (x key keys)
+             (let ((map (#_-dissoc (record-map x) key keys)))
+               (if (block nil
+                     (mapf (lambda (key)
+                             (when (memq key (record-fields x))
+                               (return t)))
+                           (#_cons key keys))
+                     nil)
+                   map
+                   (make-instance (class-of x) 'map map))))
+  #_IKVReduce
+  (#_kv-reduce (x f init)
+               (#_kv-reduce (record-map x) f init))
+  #_IHash
+  (#_hash (x) (#_hash (record-map x)))
+  #_IEquiv
+  (#_equiv (self other)
+           (? (and (eql (class-of other)
+                        (class-of self))
+                (truthy?
+                 (#_equiv (record-map self)
+                          (record-map other)))))))
+
+(define-clojure-macro #_defrecord (type fields &body opts+specs)
+  (mvlet* ((fields (convert 'list fields))
+           (keys (mapcar #'make-keyword fields))
+           (opts specs (parse-leading-keywords opts+specs))
+           (constructor-name
+            (intern (string+ type ".")
+                    (symbol-package type)))
+           (arrow-constructor-name
+            (intern (string+ "->" type)
+                    (symbol-package type)))
+           (map-constructor-name
+            (intern (string+ "map->" type)
+                    (symbol-package type))))
+    (declare (ignore opts))
+    `(progn
+       (defclass ,type (record-object)
+         ((fields :initform ',keys)))
+       (defmethod* object-fields ((self ,type))
+         ',keys)
+       (define-symbol-macro ,type (find-class ',type))
+       (defun-1 ,constructor-name (,@fields)
+         (,map-constructor-name
+          (fset:map
+           ,@(loop for field in fields
+                   for key in keys
+                   collect `(,key ,field)))))
+       (defun-1 ,arrow-constructor-name (,@fields)
+         (,constructor-name ,@fields))
+       (defun-1 ,map-constructor-name (map)
+         ;; TODO validity checking?
+         (make-instance ',type 'map map))
+       (symbol-macrolet ,(loop for field in fields
+                               collect `(,field (#_get (record-map %this) ',field)))
+         (#_extend-type ,type ,@specs)))))
 
 (define-clojure-macro #_deftype (type fields &body opts+specs)
   (mvlet* ((fields (convert 'list fields))
@@ -847,7 +950,7 @@ nested)."
                     (symbol-package type))))
     (declare (ignore opts))
     `(progn
-       (defclass ,type (clojure-class)
+       (defclass ,type (clojure-object)
          (,@(loop for field in fields
                   collect `(,field :initarg ,field
                                    :reader ,(symbolicate ".-" field)))))
@@ -856,11 +959,9 @@ nested)."
          (make-instance ',type
                         ,@(loop for field in fields
                                 append `(',field ,field))))
-       (defmethod* print-object ((self ,type) stream)
-         (print-unreadable-object (self stream :type t)
-           (with-slots ,fields self
-             (format stream "~{~a~^ ~}"
-                     (list ,@fields)))))
+       (defmethod* object-fields ((object ,type))
+         (with-slots ,fields object
+           (list ,@fields)))
        (symbol-macrolet ,(loop for field in fields
                                collect `(,field (slot-value %this ',field)))
          (#_extend-type ,type ,@specs)))))
@@ -900,7 +1001,7 @@ nested)."
 
 (extend-protocol #_IHash
   t
-  (#_hash (x) (murmurhash x)))
+  (#_hash (x) (murmurhash* x)))
 
 (extend-protocol #_ILookup
   map
@@ -1165,9 +1266,16 @@ nested)."
   (#_first (me) (map-entry-key me))
   (#_rest (me) (seq (map-entry-val me)))
   #_IHash
-  (#_hash (me) (murmurhash (cons (#_key me) (#_val me))))
+  (#_hash (me) (murmurhash* (cons (#_key me) (#_val me))))
   #_IEquiv
-  (#_equiv (self other) (? (coll= self other))))
+  (#_equiv (self other) (? (coll= self other)))
+  #_IIndexed
+  (#_nth (me n) (#_nth me n #_nil))
+  (#_nth (me n not-found)
+         (case n
+           (0 (map-entry-key me))
+           (1 (map-entry-val me))
+           (t not-found))))
 
 (defmethod fset:convert ((type (eql 'list))
                          (self map-entry)
@@ -1204,9 +1312,7 @@ nested)."
   (#_assoc (map key value) (with map key value))
   #_IMap
   (#_-dissoc (map key keys)
-             (reduce #'less
-                     (cons key keys)
-                     :initial-value map))
+             (#_reduce #'less map (cons key keys)))
   #_IKVReduce
   (#_kv-reduce (map f init)
                (if (empty? map) map
@@ -1251,10 +1357,10 @@ nested)."
 (extend-type symbol
   #_IHash
   (#_hash (s)
-          (if (keywordp s) (murmurhash s)
+          (if (keywordp s) (murmurhash* s)
               (multiple-value-bind (ns name) (ns+name s)
-                (if ns (murmurhash s)
-                    (murmurhash (cons '%sym name)))))))
+                (if ns (murmurhash* s)
+                    (murmurhash* (cons '%sym name)))))))
 
 (defun-1 #_instance? (class x)
   (when (symbolp class)
@@ -1521,13 +1627,13 @@ nested)."
 
 (defun-1 #_vals (map)
   (collecting
-    (do-map (k v map)
+    (do-map (k v (ensure-map map))
       (declare (ignore k))
       (collect v))))
 
 (defun-1 #_keys (map)
   (collecting
-    (do-map (k v map)
+    (do-map (k v (ensure-map map))
       (declare (ignore v))
       (collect k))))
 
@@ -1824,7 +1930,7 @@ nested)."
   (let ((fn (ifn-function fn)))
     (reduce (lambda (map1 map2)
               ;; NB fset:map-union does not have the right semantics.
-              (do-map (key val2 map2 map1)
+              (do-map (key val2 (ensure-map map2) map1)
                 (multiple-value-bind (val1 val1?)
                     (fset:lookup map1 key)
                   (if val1?
@@ -2276,7 +2382,7 @@ Analogous to `mapcar'."
   (? (typep x 'set)))
 
 (defun-1 #_map? (x)
-  (? (typep x 'map)))
+  (? (typep x '(or map record-object))))
 
 (defun-1 #_qualified-symbol? (x)
   (? (and (symbolp x)
@@ -2400,31 +2506,6 @@ Analogous to `mapcar'."
 (defun-1 #_mix-collection-hash (hash-basis count)
   ;; TODO export from cl-murmurhash
   (murmurhash::hash-integer count hash-basis t))
-
-(defconst int-length 32)
-
-(defconst long-length 64)
-
-(deftype int ()
-  '(signed-byte #.int-length))
-
-(deftype long ()
-  '(signed-byte #.long-length))
-
-(defsubst mask-signed-field (size int)
-  #+sbcl (sb-c::mask-signed-field size int)
-  #-sbcl
-  (cond ((zerop size)
-         0)
-        ((logbitp (1- size) int)
-         (dpb int (byte size 0) -1))
-        (t
-         (ldb (byte size 0) int))))
-
-(defsubst mask-int (int)
-  (mask-signed-field int-length int))
-(defsubst mask-long (int)
-  (mask-signed-field long-length int))
 
 (defvar *unchecked-math* #_false)
 (expose-to-clojure #_*unchecked-math* *unchecked-math*)

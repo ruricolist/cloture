@@ -49,7 +49,7 @@
   (:report (lambda (c s)
              (with-slots (name actual) c
                (format s "~a got ~a arg~:p, which is the wrong arity."
-                       name actual)))))
+                       (or name "Anonymous function") actual)))))
 (defun #_ArityException. (actual name)
   (make-condition '#_ArityException
                   :actual actual
