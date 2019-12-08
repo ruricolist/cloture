@@ -1,5 +1,30 @@
 (in-package #:cloture)
 
+(defconst int-length 32)
+
+(defconst long-length 64)
+
+(deftype int ()
+  '(signed-byte #.int-length))
+
+(deftype long ()
+  '(signed-byte #.long-length))
+
+(defsubst mask-signed-field (size int)
+  #+sbcl (sb-c::mask-signed-field size int)
+  #-sbcl
+  (cond ((zerop size)
+         0)
+        ((logbitp (1- size) int)
+         (dpb int (byte size 0) -1))
+        (t
+         (ldb (byte size 0) int))))
+
+(defsubst mask-int (int)
+  (mask-signed-field int-length int))
+(defsubst mask-long (int)
+  (mask-signed-field long-length int))
+
 (defmethod make-load-form ((seq seq) &optional env)
   (declare (ignore env))
   `(seq ,@(mapcar (op `(quote ,_))
@@ -27,23 +52,29 @@
                      collect `(lookup ,it ,i)
                      collect pat))))
 
+(defun murmurhash* (x)
+  (mask-int (murmurhash x)))
+
 (defmethod murmurhash ((seq seq) &key (seed *default-seed*)
                                       mix-only)
-  (murmurhash
-   (list* '%seq (size seq) (convert 'list seq))
-   :seed seed :mix-only mix-only))
+  (mask-int
+   (murmurhash
+    (list* '%seq (size seq) (convert 'list seq))
+    :seed seed :mix-only mix-only)))
 
 (defmethod murmurhash ((set set) &key (seed *default-seed*)
                                       mix-only)
-  (murmurhash
-   (list* '%set (size set) (convert 'list set))
-   :seed seed :mix-only mix-only))
+  (mask-int
+   (murmurhash
+    (list* '%set (size set) (convert 'list set))
+    :seed seed :mix-only mix-only)))
 
 (defmethod murmurhash ((map map) &key (seed *default-seed*)
                                       mix-only)
-  (murmurhash
-   (list* '%set (size map) (map->alist map))
-   :seed seed :mix-only mix-only))
+  (mask-int
+   (murmurhash
+    (list* '%set (size map) (map->alist map))
+    :seed seed :mix-only mix-only)))
 
 ;;; We want to be able to build on FSet's idea of equality, but we
 ;;; also need FSet to take into account Clojure's idea of equality (so

@@ -19,11 +19,11 @@
 (def false |clojure.core|:|false|)
 
 (defmethod murmurhash ((self |clojure.core|:|true|) &key)
-  (murmurhash '|clojure.core|:|true|))
+  (murmurhash* '|clojure.core|:|true|))
 (defmethod murmurhash ((self |clojure.core|:|false|) &key)
-  (murmurhash '|clojure.core|:|false|))
+  (murmurhash* '|clojure.core|:|false|))
 (defmethod murmurhash ((self |clojure.core|:|nil|) &key)
-  (murmurhash '|clojure.core|:|nil|))
+  (murmurhash* '|clojure.core|:|nil|))
 
 (defmethod fset:convert ((type (eql 'list)) (x |clojure.core|:|nil|) &key)
   '())
