@@ -885,12 +885,13 @@ nested)."
                                         key value)))
   #_IMap
   (#_-dissoc (x key keys)
-             (let ((map (#_-dissoc (record-map x) key keys)))
-               (if (iterate (for key in-seq (#_cons key keys))
-                     (when (memq key (record-fields x))
-                       (return t)))
-                   map
-                   (make-instance (class-of x) 'map map))))
+             (flet ((field? (key) (memq key (record-fields x))))
+               (let ((map (#_-dissoc (record-map x) key keys)))
+                 (if (or (field? key)
+                       (iterate (for key in-seq keys)
+                         (thereis (field? key))))
+                     map
+                     (make-instance (class-of x) 'map map)))))
   #_IKVReduce
   (#_kv-reduce (x f init)
                (#_kv-reduce (record-map x) f init))
