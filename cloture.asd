@@ -19,7 +19,8 @@
                "overlord"
                "cl-interpol"
                "global-vars"
-               "esrap")
+               "esrap"
+               "iterate")
   :in-order-to ((test-op (test-op "cloture-test")))
   :serial t
   :components ((:file "package")
@@ -34,6 +35,7 @@
                (:file "asdf")
                (:file "clojure-printer")
                (:file "errors")
+               (:file "iterate-drivers")
                (:module "clojure"
                 :serial t
                 :components ((:file "core")

@@ -886,12 +886,9 @@ nested)."
   #_IMap
   (#_-dissoc (x key keys)
              (let ((map (#_-dissoc (record-map x) key keys)))
-               (if (block nil
-                     (mapf (lambda (key)
-                             (when (memq key (record-fields x))
-                               (return t)))
-                           (#_cons key keys))
-                     nil)
+               (if (iterate (for key in-seq (#_cons key keys))
+                     (when (memq key (record-fields x))
+                       (return t)))
                    map
                    (make-instance (class-of x) 'map map))))
   #_IKVReduce
@@ -1722,31 +1719,17 @@ nested)."
   (#_equiv (self other) (? (coll= (force self) (force other))))
   #_IReduce
   (#_internal-reduce (coll f)
-                     (let ((f (ifn-function f))
-                           (init nil)
-                           (init? nil))
-                       (mapf (lambda (item)
-                               (if (not init?)
-                                   (setf init item
-                                         init? t)
-                                   (setf init (funcall f init item))))
-                             coll)
-                       init))
+                     (let ((f (ifn-function f)))
+                       (iterate (for item in-seq coll)
+                         (reducing item by f))))
   (#_internal-reduce (coll f start)
-                     (let ((f (ifn-function f))
-                           (init start))
-                       (mapf (lambda (item)
-                               (setf init (funcall f init item)))
-                             coll)
-                       init))
+                     (let ((f (ifn-function f)))
+                       (iterate (for item in-seq coll)
+                         (reducing item by f initial-value start))))
   #_ICounted
   (#_count (coll)
-           (let ((count 0))
-             (mapf (lambda (x)
-                     (declare (ignore x))
-                     (incf count))
-                   coll)
-             count)))
+           (iterate (for x in-seq coll)
+             (counting 1))))
 
 (defun-1 #_cons (x y)
   (cons x y))
@@ -1774,14 +1757,16 @@ nested)."
   (values))
 
 (defun lazy-seq->list (lazy-seq)
-  (mapfirst #'identity lazy-seq))
+  (iterate (for item in-seq lazy-seq)
+    (collect item)))
 
 (defmethod convert ((type (eql 'list)) (seq lazy-seq) &key)
   (lazy-seq->list seq))
 
-(defmethod convert ((type (eql 'seq)) (seq lazy-seq) &key)
+(defmethod convert ((type (eql 'seq)) (lseq lazy-seq) &key)
   (let ((seq (empty-seq)))
-    (mapfirst (op (withf seq _)) seq)
+    (iterate (for item in-seq lseq)
+      (withf seq item))
     seq))
 
 (defun-1 #_concat (&rest seqs)
@@ -1983,16 +1968,11 @@ nested)."
      (#_internal-reduce (#_seq coll) f start))))
 
 (defun reduce-rests (coll f start start?)
-  (let ((f (ifn-function f))
-        (init start)
-        (init? start?))
-    (mapf (lambda (elt)
-            (if (not init?)
-                (setf init elt
-                      init? t)
-                (setf init (funcall f init elt))))
-          coll)
-    init))
+  (if start?
+      (iterate (for x in-seq coll)
+        (reducing x by f initial-value start))
+      (iterate (for x in-seq coll)
+        (reducing x by f))))
 
 (defun get-once-value (name)
   (let* ((unbound "unbound")
@@ -2439,9 +2419,12 @@ Analogous to `mapcar'."
   (coerce x 'double-float))
 
 (defun-1 #_floats (xs)
-  (replace (make-array (#_count xs) :element-type 'double-float)
-           (mapfirst (op (coerce _ 'double-float))
-                     xs)))
+  (lret ((a (make-array (#_count xs) :element-type 'double-float)))
+    (iterate
+      (for x in-seq xs)
+      (for i from 0)
+      (setf (aref a i)
+            (coerce x 'double-float)))))
 
 (defun-1 #_disj (set key)
   (fset:less (assure set set) key))
@@ -2618,9 +2601,8 @@ Analogous to `mapcar'."
   (typep x 'integer))
 
 (defun-1 #_every? (pred coll)
-  (let ((pred (ifn-function pred)))
-    (mapf (lambda (item)
-            (when (falsy? (funcall pred item))
-              (return-from #_every? #_false)))
-          coll)
-    #_true))
+  (fbind ((pred (ifn-function pred)))
+    (if (iterate (for item in-seq coll)
+          (never (falsy? (pred item))))
+        #_true
+        #_false)))

@@ -8,8 +8,13 @@
     #:named-readtables
     ;; Pattern matching.
     #:trivia
-    #:murmurhash)
+    #:murmurhash
+    #:iterate)
   (:import-from #:trivia.ppcre #:ppcre)
+  (:shadowing-import-from #:iterate
+    #:sum #:summing #:in)
+  (:shadowing-import-from #:serapeum
+    #:collecting)
   (:import-from #:cl-custom-hash-table
     #:define-custom-hash-table-constructor)
   (:import-from #:fset
@@ -20,13 +25,13 @@
     #:do-map
     #:do-seq
     #:do-set
-    #:with
     #:empty-seq
     #:empty-set
     #:empty-map
     #:convert
     #:seq
     #:size)
+  (:shadowing-import-from #:fset #:with)
   (:import-from #:lisp-namespace
     #:define-namespace)
   (:shadowing-import-from #:fset
@@ -69,4 +74,9 @@
 
            #:repl
 
-           #:regex))
+           #:regex
+
+           ;; Iterate drivers.
+           #:in-seq
+           #:on-seq
+           #:in-indexed))
