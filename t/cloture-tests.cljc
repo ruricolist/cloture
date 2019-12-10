@@ -77,6 +77,12 @@
   (is (= \tab (first "\t")))
   (is (= \u03A9 (first "Ω"))))
 
+(deftest test-read-hex
+  (is (= 0xfff 4095)))
+
+(deftest test-read-octal
+  (is (= 0123 83)))
+
 (deftest let-test
   (is (= 3 (let [x 1 y 2] (+ x y))))
   (is (= 3 (let [x 2 y 1] (+ x y))))

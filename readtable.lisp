@@ -167,6 +167,24 @@
           (t
            (read-char stream nil nil t)))))
 
+(defun subread-with-prefix (prefix stream)
+  (let ((stream (make-concatenated-stream
+                 (make-string-input-stream prefix)
+                 stream))
+        (*readtable* (find-readtable :standard)))
+    (subread stream)))
+
+(defun read-clojure-number (stream char)
+  (declare (ignore char))
+  (let ((next (read-char stream nil nil t)))
+    (cond ((whitespacep next) 0)
+          ((eql next #\x)
+           (subread-with-prefix "#x" stream))
+          ((digit-char-p next 8)
+           (subread-with-prefix (fmt "#o~a" next) stream))
+          (t (unread-char next stream)
+             0))))
+
 (defreadtable cloture
   (:fuze :standard cloture.qq:quasiquote-mixin)
   (:case :preserve)
@@ -174,6 +192,8 @@
   (:macro-char #\' 'read-quote)
   ;; Clojure characters.
   (:macro-char #\\ 'read-clojure-char)
+  ;; Clojure numbers.
+  (:macro-char #\0 'read-clojure-number t)
   ;; Strings with escapes.
   (:macro-char #\" 'read-string-with-escapes)
   ;; Supress.
