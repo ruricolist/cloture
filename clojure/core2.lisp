@@ -122,6 +122,12 @@
   ([x y & more]
    (reduce max (max x y) more)))
 
+(defn min
+  ([x] x)
+  ([x y] (if (< x y) x y))
+  ([x y & more]
+   (reduce min (min x y) more)))
+
 (defn hash-ordered-coll [collection]
   (-> (reduce (fn [acc e] (unchecked-add-int
                            (unchecked-multiply-int 31 acc)
