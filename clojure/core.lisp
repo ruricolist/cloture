@@ -979,6 +979,10 @@ nested)."
   #_INext
   (#_next (x) (#_seq (#_rest x))))
 
+(extend-type <regex>
+  #_Object
+  (#_toString (x) (regex-string x)))
+
 (extend-type package
   #_IEquiv
   (#_equiv (x y) (? (eql x y))))

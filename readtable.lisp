@@ -39,6 +39,11 @@
   (raw-regex (string string))
   (compiled-regex (string string) (function function)))
 
+(defun regex-string (r)
+  (match-of regex r
+    ((raw-regex s) s)
+    ((compiled-regex s _) s)))
+
 (defun read-regex (stream char arg)
   (declare (ignore arg))
   (unread-char char stream)
