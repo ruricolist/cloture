@@ -434,7 +434,7 @@ nested)."
                      exports)))
           (import exports)
           (when rename
-            (do-map (from to rename)
+            (iterate (for (from to) in-map rename)
               (let ((from (find-external-symbol from p :error t))
                     (to (intern (string to))))
                 (eval `(alias-from ,from ,to)))))))))
@@ -1225,10 +1225,10 @@ nested)."
   #_IKVReduce
   (#_kv-reduce (seq f init)
                (if (empty? seq) seq
-                   (let ((k 0))
-                     (do-seq (v seq)
-                       (setf init (ifncall f init (finc k) v)))
-                     init)))
+                   (iterate
+                     (for v in-fset-seq seq with-index k)
+                     (setf init (ifncall f init k v))
+                     (finally (return init)))))
   #_ILookup
   (#_lookup (coll key) (#_nth coll key #_nil))
   (#_lookup (coll key default) (#_nth coll key default))
@@ -1285,13 +1285,12 @@ nested)."
   #_ISeqable
   (#_seq (map)
          (if (empty? map) #_nil
-             (collecting
-               (do-map (k v map)
-                 (collect (map-entry k v))))))
+             (iterate (for (k v) in-map map)
+               (collect (map-entry k v)))))
   #_ISeq
   (#_first (map)
            (if (empty? map) #_nil
-               (do-map (k v map)
+               (iterate (for (k v) in-map map)
                  (return (seq k v)))))
   (#_rest (map) (#_rest (#_seq map)))
   #_INext
@@ -1315,9 +1314,9 @@ nested)."
   (#_kv-reduce (map f init)
                (if (empty? map) map
                    (progn
-                     (do-map (k v map)
-                       (setf init (ifncall f init k v)))
-                     init)))
+                     (iterate (for (k v) in-map map)
+                       (setf init (ifncall f init k v))
+                       (finally (return init))))))
   #_IHash
   (#_hash (coll) (#_hash-unordered-coll coll)))
 
@@ -1330,9 +1329,7 @@ nested)."
   #_ISeqable
   (#_seq (set)
          (if (empty? set) #_nil
-             (collecting
-               (do-set (x set)
-                 (collect x)))))
+             (convert 'list set)))
   #_IEmptyableCollection
   (#_empty (set) (fset:empty-set))
   #_ICollection
@@ -1624,16 +1621,12 @@ nested)."
       (apply #'compose (mapcar #'ifn-function fns))))
 
 (defun-1 #_vals (map)
-  (collecting
-    (do-map (k v (ensure-map map))
-      (declare (ignore k))
-      (collect v))))
+  (iterate (for (nil v) in-map (ensure-map map))
+    (collect v)))
 
 (defun-1 #_keys (map)
-  (collecting
-    (do-map (k v (ensure-map map))
-      (declare (ignore v))
-      (collect k))))
+  (iterate (for (k nil) in-map (ensure-map map))
+    (collect k)))
 
 (define-clojure-macro #_time (form)
   `(time ,form))
@@ -1729,8 +1722,11 @@ nested)."
                          (reducing item by f initial-value start))))
   #_ICounted
   (#_count (coll)
-           (iterate (for x in-seq coll)
-             (counting 1))))
+           (nlet rec ((coll coll)
+                      (count 0))
+             (if (seq? coll)
+                 (rec (#_rest coll) (1+ count))
+                 count))))
 
 (defun-1 #_cons (x y)
   (cons x y))
@@ -1913,15 +1909,16 @@ nested)."
         (withf map key (convert 'seq group))))))
 
 (defun-1 #_merge-with (fn &rest maps)
-  (let ((fn (ifn-function fn)))
+  (fbind ((fn (ifn-function fn)))
     (reduce (lambda (map1 map2)
               ;; NB fset:map-union does not have the right semantics.
-              (do-map (key val2 (ensure-map map2) map1)
+              (iterate (for (key val2) in-map (ensure-map map2))
                 (multiple-value-bind (val1 val1?)
                     (fset:lookup map1 key)
                   (if val1?
-                      (withf map1 key (funcall fn val1 val2))
-                      (withf map1 key val2)))))
+                      (withf map1 key (fn val1 val2))
+                      (withf map1 key val2)))
+                (finally (return map1))))
             maps
             :initial-value (empty-map))))
 

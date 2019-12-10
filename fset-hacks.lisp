@@ -33,7 +33,7 @@
 (defmethod make-load-form ((map map) &optional env)
   (declare (ignore env))
   `(map ,@(collecting
-            (do-map (k v map)
+            (fset:do-map (k v map)
               (collect (list `(quote ,k)
                              `(quote ,v)))))))
 

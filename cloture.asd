@@ -27,6 +27,7 @@
                (:static-file "core-syms.txt")
                (:static-file "pprint-syms.txt")
                (:file "clojure-packages")
+               (:file "iterate-drivers")
                (:file "fset-hacks")
                (:file "cloture")
                (:file "quasiquote")
@@ -35,7 +36,6 @@
                (:file "asdf")
                (:file "clojure-printer")
                (:file "errors")
-               (:file "iterate-drivers")
                (:module "clojure"
                 :serial t
                 :components ((:file "core")

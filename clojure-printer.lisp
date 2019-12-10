@@ -10,7 +10,7 @@
 
 (defun pp-seq (stream seq)
   (pprint-logical-block (stream nil :prefix "[")
-    (do-seq (x seq)
+    (iterate (for x in-fset-seq seq)
       (pprint-pop)
       (write-char #\Space stream)
       (pprint-newline :linear stream)
@@ -19,7 +19,7 @@
 
 (defun pp-map (stream map)
   (pprint-logical-block (stream nil :prefix "{")
-    (do-map (x y map)
+    (iterate (for (x y) in-map map)
       (pprint-pop)
       (write-char #\Space stream)
       (pprint-newline :linear stream)

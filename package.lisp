@@ -22,9 +22,6 @@
     #:empty?
     #:lookup
     #:less
-    #:do-map
-    #:do-seq
-    #:do-set
     #:empty-seq
     #:empty-set
     #:empty-map
@@ -79,4 +76,9 @@
            ;; Iterate drivers.
            #:in-seq
            #:on-seq
-           #:in-indexed))
+           #:in-indexed
+           #:index-of-indexed
+           #:in-map
+           #:in-set
+           #:in-fset-seq
+           #:index-of-fset-seq))

@@ -71,8 +71,9 @@
 (defun merge-maps (&rest maps)
   (reduce (lambda (m1 m2)
             (let ((out m1))
-              (do-map (k v m2 out)
-                (withf out k v))))
+              (iterate (for (k v) in-map m2)
+                (withf out k v)
+                (finally (return out)))))
           maps
           :initial-value (empty-map)))
 
@@ -192,14 +193,13 @@
                      collect pat))))
 
 (defun map->alist (map)
-  (collecting
-    (do-map (k v map)
-      (collect (cons k v)))))
+  (iterate (for (k v) in-map map)
+    (collect (cons k v))))
 
 (defun map->list (map)
-  (collecting
-    (do-map (k v map)
-      (collect k v))))
+  (iterate (for (k v) in-map map)
+    (collect k)
+    (collect v)))
 
 (defun list->map (l)
   (let ((pairs (batches l 2 :even t)))
@@ -224,8 +224,8 @@ Also return (as a second value) a list of all the symbols bound."
                  (seq
                   (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
                     `(or (clojuresque-list ,@pats)
-                         ;; NB this matches lists with too few arguments.
-                         (sequential ,@pats))))
+                       ;; NB this matches lists with too few arguments.
+                       (sequential ,@pats))))
                  (map
                   (let* ((alist (map->alist obj))
                          (as (cdr (pop-assoc :|as| alist)))
@@ -233,8 +233,9 @@ Also return (as a second value) a list of all the symbols bound."
                                      (empty-map)))
                          (or-map
                            (let ((map (empty-map)))
-                             (do-map (k v or-map map)
-                               (withf map (make-keyword k) v))))
+                             (iterate (for (k v) in-map or-map)
+                               (withf map (make-keyword k) v)
+                               (finally (return map)))))
                          (keys (cdr (pop-assoc :|keys| alist)))
                          (strs (cdr (pop-assoc :|strs| alist)))
                          (syms (cdr (pop-assoc :|syms| alist)))

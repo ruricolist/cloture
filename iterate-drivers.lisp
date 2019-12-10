@@ -1,19 +1,64 @@
 (in-package #:cloture)
-(in-readtable clojure-shortcut)
 
 (defclause-sequence in-indexed index-of-indexed
-  :access-fn '#_nth
-  :size-fn (lambda (v) (#_count v))
+  :access-fn '|clojure.core|:|nth|
+  :size-fn (lambda (v) (|clojure.core|:|count| v))
   :sequence-type 'indexed
   :element-type t
   :element-doc-string "Elements of an object that extends IIndexed."
   :index-doc-string  "Indices of an object that extends IIndexed.")
 
+(defclause-sequence cloture:in-fset-seq cloture:index-of-fset-seq
+  :access-fn 'fset:lookup
+  :size-fn 'fset:size
+  :sequence-type 'fset:seq
+  :element-type t
+  :element-doc-string "Elements of an Fset seq."
+  :element-doc-string "Indices of an Fset seq.")
+
+(defmacro-driver (for x in-set s)
+  (with-unique-names (gset elt)
+    (let ((kwd (if generate 'iter:generate 'iter:for)))
+      `(progn
+         (iterate:with ,gset = ,s)
+         (,kwd ,x
+               next
+               (if (empty? ,gset)
+                   (terminate)
+                   (let ((,elt (fset:arb ,gset)))
+                     (setf ,gset (fset:less ,gset ,elt))
+                     ,elt)))))))
+
+(defmacro-clause (for var in-plist plist)
+  (destructuring-bind (k &optional v) var
+    `(for (,k ,@(unsplice v))
+       on ,plist by #'cddr)))
+
+(defmacro with-fset-iterator ((name col) &body body)
+  `(fbind ((,name (curry (fset:iterator ,col) :get)))
+     ,@body))
+
+(iterate::defclause-driver (for key-val-vars in-map map)
+  "Elements and keys of an Fset map."
+  (iterate::top-level-check)
+  (unless (consp key-val-vars)
+    (iterate::clause-error "~a should be a list of up to two variables: the first ~
+  for the keys, the second for the values." key-val-vars))
+  (let* ((iterator (gensym "FSET-ITERATOR-"))
+         (more?    (gensym))
+         (var-spec `(values ,@key-val-vars ,more?))
+         (setqs    (iterate::do-dsetq var-spec `(,iterator)))
+         (test     `(and (not ,more?) (go ,iterate::*loop-end*))))
+    (setf iterate::*loop-end-used?* t)
+    (iterate::add-loop-body-wrapper `(with-fset-iterator (,iterator ,map)))
+    (iterate::return-driver-code :next (list setqs test)
+                                 :variable var-spec)))
+
 ;;; These are adapted from the source of Iterate.
 
 (in-package #:iterate)
 
-(defclause-driver (for var on-seq list &optional by (step ''#_rest))
+(defclause-driver (for var cloture:on-seq list &optional by (step ''|clojure.core|:|rest|))
   "Rests of a seq."
   (top-level-check)
   (let* ((list-var (make-var-and-default-binding 'list))
@@ -28,11 +73,11 @@
 				     list-var step))
 			:variable var)))
 
-(defclause-driver (for var in-seq list &optional by (step ''#_rest))
+(defclause-driver (for var cloture:in-seq list &optional by (step ''|clojure.core|:|rest|))
   "Elements of a seq."
   (top-level-check)
   (let* ((on-var (make-var-and-default-binding 'list :type 'list))
-	 (setqs (do-dsetq var `(#_first ,on-var)))
+	 (setqs (do-dsetq var `(|clojure.core|:|first| ,on-var)))
 	 (test `(if (not (cloture::seq? ,on-var)) (go ,*loop-end*))))
     (setq *loop-end-used?* t)
     (return-driver-code :initial `((setq ,on-var ,list))
