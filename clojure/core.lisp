@@ -2606,3 +2606,6 @@ Analogous to `mapcar'."
           (never (falsy? (pred item))))
         #_true
         #_false)))
+
+(defun-1 #_char (x)
+  (coerce x 'character))
