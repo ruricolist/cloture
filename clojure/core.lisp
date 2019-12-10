@@ -1761,10 +1761,8 @@ nested)."
   (lazy-seq->list seq))
 
 (defmethod convert ((type (eql 'seq)) (lseq lazy-seq) &key)
-  (let ((seq (empty-seq)))
-    (iterate (for item in-seq lseq)
-      (withf seq item))
-    seq))
+  (iterate (for item in-seq lseq)
+    (reducing item by #'fset:with-last initial-value (empty-seq))))
 
 (defun-1 #_concat (&rest seqs)
   (labels ((rec (seqs)
