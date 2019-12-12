@@ -662,3 +662,13 @@
              type)))
   (is (not= (type (->Foo 1 2))
             (type (dissoc (->Foo 1 2) :b)))))
+
+(deftest test-sorted-map-equality
+  (let [m1 (sorted-map-by > 3 -7 5 10 15 20)
+        m2 {3 -7, 5 10, 15 20}]
+    (is (= m1 m2))))
+
+(deftest test-map-vector-equality
+  (let [v1 ["a" "b" "c"]
+        v2 {0 "a" 1 "b" 2 "c"}]
+    (is (not (= v1 v2)))))

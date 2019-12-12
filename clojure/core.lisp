@@ -1303,7 +1303,7 @@ nested)."
   (#_empty (map) (fset:empty-map))
   #_ICollection
   (#_-conj (map x)
-           (if (satisfies? '#_IMap x)
+           (if (truthy? (#_map? x))
                (#_merge map x)
                (apply #'fset:with map (convert 'list x))))
   #_IFn
@@ -1317,10 +1317,9 @@ nested)."
   #_IKVReduce
   (#_kv-reduce (map f init)
                (if (empty? map) map
-                   (progn
-                     (iterate (for (k v) in-map map)
-                       (setf init (ifncall f init k v))
-                       (finally (return init))))))
+                   (iterate (for (k v) in-map map)
+                     (setf init (ifncall f init k v))
+                     (finally (return init)))))
   #_IHash
   (#_hash (coll) (#_hash-unordered-coll coll)))
 
@@ -2362,7 +2361,7 @@ Analogous to `mapcar'."
   (? (typep x 'set)))
 
 (defun-1 #_map? (x)
-  (? (typep x '(or map record-object))))
+  (#_satisfies? '#_IMap x))
 
 (defun-1 #_qualified-symbol? (x)
   (? (and (symbolp x)
@@ -2609,3 +2608,111 @@ Analogous to `mapcar'."
 
 (defun-1 #_char (x)
   (coerce x 'character))
+
+(defclass sorted-map ()
+  ((map
+    :initarg :map
+    :accessor sorted-map-map)
+   (comparator
+    :initarg :comparator
+    :type function
+    :accessor sorted-map-comparator))
+  (:default-initargs
+   :map (empty-map)
+   :comparator #'#_compare))
+
+(defconstructor sort-wrapper
+  (comparator function)
+  (object t))
+
+(defmethods sorted-map (sm map comparator)
+  (:method ensure-map (sm) sm)
+  (:method empty? (sm) (empty? map))
+
+  (:method lookup (sm key)
+    (fset:lookup map (sort-wrapper comparator key)))
+
+  (:method with (sm key &optional (val nil val-supplied?))
+    (assert val-supplied?)
+    (make 'sorted-map
+          :comparator comparator
+          :map (with map
+                     (sort-wrapper comparator key)
+                     val)))
+
+  (:method fset:compare (sm other)
+    (fset:compare (unsort-map (sorted-map-map sm)) other))
+  (:method fset:compare (other sm)
+    (fset:compare other (unsort-map (sorted-map-map sm)))))
+
+(defun unsort-map (map)
+  (let ((out (empty-map)))
+    (iterate (for (k v) in-map map)
+      (withf out (sort-wrapper-object k) v)
+      (finally (return out)))))
+
+(fset:define-cross-type-compare-methods sort-wrapper)
+
+(defmethod fset:compare ((x sort-wrapper) (y sort-wrapper))
+  (multiple-value-ematch (values x y)
+    (((sort-wrapper c1 o1) (sort-wrapper c2 o2))
+     (assert (eql c1 c2))
+     (ecase (funcall c1 o1 o2)
+       (#.#_true :less)
+       (#.#_false :greater)
+       (-1 :less)
+       (0 :equal)
+       (1 :greater)))))
+
+(defun-1 #_sorted-map (&rest keyvals)
+  (apply #'#_sorted-map-by #'#_compare keyvals))
+
+(defun-1 #_sorted-map-by (comparator &rest keyvals)
+  (let ((smap (make-sorted-map comparator)))
+    (loop for (key val) in (batches keyvals 2 :even t)
+          do (setf smap (#_assoc smap key val)))
+    smap))
+
+(defun make-sorted-map (comparator)
+  (make 'sorted-map
+        :comparator (ifn-function comparator)))
+
+(defun sort-wrap (map x)
+  (sort-wrapper (sorted-map-comparator map) x))
+
+(extend-type sorted-map
+  #_ISeqable
+  (#_seq (m)
+         (if (empty? m) #_nil
+             (iterate (for (k v) in-map (sorted-map-map m))
+               (collect (map-entry (sort-wrapper-object k) v)))))
+  #_ISeq
+  (#_first (m) (#_first (#_seq m)))
+  (#_rest (m) (#_rest (#_seq m)))
+  #_INext
+  (#_next (m) (#_seq m))
+  #_IEmptyableCollection
+  (#_empty (m) (make-sorted-map (sorted-map-comparator m)))
+  #_ICollection
+  (#_-conj (map x)
+           (if (truthy? (#_map? x))
+               (#_merge map x)
+               (apply #'fset:with map (convert 'list x))))
+  #_IFn
+  (#_invoke (x arg) (lookup x arg))
+  #_IAssociative
+  (#_contains-key? (map key) (fset:contains? (sort-wrap map key)
+                                             (sorted-map-map map)))
+  (#_assoc (map key value) (with map key value))
+  #_IMap
+  (#_-dissoc (map key keys)
+             (#_reduce #'less map (cons key keys)))
+  #_IKVReduce
+  (#_kv-reduce (map f init)
+               (if (empty? map) map
+                   (iterate (for (k v) in-map (sorted-map-map map))
+                     (let ((k (sort-wrapper-object k)))
+                       (setf init (ifncall f init k v))
+                       (finally (return init))))))
+  #_IHash
+  (#_hash (coll) (#_hash-ordered-coll coll)))
