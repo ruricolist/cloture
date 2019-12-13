@@ -2728,3 +2728,7 @@ Analogous to `mapcar'."
 
 (defun-1 #_vector? (x)
   (? (typep x 'fset:seq)))
+
+(defn #_keyword
+  ((name) (make-keyword name))
+  ((ns name) (make-keyword (string+ ns "/" name))))
