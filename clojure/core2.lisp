@@ -177,3 +177,6 @@
 
 (defn remove [pred coll]
   (filter (complement pred) coll))
+
+(defn mapcat [f & colls]
+  (apply concat (apply map f colls)))

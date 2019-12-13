@@ -677,3 +677,7 @@
   (let [v1 ["a" "b" "c"]
         v2 {0 "a" 1 "b" 2 "c"}]
     (is (not (= v1 v2)))))
+
+(deftest test-mapcat
+  (is (= '(0 1 2 3 4 5 6 7 8 9)
+         (mapcat reverse [[3 2 1 0] [6 5 4] [9 8 7]]))))
