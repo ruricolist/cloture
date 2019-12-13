@@ -1430,7 +1430,7 @@ nested)."
   `(progn
      ,@(loop for arg in args
              collect `(define-symbol-macro ,arg
-                          ,(backing-var arg)))))
+                          (symbol-value ',(backing-var arg))))))
 
 (defun-1 #_= (&rest args)
   (assure clojure-boolean
