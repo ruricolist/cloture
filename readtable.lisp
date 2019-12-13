@@ -140,7 +140,7 @@
 (defalias read-eval
   (get-dispatch-macro-character #\# #\.))
 
-(defun read-string-with-escapes (stream char)
+(defun read-string-with-escapes (stream &optional (char #\"))
   (unread-char char stream)
   (let ((interpol:*outer-delimiters* '(#\"))
         (interpol:*inner-delimiters* nil)

@@ -81,4 +81,5 @@
            #:in-map
            #:in-set
            #:in-fset-seq
-           #:index-of-fset-seq))
+           #:index-of-fset-seq
+           #:read-string-with-escapes))
