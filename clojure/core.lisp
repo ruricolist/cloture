@@ -925,6 +925,7 @@ nested)."
        (defmethod* object-fields ((self ,type))
          ',keys)
        (define-symbol-macro ,type (find-class ',type))
+       (export '(,type) ,(symbol-package type))
        (defun-1 ,constructor-name (,@fields)
          (,map-constructor-name
           (fset:map
