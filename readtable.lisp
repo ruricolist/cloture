@@ -39,6 +39,11 @@
   (raw-regex (string string))
   (compiled-regex (string string) (function function)))
 
+(defmethod fset:compare ((r1 <regex>) (r2 <regex>))
+  (fset:compare (regex-string r1) (regex-string r2)))
+
+(fset:define-cross-type-compare-methods <regex>)
+
 (defun regex-string (r)
   (match-of regex r
     ((raw-regex s) s)
