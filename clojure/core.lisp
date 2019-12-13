@@ -1529,8 +1529,10 @@ nested)."
     (otherwise call)))
 
 (defun-1 #_re-pattern (s)
-  (check-type s string)
-  (compiled-regex s (ppcre:create-scanner s)))
+  (etypecase-of (or string regex) s
+    (string (compiled-regex s (ppcre:create-scanner s)))
+    (raw-regex (#_re-pattern (raw-regex-string s)))
+    (compiled-regex s)))
 
 (define-clojure-macro #_defmulti (name &body body)
   (mvlet* ((body docs (body+docs+attrs body)))
