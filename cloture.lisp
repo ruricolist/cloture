@@ -134,7 +134,8 @@
               (loop for pat in pats
                     if (symbolp pat)
                       collect pat
-                    else collect (obj->pattern pat)))
+                    else collect (obj->pattern pat))
+              rest (obj->pattern rest :rest t))
         (progn
           (assert (every #'symbolp pats))
           (assert (symbolp rest))))
@@ -192,6 +193,16 @@
                      collect `(|clojure.core|:|lookup| ,as ,key ,default)
                      collect pat))))
 
+(defpattern rest-associative (list &key as)
+  (with-unique-names (temp-as)
+    (let* ((as (or as (string-gensym 'as))))
+      `(guard1 ,temp-as
+               (typep ,temp-as 'list)
+               (list->map ,temp-as) (guard1 ,as t)
+               ,@(loop for (pat key default) in list
+                       collect `(|clojure.core|:|lookup| ,as ,key ,default)
+                       collect pat)))))
+
 (defun map->alist (map)
   (iterate (for (k v) in-map map)
     (collect (cons k v))))
@@ -210,7 +221,7 @@
             :initial-value (empty-map))))
 
 ;;; TODO
-(defun obj->pattern (obj)
+(defun obj->pattern (obj &key rest)
   "Convert OBJ into a Trivia destructuring pattern.
 Also return (as a second value) a list of all the symbols bound."
   (let ((syms (queue)))
@@ -226,6 +237,8 @@ Also return (as a second value) a list of all the symbols bound."
                     `(or (clojuresque-list ,@pats)
                        ;; NB this matches lists with too few arguments.
                        (sequential ,@pats))))
+                 ((cons (eql {}) t)
+                  (obj->pattern (list->map (rest obj))))
                  (map
                   (let* ((alist (map->alist obj))
                          (as (cdr (pop-assoc :|as| alist)))
@@ -256,7 +269,9 @@ Also return (as a second value) a list of all the symbols bound."
                                  for default = (|clojure.core|:|lookup| or-map key)
                                  for pat = (obj->pattern obj)
                                  collect (list pat key default))))
-                    `(associative ,list :as ,as))))))
+                    (if rest
+                        `(rest-associative ,list :as ,as)
+                        `(associative ,list :as ,as)))))))
       (values (obj->pattern obj)
               (qlist syms)))))
 

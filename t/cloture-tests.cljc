@@ -175,6 +175,11 @@
 (deftest destructure-associative-as
   (is (= client (let [{:as all} client] all))))
 
+(deftest destructure-keyword-arguments
+  (letfn ((optify [& {:as opts}] opts))
+    (is (= {:x 1 :y 2}
+           (optify :x 1 :y 2)))))
+
 (deftest destructure-associative-default
   (is (= "Category not found"
          (let [{category :category, :or {category "Category not found"}} client]
