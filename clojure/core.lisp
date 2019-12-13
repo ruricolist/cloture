@@ -676,12 +676,12 @@ nested)."
 (defun ifn-apply (ifn &rest args)
   (let* ((last (lastcar args))
          (args
-           (if (listp last) args
-               (append1 (butlast args)
-                        (convert 'list last)))))
+           (append1 (butlast args)
+                    (iterate (for each in-seq last)
+                      (collect each)))))
     (apply #'apply
            (ifn-function ifn)
-           (convert 'list args))))
+           args)))
 
 (-> ifn-function (t) (values function &optional))
 (defun ifn-function (ifn)
