@@ -1903,6 +1903,10 @@ nested)."
   `(with-output-to-string (*standard-output*)
      ,@body))
 
+(define-clojure-macro #_with-in-str (s &body body)
+  `(with-input-from-string (*standard-input* ,s)
+     ,@body))
+
 (defun-1 #_group-by (fn seq)
   (let* ((fn (ifn-function fn))
          (seq (convert 'list seq))
