@@ -2380,6 +2380,9 @@ Analogous to `mapcar'."
 (defun-1 #_simple-ident? (x)
   (? (and (symbolp x) (ns+name x))))
 
+(defun-1 #_keyword? (x)
+  (? (keywordp x)))
+
 (define-clojure-macro #_dotimes (bindings &body body)
   (ematch bindings
     ((seq i n)
@@ -2716,3 +2719,9 @@ Analogous to `mapcar'."
                        (finally (return init))))))
   #_IHash
   (#_hash (coll) (#_hash-ordered-coll coll)))
+
+(defun-1 #_string? (x)
+  (? (stringp x)))
+
+(defun-1 #_vector? (x)
+  (? (typep x 'fset:seq)))
