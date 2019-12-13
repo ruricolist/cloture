@@ -2497,7 +2497,7 @@ Analogous to `mapcar'."
 
 (defun-1 #_mix-collection-hash (hash-basis count)
   ;; TODO export from cl-murmurhash
-  (murmurhash::hash-integer count hash-basis t))
+  (mask-int (murmurhash::hash-integer count hash-basis t)))
 
 (defvar *unchecked-math* #_false)
 (expose-to-clojure #_*unchecked-math* *unchecked-math*)
