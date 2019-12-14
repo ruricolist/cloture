@@ -38,6 +38,22 @@
   `(fbind ((,name (curry (fset:iterator ,col) :get)))
      ,@body))
 
+(defmacro-clause (collecting-set x &optional into var)
+  `(reducing ,x by #'fset:with into ,var initial-value (empty-set)))
+
+(defmacro-clause (collecting-seq x &optional into var)
+  `(reducing ,x by #'fset:with-last into ,var initial-value (empty-seq)))
+
+(defun with-kv (map kv)
+  (destructuring-bind (k . v) kv
+    (fset:with map k v)))
+
+(defmacro-clause (collecting-map-aux kv &optional into var)
+  `(reducing ,kv by #'with-kv into ,var initial-value (empty-map)))
+
+(defmacro collecting-map (k v &rest args)
+  `(collecting-map-aux (cons ,k ,v) ,@args))
+
 (iterate::defclause-driver (for key-val-vars in-map map)
   "Elements and keys of an Fset map."
   (iterate::top-level-check)

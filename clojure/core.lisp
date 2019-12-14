@@ -1768,7 +1768,7 @@ nested)."
 
 (defmethod convert ((type (eql 'seq)) (lseq lazy-seq) &key)
   (iterate (for item in-seq lseq)
-    (reducing item by #'fset:with-last initial-value (empty-seq))))
+    (collecting-seq item)))
 
 (defun-1 #_concat (&rest seqs)
   (labels ((rec (seqs)
@@ -1910,11 +1910,10 @@ nested)."
 (defun-1 #_group-by (fn seq)
   (let* ((fn (ifn-function fn))
          (seq (convert 'list seq))
-         (groups (assort seq :key fn :test (compose #'truthy? #_=)))
-         (map (empty-map)))
-    (dolist (group groups map)
+         (groups (assort seq :key fn :test (compose #'truthy? #_=))))
+    (iterate (for group in groups)
       (let ((key (funcall fn (first group))))
-        (withf map key (convert 'seq group))))))
+        (collecting-map key (convert 'seq group))))))
 
 (defun-1 #_merge-with (fn &rest maps)
   (fbind ((fn (ifn-function fn)))
@@ -2656,10 +2655,8 @@ Analogous to `mapcar'."
     (fset:compare other (unsort-map (sorted-map-map sm)))))
 
 (defun unsort-map (map)
-  (let ((out (empty-map)))
-    (iterate (for (k v) in-map map)
-      (withf out (sort-wrapper-object k) v)
-      (finally (return out)))))
+  (iterate (for (k v) in-map map)
+    (collecting-map (sort-wrapper-object k) v)))
 
 (fset:define-cross-type-compare-methods sort-wrapper)
 
