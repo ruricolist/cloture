@@ -44,5 +44,6 @@
                              (:file "template")
                              (:file "set")
                              (:file "string")
-                             (:file "stacktrace")))
+                             (:file "stacktrace")
+                             (:file "walk")))
                (:file "clojure-repl")))

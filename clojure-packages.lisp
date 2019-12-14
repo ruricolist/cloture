@@ -115,6 +115,10 @@
   (:use)
   (:export "print-cause-trace" "print-stack-trace" "print-throwable" "root-cause"))
 
+(define-clojure-package "clojure.walk"
+  (:use)
+  (:export "postwalk" "postwalk-demo"))
+
 (define-clojure-package "user"
   (:use "clojure.core"))
 
@@ -126,5 +130,6 @@
     "clojure.set"
     "clojure.string"
     "clojure.template"
-    "clojure.stacktrace")
+    "clojure.stacktrace"
+    "clojure.walk")
   (:shadowing-import-from "clojure.core" "replace"))
