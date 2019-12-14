@@ -54,6 +54,14 @@
 (defmacro collecting-map (k v &rest args)
   `(collecting-map-aux (cons ,k ,v) ,@args))
 
+(defmacro reducing-kv (k v by f &rest args)
+  (assert (string-equal by 'by))
+  (with-unique-names (fn)
+    `(let ((,fn (ifn-function ,f)))
+       (reducing (cons ,k ,v) by (lambda (old kv)
+                                   (funcall ,fn old (car kv) (cdr kv)))
+                 ,@args))))
+
 (iterate::defclause-driver (for key-val-vars in-map map)
   "Elements and keys of an Fset map."
   (iterate::top-level-check)

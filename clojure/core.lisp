@@ -1232,8 +1232,7 @@ nested)."
                (if (empty? seq) seq
                    (iterate
                      (for v in-fset-seq seq with-index k)
-                     (setf init (ifncall f init k v))
-                     (finally (return init)))))
+                     (reducing-kv k v by f initial-value init))))
   #_ILookup
   (#_lookup (coll key) (#_nth coll key #_nil))
   (#_lookup (coll key default) (#_nth coll key default))
@@ -1319,8 +1318,7 @@ nested)."
   (#_kv-reduce (map f init)
                (if (empty? map) map
                    (iterate (for (k v) in-map map)
-                     (setf init (ifncall f init k v))
-                     (finally (return init)))))
+                     (reducing-kv k v by f initial-value init))))
   #_IHash
   (#_hash (coll) (#_hash-unordered-coll coll)))
 
@@ -2719,8 +2717,7 @@ Analogous to `mapcar'."
                (if (empty? map) map
                    (iterate (for (k v) in-map (sorted-map-map map))
                      (let ((k (sort-wrapper-object k)))
-                       (setf init (ifncall f init k v))
-                       (finally (return init))))))
+                       (reducing-kv k v by f initial-value init)))))
   #_IHash
   (#_hash (coll) (#_hash-ordered-coll coll)))
 
