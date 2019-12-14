@@ -2616,6 +2616,8 @@ Analogous to `mapcar'."
 (defun-1 #_char (x)
   (coerce x 'character))
 
+;;; TODO Maybe sorted maps (and sets) should be a separate library?
+
 (defclass sorted-map ()
   ((map
     :initarg :map
