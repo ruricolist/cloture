@@ -933,7 +933,9 @@ nested)."
                     (symbol-package type)))
            (map-constructor-name
             (intern (string+ "map->" type)
-                    (symbol-package type))))
+                    (symbol-package type)))
+           (exports
+            (list type arrow-constructor-name map-constructor-name)))
     (declare (ignore opts))
     `(progn
        (defclass ,type (record-object)
@@ -941,7 +943,6 @@ nested)."
        (defmethod* object-fields ((self ,type))
          ',keys)
        (define-symbol-macro ,type (find-class ',type))
-       (export '(,type) ,(symbol-package type))
        (declare-absolute-class ,type)
        (defun-1 ,constructor-name (,@fields)
          (,map-constructor-name
@@ -954,6 +955,7 @@ nested)."
        (defun-1 ,map-constructor-name (map)
          ;; TODO validity checking?
          (make-instance ',type 'map map))
+       (export ',exports ,(symbol-package type))
        (symbol-macrolet ,(loop for field in fields
                                collect `(,field (#_get (record-map %this) ',field)))
          (#_extend-type ,type ,@specs)))))
