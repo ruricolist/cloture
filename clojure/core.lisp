@@ -2737,3 +2737,6 @@ Analogous to `mapcar'."
   (reduce #'with
           (batches keys-and-vals 2 :even t)
           :initial-value (empty-map)))
+
+(defun-1 #_max-key (k x &rest xs)
+  (reduce #'max (cons x xs) :key (ifn-function k)))
