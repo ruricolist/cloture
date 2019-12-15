@@ -307,7 +307,7 @@ Also return (as a second value) a list of all the symbols bound."
 (defun find-var (sym &optional env)
   ;; NB We do not look for a specific prefix, because the "var" could
   ;; also be a pre-defined Lisp dynamic variable.
-  (let ((exp (macroexpand-1 sym env)))
+  (let ((exp (macroexpand sym env)))
     (unless (or (eql exp sym)
               (not (symbolp exp)))
       exp)))
