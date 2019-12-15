@@ -646,6 +646,10 @@
 (defrecord Foo [a b])
 (defrecord Bar [a b])
 
+(deftest test-absolute-class
+  (is (= Foo cloture.tests.Foo))
+  (is (= Bar cloture.tests.Bar)))
+
 (deftest test-defrecord
   (is (= (Foo. 1 2) (->Foo 1 2) (map->Foo {:a 1 :b 2})))
   (is (= (hash (->Foo 1 2)) (hash (map->Foo {:a 1 :b 2}))))

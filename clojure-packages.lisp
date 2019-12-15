@@ -24,6 +24,9 @@
      (uiop:define-package ,name ,@body)
      (declaim-clojure-packages ,name)))
 
+(define-clojure-package :clojure-classes
+  (:use))
+
 (define-clojure-package "clojure.core"
   (:nicknames "clj")
   (:use)

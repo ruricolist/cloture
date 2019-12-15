@@ -487,7 +487,7 @@ nested)."
        ;; Use define-package instead of defpackage so SBCL complain
        ;; about package variance.
        (define-clojure-package ,(string name)
-         (:use)
+         (:use :clojure-classes)
          ,@(unsplice (and docstr `(:documentation ,docstr))))
        (in-package ,(string name))
        ,@(unsplice
@@ -905,6 +905,17 @@ nested)."
                  (#_equiv (record-map self)
                           (record-map other)))))))
 
+(defmacro declare-absolute-class (class)
+  (let* ((package (find-package :clojure-classes))
+         (name
+           (intern (fmt "~a.~a"
+                        (package-name (symbol-package class))
+                        (symbol-name class))
+                   package)))
+    `(progn
+       (define-symbol-macro ,name (find-class ',class))
+       (export-always ',name ,package))))
+
 (define-clojure-macro #_defrecord (type fields &body opts+specs)
   (mvlet* ((fields (convert 'list fields))
            (keys (mapcar #'make-keyword fields))
@@ -926,6 +937,7 @@ nested)."
          ',keys)
        (define-symbol-macro ,type (find-class ',type))
        (export '(,type) ,(symbol-package type))
+       (declare-absolute-class ,type)
        (defun-1 ,constructor-name (,@fields)
          (,map-constructor-name
           (fset:map
@@ -954,6 +966,8 @@ nested)."
                   collect `(,field :initarg ,field
                                    :reader ,(symbolicate ".-" field)))))
        (define-symbol-macro ,type (find-class ',type))
+       (export '(,type) ,(symbol-package type))
+       (declare-absolute-class ,type)
        (defun-1 ,constructor-name ,fields
          (make-instance ',type
                         ,@(loop for field in fields
