@@ -1229,7 +1229,7 @@ nested)."
   #_ICollection
   (#_-conj (seq x) (fset:with-last seq x))
   #_IFn
-  (#_invoke (x arg) (fset:lookup x arg))
+  (#_invoke (x arg) (#_lookup x arg))
   #_IReversible
   (#_rseq (x) (fset:reverse x))
   #_IIndexed
@@ -1237,7 +1237,7 @@ nested)."
   (#_nth (v n not-found)
          (if (>= n (size v))
              not-found
-             (fset:lookup v n)))
+             (lookup v n)))
   #_IStack
   (#_peek (c) (if (empty? c) #_nil
                   (lookup c (1- (size c)))))
@@ -1328,7 +1328,7 @@ nested)."
                (#_merge map x)
                (apply #'fset:with map (convert 'list x))))
   #_IFn
-  (#_invoke (x arg) (lookup x arg))
+  (#_invoke (x arg) (#_lookup x arg))
   #_IAssociative
   (#_contains-key? (map key) (? (fset:contains? map key)))
   (#_assoc (map key value) (with map key value))
@@ -1358,7 +1358,7 @@ nested)."
   #_ICollection
   (#_-conj (set x) (with set x))
   #_IFn
-  (#_invoke (x arg) (lookup x arg))
+  (#_invoke (x arg) (#_lookup x arg))
   #_IHash
   (#_hash (coll) (#_hash-unordered-coll coll))
   #_IEquiv
@@ -1751,7 +1751,14 @@ nested)."
                       (count 0))
              (if (seq? coll)
                  (rec (#_rest coll) (1+ count))
-                 count))))
+                 count)))
+  #_IIndexed
+  (#_nth (s n) (#_nth s n #_nil))
+  (#_nth (s n default)
+         (let ((tail (#_nthrest s n)))
+           (if (seq? tail)
+               (#_first tail)
+               default))))
 
 (defun-1 #_cons (x y)
   (cons x y))
@@ -1940,7 +1947,7 @@ nested)."
               ;; NB fset:map-union does not have the right semantics.
               (iterate (for (key val2) in-map (ensure-map map2))
                 (multiple-value-bind (val1 val1?)
-                    (fset:lookup map1 key)
+                    (lookup map1 key)
                   (if val1?
                       (withf map1 key (fn val1 val2))
                       (withf map1 key val2)))
@@ -2618,7 +2625,7 @@ Analogous to `mapcar'."
         (nlet rec ((coll coll))
           (if (not (seq? coll)) '()
               (let ((first (#_first coll)))
-                (if (not (lookup seen first))
+                (if (not (fset:contains? seen first))
                     (cons first
                           (distinct-aux (with seen first)
                                         (#_rest coll)))
@@ -2663,7 +2670,7 @@ Analogous to `mapcar'."
   (:method empty? (sm) (empty? map))
 
   (:method lookup (sm key)
-    (fset:lookup map (sort-wrapper comparator key)))
+    (lookup map (sort-wrapper comparator key)))
 
   (:method with (sm key &optional (val nil val-supplied?))
     (assert val-supplied?)
@@ -2712,6 +2719,8 @@ Analogous to `mapcar'."
   (sort-wrapper (sorted-map-comparator map) x))
 
 (extend-type sorted-map
+  #_ICounted
+  (#_count (x) (#_count (sorted-map-map x)))
   #_ISeqable
   (#_seq (m)
          (if (empty? m) #_nil
@@ -2730,7 +2739,12 @@ Analogous to `mapcar'."
                (#_merge map x)
                (apply #'fset:with map (convert 'list x))))
   #_IFn
-  (#_invoke (x arg) (lookup x arg))
+  (#_invoke (x arg) (#_lookup x arg))
+  #_ILookup
+  (#_lookup (x key) (#_lookup x key #_nil))
+  (#_lookup (x key default)
+            (multiple-value-bind (val val?) (lookup x key)
+              (if val? val default)))
   #_IAssociative
   (#_contains-key? (map key) (fset:contains? (sort-wrap map key)
                                              (sorted-map-map map)))
