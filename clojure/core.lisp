@@ -2732,3 +2732,8 @@ Analogous to `mapcar'."
 (defn #_keyword
   ((name) (make-keyword name))
   ((ns name) (make-keyword (string+ ns "/" name))))
+
+(defun-1 #_hash-map (&rest keys-and-vals &key &allow-other-keys)
+  (reduce #'with
+          (batches keys-and-vals 2 :even t)
+          :initial-value (empty-map)))
