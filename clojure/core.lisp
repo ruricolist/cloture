@@ -2057,6 +2057,9 @@ nested)."
     (unless (nil? meta)
       (setf (meta atom) meta))))
 
+(defun-1 #_atom? (x)
+  (? (typep x 'atom)))
+
 (defun-1 #_reset! (atom value)
   (prog1 value
     (setf (atom-value atom) value)))

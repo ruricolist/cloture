@@ -92,6 +92,7 @@
                   "Integer/MIN_VALUE"
                   "Long/MIN_VALUE"
                   "Long/MAX_VALUE"
+                  "atom?"
                   ;; These aren't part of Clojure but the REPL needs
                   ;; them (and Leiningen provides them).
                   "exit" "quit"))))
