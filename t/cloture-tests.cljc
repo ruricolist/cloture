@@ -707,4 +707,10 @@
 (deftest test-if-let
   (if-let [_ false]
     (is false)
-    (is true)))
+    (is true))
+  (if-let [_ nil]
+    (is false)
+    (is true))
+  (if-let [_ '()]
+    (is true)
+    (is false)))
