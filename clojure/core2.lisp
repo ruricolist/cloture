@@ -67,9 +67,8 @@
           ~then)
         ~else))))
 
-(defmacro when-let
-  ([binds & body]
-   `(if-let ~binds ~@body)))
+(defmacro when-let [[bind test] & body]
+  `(if-let [~bind ~test] (do ~@body)))
 
 (defn fnil
   ([f x]

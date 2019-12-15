@@ -698,3 +698,8 @@
     (is (= #{:x} @atm))
     (reset! atm 0)
     (is (= 0 @atm))))
+
+(deftest when-let-regression
+  (when-let [_ false]
+    nil
+    (is false)))
