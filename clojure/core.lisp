@@ -84,6 +84,9 @@ defmulti)."
 (defun-1 #_eval (x)
   (eval (declojurize x)))
 
+(defparameter *must-use-rest*
+  '(or and))
+
 (defmacro define-clojure-macro (name args &body body)
   (flet ((split-args-on (args kw)
            (if-let (tail (member kw args))
@@ -100,8 +103,10 @@ defmulti)."
              (forms (string-gensym 'forms))
              (env args (split-args-on args '&environment))
              (whole args (split-args-on args '&whole))
-             (rest-or-body (if (memq '&body args) '&body '&rest))
-             )
+             (rest-or-body
+              (cond ((member name *must-use-rest* :test #'string-equal) '&rest)
+                    ((memq '&body args) '&body)
+                    (t '&rest))))
       `(locally
            ;; Suppress SBCL warnings about &form and &env being suspicious variables.
            (declare #+sbcl (sb-ext:muffle-conditions style-warning))
