@@ -703,3 +703,8 @@
   (when-let [_ false]
     nil
     (is false)))
+
+(deftest test-if-let
+  (if-let [_ false]
+    (is false)
+    (is true)))
