@@ -714,3 +714,9 @@
   (if-let [_ '()]
     (is true)
     (is false)))
+
+(deftest test-function-equality
+  (let [f (fn [x] x)
+        g (fn [x] x)]
+    (is (= f f))
+    (is (not= f g))))

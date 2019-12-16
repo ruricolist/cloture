@@ -1024,6 +1024,10 @@ nested)."
                collect `(#_invoke (fn ,@tail)
                                   (ifncall fn ,@tail)))))
 
+(extend-type function
+  #_IEquiv
+  (#_equiv (self other) (? (eql self other))))
+
 (extend-protocol #_IHash
   t
   (#_hash (x) (murmurhash* x)))
