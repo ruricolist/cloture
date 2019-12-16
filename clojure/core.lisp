@@ -2714,6 +2714,20 @@ Analogous to `mapcar'."
        (0 :equal)
        (1 :greater)))))
 
+(defmethod fset:iterator ((map sorted-map) &key)
+  (fbind ((iter (fset:iterator (sorted-map-map map))))
+    (lambda (x)
+      (case x
+        (:get
+         (multiple-value-bind (key val there?)
+             (iter x)
+           (if (not there?)
+               (values key val there?)
+               (values (sort-wrapper-object key)
+                       val
+                       there?))))
+        (otherwise (iter x))))))
+
 (defun-1 #_sorted-map (&rest keyvals)
   (apply #'#_sorted-map-by #'#_compare keyvals))
 
