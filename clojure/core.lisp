@@ -84,8 +84,9 @@ defmulti)."
 (defun-1 #_eval (x)
   (eval (declojurize x)))
 
-(defparameter *must-use-rest*
-  '(or and))
+(eval-always
+  (defparameter *must-use-rest*
+    '(or and)))
 
 (defmacro define-clojure-macro (name args &body body)
   (flet ((split-args-on (args kw)
