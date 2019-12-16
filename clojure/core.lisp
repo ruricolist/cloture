@@ -1358,6 +1358,13 @@ nested)."
   (#_seq (set)
          (if (empty? set) #_nil
              (convert 'list set)))
+  #_ISeq
+  (#_first (set) (#_first (#_seq set)))
+  (#_rest (set) (#_rest (#_seq set)))
+  #_INext
+  (#_next (set)
+          (if (empty? set) #_nil
+              (#_next (seq set))))
   #_IEmptyableCollection
   (#_empty (set) (fset:empty-set))
   #_ICollection
