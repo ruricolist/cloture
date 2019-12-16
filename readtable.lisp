@@ -148,6 +148,13 @@
         (interpol::*regex-delimiters* nil))
     (interpol:interpol-reader stream nil nil)))
 
+(defun read-delimited-string (stream)
+  (let ((stream
+          (make-concatenated-stream
+           (make-string-input-stream "\"")
+           stream)))
+    (read stream)))
+
 (def char-names
   '(("newline" . #\Newline)
     ("space" . #\Space)
