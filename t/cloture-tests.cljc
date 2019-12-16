@@ -720,3 +720,8 @@
         g (fn [x] x)]
     (is (= f f))
     (is (not= f g))))
+
+(deftest test-case
+  (case :x
+    :y (is false)
+    :x (is true)))

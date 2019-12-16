@@ -1649,7 +1649,7 @@ nested)."
             (if default?
                 (values clauses nil)
                 (values (butlast clauses) (lastcar clauses)))))
-    `(case-using #'#_= ,e
+    `(case-using #'egal ,e
        ,@clauses
        ,@(unsplice (and default? `(otherwise ,default))))))
 
