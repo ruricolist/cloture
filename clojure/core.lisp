@@ -2461,7 +2461,7 @@ Analogous to `mapcar'."
 (defun-1 #_int (x)
   (etypecase x
     (character (char-code x))
-    (number (coerce x 'integer))))
+    (number (mask-int (coerce x 'integer)))))
 
 (-> #_float (t) double-float)
 (defun-1 #_float (x)
