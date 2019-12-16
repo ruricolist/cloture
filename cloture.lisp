@@ -15,6 +15,13 @@
 (fset:define-cross-type-compare-methods |clojure.core|:|true|)
 (fset:define-cross-type-compare-methods |clojure.core|:|false|)
 
+(defmethod fset:compare ((self |clojure.core|:|true|) (other |clojure.core|:|true|))
+  t)
+(defmethod fset:compare ((self |clojure.core|:|false|) (other |clojure.core|:|false|))
+  t)
+(defmethod fset:compare ((self |clojure.core|:|nil|) (other |clojure.core|:|nil|))
+  t)
+
 (def true |clojure.core|:|true|)
 (def false |clojure.core|:|false|)
 
