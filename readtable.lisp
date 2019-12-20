@@ -167,7 +167,7 @@
   (let ((next-char (peek-char nil stream nil nil t)))
     (cond ((eql char next-char)
            (read-char stream nil nil t)
-           (values))
+           #\\)
           ((alpha-char-p next-char)
            (let* ((name
                     (loop for c = (peek-char nil stream nil nil t)
@@ -180,7 +180,7 @@
                     (code-char (parse-integer name :start 1 :radix 16)))
                    (t
                     (or (assocdr name char-names :test #'equal)
-                      (error "Invalid char: ~s" name))))))
+                        (error "Invalid char: ~s" name))))))
           (t
            (read-char stream nil nil t)))))
 

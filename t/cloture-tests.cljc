@@ -71,6 +71,7 @@
 
 (deftest test-read-char
   (is (= \\ (first "\\")))
+  (is (= "\\" (str \\)))
   (is (= \{ (first "{")))
   (is (= \{ '\{))
   (is (= \newline (first "\n")))
