@@ -1642,13 +1642,13 @@ nested)."
 (defun-1 #_new (class &rest args)
   (apply #'make-instance class args))
 
-(define-clojure-macro #_case (e &body clauses)
-  (mvlet* ((default? (evenp (length clauses)))
-           (clauses (batches clauses 2))
+(define-clojure-macro #_case (e &body body)
+  (mvlet* ((default? (oddp (length body)))
            (clauses default
             (if default?
-                (values clauses nil)
-                (values (butlast clauses) (lastcar clauses)))))
+                (values (butlast body) (lastcar body))
+                (values body nil)))
+           (clauses (batches clauses 2)))
     `(case-using #'egal ,e
        ,@clauses
        ,@(unsplice (and default? `(otherwise ,default))))))

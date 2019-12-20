@@ -725,3 +725,10 @@
   (case :x
     :y (is false)
     :x (is true)))
+
+(deftest test-case-default
+  (is (= 1
+         (case :z
+           :y (is false)
+           :x (is true)
+           1))))
