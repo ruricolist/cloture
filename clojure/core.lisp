@@ -1829,6 +1829,11 @@ nested)."
                  (rec seq))))
     (rec seq)))
 
+(defun-1 #_drop (n seq)
+  (lazy-seq
+    (if (<= n 0) seq
+        (#_nthrest seq n))))
+
 (defun-1 #_drop-while (pred seq)
   (fbind ((pred (ifn-function pred)))
     (if (not (seq? seq)) '()

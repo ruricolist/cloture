@@ -497,6 +497,12 @@
   (is (= (SERAPEUM:RANGE 10)
          (take 10 (range)))))
 
+(deftest test-drop
+  (is (= [1 2 3 4] (drop -1 [1 2 3 4])))
+  (is (= [1 2 3 4] (drop 0 [1 2 3 4])))
+  (is (= [3 4] (drop 2 [1 2 3 4])))
+  (is (= [] (drop 5 [1 2 3 4]))))
+
 (deftest test-drop-while
   (is (= '(2 4 6)
          (drop-while odd? '(1 3 5 2 4 6)))))
