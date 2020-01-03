@@ -17,7 +17,6 @@
                "atomics"
                "lparallel"
                "overlord"
-               "cl-interpol"
                "global-vars"
                "esrap"
                "iterate")
@@ -31,6 +30,7 @@
                (:file "fset-hacks")
                (:file "cloture")
                (:file "quasiquote")
+               (:file "interpol")
                (:file "readtable")
                (:file "walk")
                (:file "asdf")

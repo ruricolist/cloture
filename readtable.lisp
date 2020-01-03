@@ -54,9 +54,9 @@
   (unread-char char stream)
   (let ((string (assure string
                   ;; Don't interpret backslash escapes.
-                  (let ((interpol::*regex-delimiters* '(#\"))
-                        (interpol:*outer-delimiters* '(#\")))
-                    (interpol:interpol-reader stream nil nil)))))
+                  (let ((cloture.interpol::*regex-delimiters* '(#\"))
+                        (cloture.interpol:*outer-delimiters* '(#\")))
+                    (cloture.interpol:interpol-reader stream nil nil)))))
     (raw-regex string)))
 
 (defun read-quote (stream char)
@@ -142,11 +142,11 @@
 
 (defun read-string-with-escapes (stream &optional (char #\"))
   (unread-char char stream)
-  (let ((interpol:*outer-delimiters* '(#\"))
-        (interpol:*inner-delimiters* nil)
-        (interpol:*interpolate-format-directives* nil)
-        (interpol::*regex-delimiters* nil))
-    (interpol:interpol-reader stream nil nil)))
+  (let ((cloture.interpol:*outer-delimiters* '(#\"))
+        (cloture.interpol:*inner-delimiters* nil)
+        (cloture.interpol:*interpolate-format-directives* nil)
+        (cloture.interpol::*regex-delimiters* nil))
+    (cloture.interpol:interpol-reader stream nil nil)))
 
 (defun read-delimited-string (stream)
   (let ((stream
