@@ -57,9 +57,6 @@ interpolated by #\@.")
 following delimiter.  Lexical variables are handled correctly,
 but the rules are somewhat complex -- see the docs for details.")
 
-(defvar *interpolate-format-directives* nil
-  "Whether to allow ~X(...) as format control directives in interpolated strings.")
-
 (defmacro defvar-unbound (variable-name documentation)
   "Like DEFVAR, but the variable will be unbound rather than getting
 an initial value.  This is useful for variables which should have no
@@ -451,53 +448,6 @@ returns NIL."
                     (set-syntax-from-char end-delimiter #\))
                     (read-delimited-list end-delimiter *stream* recursive-p))))))))
 
-(defun read-format-directive ()
-  "Reads and returns a format directive (as a string) along with one
-  or more lisp forms (as per read-form)."
-  (let ((format-directive (make-collector)))
-    (labels ((read-quoted-char ()
-               (if (char= #\' (peek-char*))
-                   (progn
-                     (vector-push-extend (read-char*) format-directive)
-                     (vector-push-extend (read-char*) format-directive)
-                     t)
-                   nil))
-             (read-integer ()
-               (if (member (peek-char*) '(#\- #\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                   (progn
-                     (vector-push-extend (read-char*) format-directive)
-                     (loop while (member (peek-char*) '(#\- #\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                           do (vector-push-extend (read-char*) format-directive))
-                     t)
-                   nil))
-             (read-modifier ()
-               (loop repeat 2
-                     with found = nil
-                     when (member (peek-char*) '(#\@ #\:))
-                       do (vector-push-extend (read-char*) format-directive)
-                       and do (setf found t)
-                     finally (return found)))
-             (read-comma ()
-               (if (char= #\, (peek-char*))
-                   (progn
-                     (vector-push-extend (read-char*) format-directive)
-                     t)
-                   nil))
-             (read-v ()
-               (if (char-equal #\v (peek-char*))
-                   (progn
-                     (vector-push-extend (read-char*) format-directive)
-                     t)
-                   nil)))
-      (loop
-        while (or (read-quoted-char)
-                  (read-integer)
-                  (read-v)
-                  (read-comma))
-        finally (read-modifier)
-        finally (vector-push-extend (read-char*) format-directive))
-      format-directive)))
-
 (defun interpol-reader (*stream* char arg &key (recursive-p t))
   "The actual reader function for the 'sub-character' #\?.
 
@@ -798,16 +748,6 @@ call itself recursively."
                                  ;; otherwise this is a
                                  ;; backslash-escaped character
                                  (unescape-char regex-mode))))
-                             ((#\~)
-                              ;; #\~ - might be an inline format directive
-                              (if *interpolate-format-directives*
-                                  `(format ,string-stream
-                                           ,(concatenate 'string "~" (read-format-directive))
-                                           ,@(let ((form (read-form :recursive-p recursive-p)))
-                                               (if form
-                                                   (list form)
-                                                   '())))
-                                  #\~))
                              ((#\$)
                               ;; #\$ - might be an interpolation
                               (let ((form (read-form :recursive-p recursive-p)))
