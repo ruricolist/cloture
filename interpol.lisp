@@ -29,6 +29,7 @@
   (:use :cl :cl-unicode :cl-ppcre)
   (:import-from :named-readtables
     :defreadtable)
+  (:import-from :serapeum :defvar-unbound :string-join)
   (:export
    :*regex-delimiters*
    :interpol-reader))
@@ -56,17 +57,6 @@ interpolated by #\@.")
   "Whether text following $ or @ should interpolate even without a
 following delimiter.  Lexical variables are handled correctly,
 but the rules are somewhat complex -- see the docs for details.")
-
-(defmacro defvar-unbound (variable-name documentation)
-  "Like DEFVAR, but the variable will be unbound rather than getting
-an initial value.  This is useful for variables which should have no
-global value but might have a dynamically bound value."
-  ;; stolen from comp.lang.lisp article <k7727i3s.fsf@comcast.net> by
-  ;; "prunesquallor@comcast.net"
-  `(eval-when (:load-toplevel :compile-toplevel :execute)
-     (defvar ,variable-name)
-     (setf (documentation ',variable-name 'variable)
-           ,documentation)))
 
 (defvar-unbound *saw-backslash*
   "Whether we have to re-process an \L or \U because it closes several
@@ -103,21 +93,6 @@ modified.")
           :stream *stream*
           :format-control ,format-control
           :format-arguments (list ,@format-arguments)))
-
-(defun string-list-to-string (string-list)
-  "Concatenates a list of strings to one string."
-  ;; this function was originally provided by JP Massar for CL-PPCRE;
-  ;; note that we can't use APPLY with CONCATENATE here because of
-  ;; CALL-ARGUMENTS-LIMIT
-  (let ((total-size 0))
-    (dolist (string string-list)
-      (incf total-size (length string)))
-    (let ((result-string (make-array total-size :element-type 'character))
-          (curr-pos 0))
-      (dolist (string string-list)
-        (replace result-string string :start1 curr-pos)
-        (incf curr-pos (length string)))
-      result-string)))
 
 (defun get-end-delimiter (start-delimiter delimiters &key errorp)
   "Find the closing delimiter corresponding to the opening delimiter
@@ -760,7 +735,7 @@ call itself recursively."
     (if (every #'stringp result)
         ;; if all elements of RESULT are strings we can return a
         ;; constant string
-        (string-list-to-string result)
+        (string-join result)
         ;; otherwise we have to wrap the PRINCs emitted above into a
         ;; WITH-OUTPUT-TO-STRING form
         `(with-output-to-string (,string-stream)
