@@ -105,9 +105,9 @@
   ([m ks not-found]
    (loop [m m ks ks]
      (if (not (seq ks)) m
-         (let [ks (first ks)
+         (let [k (first ks)
                ks (rest ks)]
-           (recur (lookup m ks not-found) ks))))))
+           (recur (lookup m k not-found) ks))))))
 
 (defn into
   ([] [])
