@@ -26,9 +26,7 @@
 
 
 (defpackage :cloture.interpol
-  (:use :cl :cl-unicode :cl-ppcre)
-  (:import-from :named-readtables
-    :defreadtable)
+  (:use :cl :cl-ppcre)
   (:import-from :serapeum :defvar-unbound :string-join)
   (:export
    :*regex-delimiters*
@@ -36,27 +34,11 @@
 
 (in-package :cloture.interpol)
 
-(defvar *list-delimiter* #\Space
-  "What is inserted between the elements of a list which is
-interpolated by #\@.")
-
-(defvar *inner-delimiters* nil
-  "Legal delimiters for interpolation with #\$ and #\@.")
-
 (defvar *outer-delimiters* '(#\")
   "Legal outer delimiters for CL-INTERPOL strings.")
 
 (defvar *regex-delimiters* '(#\/)
   "Outer delimiters which automatically enable regex mode.")
-
-(defvar *unicode-aliases*
-  (make-hash-table :test #'equalp)
-  "A hash table which maps Unicode aliases to their real names.")
-
-(defvar *optional-delimiters-p* nil
-  "Whether text following $ or @ should interpolate even without a
-following delimiter.  Lexical variables are handled correctly,
-but the rules are somewhat complex -- see the docs for details.")
 
 (defvar-unbound *saw-backslash*
   "Whether we have to re-process an \L or \U because it closes several
@@ -73,10 +55,6 @@ scopes.")
 
 (defvar-unbound *term-char*
   "Bound to the closing outer delimiter while parsing a string.")
-
-(defvar *previous-readtables* nil
-  "A stack which holds the previous readtables that have been pushed
-here by ENABLE-INTERPOL-SYNTAX.")
 
 (defvar-unbound *readtable-copy*
   "Bound to the current readtable if it has to be temporarily
@@ -126,12 +104,6 @@ interpreted as 0."
         (signal-reader-error "No character for char-code #x~X"
                              number))))
 
-(declaim (inline lower-case-p*))
-(defun lower-case-p* (char)
-  "Whether CHAR is a character which has case and is lowercase."
-  (or (not (both-case-p char))
-      (lower-case-p char)))
-
 (defmacro read-char* ()
   "Convenience macro because we always read from the same string with
 the same arguments."
@@ -141,46 +113,6 @@ the same arguments."
   "Convenience macro because we always peek at the same string with
 the same arguments."
   `(peek-char nil *stream* t nil t))
-
-(declaim (inline copy-readtable*))
-(defun copy-readtable* ()
-  "Returns a copy of the readtable which was current when
-INTERPOL-READER was invoked. Memoizes its result."
-  (or *readtable-copy*
-      (setq *readtable-copy* (copy-readtable))))
-
-(declaim (inline nsubvec))
-(defun nsubvec (sequence start &optional (end (length sequence)))
-  "Return a subvector by pointing to location in original vector."
-  (make-array (- end start)
-              :element-type (array-element-type sequence)
-              :displaced-to sequence
-              :displaced-index-offset start))
-
-;;; define some aliases
-(loop for (alias . name) in '(("LINE FEED" . "LINE FEED \(LF)")
-                              ("FORM FEED" . "FORM FEED \(FF)")
-                              ("CARRIAGE RETURN" . "CARRIAGE RETURN \(CR)")
-                              ("NEXT LINE" . "NEXT LINE \(NEL)")
-                              ("LF" . "LINE FEED \(LF)")
-                              ("FF" . "FORM FEED \(FF)")
-                              ("CR" . "CARRIAGE RETURN \(CR)")
-                              ("NEL" . "NEXT LINE \(NEL)")
-                              ("ZWNJ" . "ZERO WIDTH NON-JOINER")
-                              ("ZWJ" . "ZERO WIDTH JOINER")
-                              ("BYTE ORDER MARK" . "ZERO WIDTH NO-BREAK SPACE")
-                              ("BOM" . "BYTE ORDER MARK")
-                              ("HORIZONTAL TABULATION" . "CHARACTER TABULATION")
-                              ("VERTICAL TABULATION" . "LINE TABULATION")
-                              ("FILE SEPARATOR" . "INFORMATION SEPARATOR FOUR")
-                              ("GROUP SEPARATOR" . "INFORMATION SEPARATOR THREE")
-                              ("RECORD SEPARATOR" . "INFORMATION SEPARATOR TWO")
-                              ("UNIT SEPARATOR" . "INFORMATION SEPARATOR ONE")
-                              ("PARTIAL LINE DOWN" . "PARTIAL LINE FORWARD")
-                              ("PARTIAL LINE UP" . "PARTIAL LINE BACKWARD"))
-      for existing-char = (character-named name)
-      when existing-char
-        do (setf (gethash (canonicalize-name alias) *unicode-aliases*) existing-char))
 
 (defun read-while (predicate &key max)
   "Reads characters from *STREAM* while PREDICATE returns a true value
@@ -207,27 +139,6 @@ next MAX characters."
                              :max max)
                  :radix radix
                  :junk-allowed t))
-
-(defun resolve-unicode-name (name)
-  "Tries to return a character which was encoded as \\N<NAME>."
-  (or (character-named name)
-      (gethash (canonicalize-name name) *unicode-aliases*)))
-
-(defun get-char-from-unicode-name ()
-  "Parses and returns a named character after \"\\N\" has already been
-read.  This function reads from *STREAM*."
-  (let ((next-char (read-char*)))
-    (unless (char= next-char #\{)
-      (signal-reader-error "Expected { after \\N"))
-    (let ((name (read-while (lambda (c)
-                              (and (char/= c #\})
-                                   (char/= c *term-char*))))))
-      (let ((next-char (read-char*)))
-        (unless (char= next-char #\})
-          (signal-reader-error "Expected } after Unicode character name")))
-      (or (resolve-unicode-name name)
-          (signal-reader-error "Could not find character with name '~A'"
-                               name)))))
 
 (defun unescape-char (regex-mode)
   "Convert the characters(s) on *STREAM* following a backslash into a
@@ -297,83 +208,6 @@ backslash has already been consumed."
              (concatenate 'string "\\" (string result)))
             (t result)))))
 
-(declaim (inline normal-name-char-p)
-         (inline never-name-char-p))
-
-(defun normal-name-char-p (c)
-  (and c (or (alphanumericp c)
-             (member c '(#\_ #\- #\+ #\*)))))
-
-(defun never-name-char-p (c)
-  (or (not c)
-      (get-macro-character c)
-      (member c '(#\$ #\@))))
-
-(defvar quell-warnings-form
-  #+sbcl '(declare (optimize (sb-ext:inhibit-warnings 3)))
-  #-sbcl nil
-  "A declaration form to quiet warnings about unbound variables
-  within a lexical environment.")
-
-(defun read-longest-name ()
-  (coerce
-   (loop until (never-name-char-p (peek-char nil *stream* nil nil t))
-         collect (read-char*))
-   'string))
-
-(defun read-optional-delimited ()
-  "Read the stuff following an optional delimiter, returning a form
-that tries to deal correctly with lexical variables."
-  (flet ((try-pos (name i form)
-           (let ((ostr (gensym)))
-             `(handler-case
-                  (with-output-to-string (,ostr)
-                    (princ ,(read-from-string (subseq name 0 i)) ,ostr)
-                    (princ ,(subseq name i) ,ostr)
-                    ,ostr)
-                (unbound-variable () ,form)))))
-
-    (loop
-      with name = (read-longest-name)
-      with form = `(error ,(format nil "Interpolation error in ~s~%" name))
-      with ostr = (gensym)
-      for i = (position-if-not #'normal-name-char-p name)
-        then (position-if-not #'normal-name-char-p name :start (1+ i))
-
-      unless i
-        return `(let () ,quell-warnings-form
-                  (handler-case
-                      (with-output-to-string (,ostr)
-                        (princ ,(read-from-string name) ,ostr)
-                        ,ostr)
-                    (unbound-variable () ,form)))
-
-      if (> i 0)
-        do (setq form (try-pos name i form))
-
-      if  (< i (length name))
-        do (setq form (try-pos name (1+ i) form)))))
-
-(declaim (inline read-form))
-(defun read-form (&key (recursive-p t))
-  "Reads and returns one or more Lisp forms from *STREAM* if the
-character we're looking at is a valid inner delimiter. Otherwise
-returns NIL."
-  (let* ((start-delimiter (peek-char*))
-         (end-delimiter (get-end-delimiter start-delimiter *inner-delimiters*)))
-    (cond ((null end-delimiter)
-           (if *optional-delimiters-p*
-               (read-optional-delimited)
-               nil))
-          (t
-           `(progn
-              ,@(progn
-                  (read-char*)
-                  (let ((*readtable* (copy-readtable*)))
-                    ;; temporarily change the readtable
-                    (set-syntax-from-char end-delimiter #\))
-                    (read-delimited-list end-delimiter *stream* recursive-p))))))))
-
 (defun interpol-reader (*stream* char arg &key (recursive-p t))
   "The actual reader function for the 'sub-character' #\?.
 
@@ -406,11 +240,6 @@ This function can be used directly outside of a read table by passing `recursive
                                           *outer-delimiters*
                                           :errorp t))
           (*pair-level* 0)
-          (*inner-delimiters* (if regex-mode
-                                  (intersection *inner-delimiters*
-                                                '((#\{ . #\}))
-                                                :test #'equal)
-                                  *inner-delimiters*))
           *saw-backslash*
           *readtable-copy*)
       (prog1
@@ -598,79 +427,6 @@ call itself recursively."
                                     (t #\#)))
                              ((#\\)
                               (unescape-char regex-mode))
-                             ((#\$)
-                              ;; #\$ - might be an interpolation
-                              (let ((form (read-form :recursive-p recursive-p)))
-                                (cond ((null form)
-                                       ;; no, just dollar sign
-                                       #\$)
-                                      (handle-next-char
-                                       ;; yes, and we have to
-                                       ;; modify the first
-                                       ;; character
-                                       (prog1
-                                           (let ((string (gensym)))
-                                             `(let ((,string (format nil "~A"
-                                                                     ,form)))
-                                                (when (plusp (length ,string))
-                                                  (setf (char ,string 0)
-                                                        (,(if (eq handle-next-char
-                                                                  :downcase)
-                                                              'char-downcase
-                                                              'char-upcase)
-                                                         (char ,string 0))))
-                                                (write-string ,string ,string-stream)))
-                                         (setq handle-next-char nil)))
-                                      (t
-                                       ;; no modification, just
-                                       ;; insert a form to PRINC
-                                       ;; this interpolation
-                                       `(princ ,form ,string-stream)))))
-                             ((#\@)
-                              ;; #\Q - might be an interpolation
-                              (let ((form (read-form :recursive-p recursive-p))
-                                    (element (gensym))
-                                    (first (gensym)))
-                                (cond ((null form)
-                                       ;; no, just at-sign
-                                       #\@)
-                                      (handle-next-char
-                                       ;; yes, and we have to
-                                       ;; modify the first
-                                       ;; character
-                                       (prog1
-                                           (let ((string (gensym)))
-                                             `(loop for ,first = t then nil
-                                                    for ,element in ,form
-                                                    unless ,first do
-                                                      (princ *list-delimiter*
-                                                             ,string-stream)
-                                                    if ,first do
-                                                      (let ((,string
-                                                              (format nil "~A"
-                                                                      ,element)))
-                                                        (when (plusp (length ,string))
-                                                          (setf (char ,string 0)
-                                                                (,(if (eq handle-next-char
-                                                                          :downcase)
-                                                                      'char-downcase
-                                                                      'char-upcase)
-                                                                 (char ,string 0))))
-                                                        (write-string ,string ,string-stream))
-                                                    else do
-                                                      (princ ,element ,string-stream)))
-                                         (setq handle-next-char nil)))
-                                      (t
-                                       ;; no modification, just
-                                       ;; insert a form to PRINC
-                                       ;; this interpolated list
-                                       ;; (including the list
-                                       ;; delimiters inbetween)
-                                       `(loop for ,first = t then nil
-                                              for ,element in ,form
-                                              unless ,first do (princ *list-delimiter*
-                                                                      ,string-stream)
-                                                do (princ ,element ,string-stream))))))
                              ;; just a 'normal' character
                              (otherwise next-char))))))
               (when interpolation
@@ -744,36 +500,3 @@ call itself recursively."
                      collect `(write-string ,interpolation ,string-stream)
                    else
                      collect interpolation)))))
-
-(defun %enable-interpol-syntax (&key (modify-*readtable* nil))
-  "Internal function used to enable reader syntax and store current
-readtable on stack."
-  (unless modify-*readtable*
-    (push *readtable*
-          *previous-readtables*)
-    (setq *readtable* (copy-readtable)))
-  (set-dispatch-macro-character #\# #\? #'interpol-reader)
-  (values))
-
-(defun %disable-interpol-syntax ()
-  "Internal function used to restore previous readtable."
-  (if *previous-readtables*
-      (setq *readtable* (pop *previous-readtables*))
-      (setq *readtable* (copy-readtable nil)))
-  (values))
-
-(defmacro enable-interpol-syntax (&rest %enable-interpol-syntax-args)
-  "Enable CL-INTERPOL reader syntax."
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (%enable-interpol-syntax ,@%enable-interpol-syntax-args)))
-
-(defmacro disable-interpol-syntax ()
-  "Restore readtable which was active before last call to
-ENABLE-INTERPOL-SYNTAX. If there was no such call, the standard
-readtable is used."
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (%disable-interpol-syntax)))
-
-(defreadtable :interpol-syntax
-  (:merge :standard)
-  (:dispatch-macro-char #\# #\? #'interpol-reader))
