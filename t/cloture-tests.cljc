@@ -78,6 +78,9 @@
   (is (= \tab (first "\t")))
   (is (= \u03A9 (first "Ω"))))
 
+(deftest test-string-escapes
+  (is (= "\u03A9" "Ω")))
+
 (deftest test-read-hex
   (is (= 0xfff 4095)))
 
