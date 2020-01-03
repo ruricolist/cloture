@@ -92,24 +92,6 @@ here by ENABLE-INTERPOL-SYNTAX.")
   "Bound to the current readtable if it has to be temporarily
 modified.")
 
-;; stuff for Nikodemus Siivola's HYPERDOC
-;; see <http://common-lisp.net/project/hyperdoc/>
-;; and <http://www.cliki.net/hyperdoc>
-
-(defvar *hyperdoc-base-uri* "http://weitz.de/cl-interpol/")
-
-(let ((exported-symbols-alist
-        (loop for symbol being the external-symbols of :cloture.interpol
-              collect (cons symbol
-                            (concatenate 'string
-                                         "#"
-                                         (string-downcase symbol))))))
-  (defun hyperdoc-lookup (symbol type)
-    (declare (ignore type))
-    (cdr (assoc symbol
-                exported-symbols-alist
-                :test #'eq))))
-
 (define-condition simple-reader-error (simple-condition reader-error)
   ()
   (:documentation "A reader error which can be signalled by ERROR."))
