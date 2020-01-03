@@ -142,12 +142,10 @@ VECTOR-PUSH-EXTEND."
               :fill-pointer t
               :adjustable t))
 
-(declaim (inline make-char-from-code))
 (defun make-char-from-code (number)
   "Create character from char-code NUMBER. NUMBER can be NIL which is
 interpreted as 0."
-  ;; Only look at rightmost eight bits in compliance with Perl
-  (let ((code (logand #o377 (or number 0))))
+  (let ((code (or number 0)))
     (or (and (< code char-code-limit)
              (code-char code))
         (signal-reader-error "No character for char-code #x~X"
@@ -224,7 +222,6 @@ for each character. Returns at most MAX characters if MAX is true."
           do (vector-push-extend (read-char*) collector)
           finally (return collector))))
 
-(declaim (inline get-number))
 (defun get-number (&key (radix 10) max)
   "Reads and consumes the number *STREAM* is currently looking at and
 returns it. Returns NIL if no number could be identified.  RADIX is
@@ -271,36 +268,8 @@ backslash has already been consumed."
         (concatenate 'string "\\" (string chr))))
     (let ((result
             (case chr
-              ((#\N)
-               ;; named Unicode chars
-               (get-char-from-unicode-name))
-              ((#\c)
-               ;; \cx means control-x
-               (when (char= (peek-char*) *term-char*)
-                 (signal-reader-error "String ended after \\c"))
-               (code-char (logxor #x40
-                                  (char-code (char-upcase (read-char*))))))
-              ((#\x)
-               (cond ((char= (peek-char*) #\{)
-                      ;; "wide" hex char, i.e. hexadecimal number is
-                      ;; enclosed in curly brackets
-                      (read-char*)
-                      (prog1
-                          (let ((code (or (get-number :radix 16)
-                                          ;; allow for empty string
-                                          0)))
-                            (or (and (< code char-code-limit)
-                                     (code-char code))
-                                (signal-reader-error
-                                 "No character for char-code #x~X" code)))
-                        (unless (char= (peek-char*) #\})
-                          (signal-reader-error "Expected } after hex code"))
-                        (read-char*)))
-                     (t
-                      ;; \x should be followed by a hexadecimal char
-                      ;; code, two digits or less; note that it is
-                      ;; OK if \x is followed by zero digits
-                      (make-char-from-code (get-number :radix 16 :max 2)))))
+              ((#\u)
+               (make-char-from-code (get-number :radix 16 :max 4)))
               ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                (cond ((and (eq regex-mode t)
                            (char/= chr #\0))
@@ -584,16 +553,6 @@ call itself recursively."
                                      ;; or somesuch
                                      (setq *saw-backslash* nil)
                                      (parse-with-case-mode 'string-downcase))))
-                             ((#\U)
-                              ;; see comments for #\L above
-                              (cond ((not *saw-backslash*)
-                                     #\U)
-                                    (case-mode
-                                     (unread-char #\U *stream*)
-                                     (compute-result))
-                                    (t
-                                     (setq *saw-backslash* nil)
-                                     (parse-with-case-mode 'string-upcase))))
                              ((#\Space #\Tab #\Linefeed #\Return #\Page)
                               (cond ((and extended-mode
                                           (not (eq regex-mode :in-char-class)))
@@ -663,73 +622,7 @@ call itself recursively."
                                            (t "(?:)")))
                                     (t #\#)))
                              ((#\\)
-                              (case (peek-char*)
-                                ((#\Q)
-                                 ;; \Q - start a new quote scope
-                                 (read-char*)
-                                 (let ((string-to-quote
-                                         (inner-reader regex-mode
-                                                       extended-mode
-                                                       t case-mode)))
-                                   (if (stringp string-to-quote)
-                                       ;; if we got a constant string
-                                       ;; we modify it directly
-                                       (quote-meta-chars string-to-quote)
-                                       ;; otherwise we expand into code
-                                       `(write-string
-                                         (quote-meta-chars ,string-to-quote)
-                                         ,string-stream))))
-                                ((#\L)
-                                 ;; \L - start a new case-modifying
-                                 ;; scope
-                                 (cond (case-mode
-                                        ;; if we're already in
-                                        ;; this mode we have to
-                                        ;; end all previous scopes
-                                        ;; first - we set
-                                        ;; *SAW-BACKSLASH* to T so
-                                        ;; the #\L is read until
-                                        ;; all scopes are finished
-                                        (setq *saw-backslash* t)
-                                        (compute-result))
-                                       (t
-                                        ;; all scopes are closed, now
-                                        ;; read and downcase 'till \E
-                                        ;; or somesuch
-                                        (setq *saw-backslash* nil)
-                                        (read-char*)
-                                        (parse-with-case-mode 'string-downcase))))
-                                ((#\U)
-                                 ;; see comments for #\L above
-                                 (cond (case-mode
-                                        (setq *saw-backslash* t)
-                                        (compute-result))
-                                       (t
-                                        (setq *saw-backslash* nil)
-                                        (read-char*)
-                                        (parse-with-case-mode 'string-upcase))))
-                                ((#\E)
-                                 ;; \E - ends exactly one scope
-                                 (read-char*)
-                                 (if (or quote-mode case-mode)
-                                     (compute-result)
-                                     ""))
-                                ((#\l)
-                                 ;; \l - downcase next character
-                                 (read-char*)
-                                 ;; remember that we have to do this
-                                 (setq handle-next-char :downcase)
-                                 nil)
-                                ((#\u)
-                                 ;; \u - upcase next character
-                                 (read-char*)
-                                 ;; remember that we have to do this
-                                 (setq handle-next-char :upcase)
-                                 nil)
-                                (otherwise
-                                 ;; otherwise this is a
-                                 ;; backslash-escaped character
-                                 (unescape-char regex-mode))))
+                              (unescape-char regex-mode))
                              ((#\$)
                               ;; #\$ - might be an interpolation
                               (let ((form (read-form :recursive-p recursive-p)))
