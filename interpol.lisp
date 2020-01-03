@@ -30,11 +30,7 @@
   (:import-from :named-readtables
     :defreadtable)
   (:export
-   :*list-delimiter*
-   :*outer-delimiters*
-   :*inner-delimiters*
-   :*optional-delimiters-p*
-   :*interpolate-format-directives*
+   :*regex-delimiters*
    :interpol-reader))
 
 (in-package :cloture.interpol)
@@ -43,17 +39,10 @@
   "What is inserted between the elements of a list which is
 interpolated by #\@.")
 
-(defvar *inner-delimiters* '((#\( . #\))
-                             (#\{ . #\})
-                             (#\< . #\>)
-                             (#\[ . #\]))
+(defvar *inner-delimiters* nil
   "Legal delimiters for interpolation with #\$ and #\@.")
 
-(defvar *outer-delimiters* '((#\( . #\))
-                             (#\{ . #\})
-                             (#\< . #\>)
-                             (#\[ . #\])
-                             #\/ #\| #\" #\' #\#)
+(defvar *outer-delimiters* '(#\")
   "Legal outer delimiters for CL-INTERPOL strings.")
 
 (defvar *regex-delimiters* '(#\/)
