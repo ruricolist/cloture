@@ -35,9 +35,11 @@
 
 (defmacro or [& forms]
   (if (seq forms)
-    `(let [val# ~(first forms)]
-       (if val# val#
-           (or ~@(rest forms))))
+    (if (seq (rest forms))
+      `(let [val# ~(first forms)]
+         (if val# val#
+             (or ~@(rest forms))))
+      (first forms))
     nil))
 
 (defn conj
