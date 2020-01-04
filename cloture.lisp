@@ -22,6 +22,11 @@
 (defmethod fset:compare ((self |clojure.core|:|nil|) (other |clojure.core|:|nil|))
   t)
 
+(defmethod fset:convert ((type (eql 'fset:seq))
+                         (x |clojure.core|:|nil|)
+                         &key)
+  (fset:empty-seq))
+
 (def true |clojure.core|:|true|)
 (def false |clojure.core|:|false|)
 
