@@ -2468,6 +2468,9 @@ Analogous to `mapcar'."
     (character (char-code x))
     (number (mask-int (coerce x 'integer)))))
 
+(defun-1 #_long (x)
+  (mask-long (coerce x 'integer)))
+
 (-> #_float (t) double-float)
 (defun-1 #_float (x)
   (coerce x 'double-float))
@@ -2809,3 +2812,19 @@ Analogous to `mapcar'."
 
 (defun-1 #_max-key (k x &rest xs)
   (reduce #'max (cons x xs) :key (ifn-function k)))
+
+(defun-1 #_last (xs)
+  (let ((xs (#_seq xs)))
+    (if (typep xs 'fset:seq)
+        (fset:last xs)
+        (let ((last #_nil))
+          (iterate (for tail on-seq xs)
+            (setf last (#_first tail)))
+          last))))
+
+(defun-1 #_butlast (xs)
+  (let ((xs (#_seq xs)))
+    (if (not (seq? xs)) xs
+        (if (typep xs 'fset:seq)
+            (fset:subseq xs 0 (1- (fset:size xs)))
+            (#_reverse (#_rest (#_reverse xs)))))))
