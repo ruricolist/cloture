@@ -70,3 +70,7 @@
 ;;; TODO Compiler macro for the regex and the replacement string.
 (defun-1 |clojure.string|:|replace| (s match replacement)
   (replace-aux s match replacement))
+
+(defun-1 |clojure.string|:|upper-case| (s)
+  (check-type s string)
+  (string-upcase s))

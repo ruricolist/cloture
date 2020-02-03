@@ -109,7 +109,7 @@
 
 (define-clojure-package "clojure.string"
   (:use)
-  (:export "starts-with?" "ends-with?" "join" "replace" "re-quote-replacement"))
+  (:export "starts-with?" "ends-with?" "join" "replace" "re-quote-replacement" "upper-case"))
 
 (define-clojure-package "clojure.template"
   (:use)
