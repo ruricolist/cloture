@@ -1,8 +1,8 @@
 # Cloture
 
-Cloture is an implementation of Clojure in Common Lisp. It is designed to interoperate well with Common Lisp; e.g. Clojure is read by the Lisp reader and Clojure namespaces are Lisp packages.
+Cloture is an implementation of Clojure in Common Lisp. It is designed above all to interoperate well with Common Lisp; Clojure is read by the Lisp reader and Clojure namespaces are Lisp packages.
 
-Cloture is in very early (pre-alpha) stages, but it has progressed far enough to load a (lightly edited) version of [test.clj][], allowing the [test suite][] to actually be written in Clojure.
+Cloture is in very early (pre-alpha) stages, but it has progressed far enough to load a (lightly edited) version of [clojure.test](test.clj), allowing the [test suite][] to actually be written in Clojure.
 
 Work so far has been focused on the critical path to get real Clojure code working in CL. But if there is interest from Clojurists I may work toward making it a more complete Clojure implementation.
 
@@ -14,13 +14,13 @@ Cloture uses [FSet][] seqs, maps, and sets to implement Clojure vectors, maps, a
 
 Use `(cloture:repl)` to start a Clojure REPL. You can exit the REPL with `(quit)` or `(exit)`.
 
-Note that not much work has been done yet on Clojure-style printing, so the “print” in REPL is still mostly the Common Lisp printer.
+Note that not much work has been done yet on Clojure-style printing, so the “Print” in REPL is still mostly the Common Lisp printer.
 
 ## Using Clojure from Lisp
 
 The design goal of Cloture is to keep things as close to Common Lisp as possible: Clojure is read by the Lisp reader and Clojure namespaces are just packages. But of course Clojure is case sensitive, so you will need to use pipe characters to call, for example, `|clojure.core|:|cons|`.
 
-Lisp’s nil is used only as the empty list; Clojure nil, true, and false are distinct objects. Use `cloture:truthy?` and `cloture:falsy?` with Clojure predicates.
+Lisp’s nil is used only as the empty list; Clojure nil, true, and false are singletons. Use `cloture:truthy?` with Clojure predicates.
 
 Clojure files can be integrated into Lisp systems by making the system definition depend on Cloture `(:defsystem-depends-on ("cloture")` and using `"cloture:cljc"` as the file type.
 
@@ -40,8 +40,7 @@ You will also need to spell out `CL:QUOTE` and `CL:FUNCTION` (or refer them), as
     (ns ...
       (:require [CL :refer [QUOTE FUNCTION]]))
 
-All Lisp sequences (lists, vectors, and extensible sequences on
-implementations that support them) implement ISeq.
+All Lisp sequences (lists, vectors, and extensible sequences on implementations that support them) implement ISeq.
 
 ## Reader conditionals
 
