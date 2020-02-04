@@ -404,6 +404,7 @@ nested)."
 ;; (defmacro #_try (&body body))
 
 (defmacro alias-from (from to)
+  (setf to (intern (string to)))
   `(progn
      (defmacro ,to (&body body)
        (cons ',from body))
@@ -415,6 +416,18 @@ nested)."
 (defun unqualify-symbol (symbol)
   (nth-value 1 (ns+name symbol)))
 
+(defclass ns-env ()
+  ((use :initform (queue) :reader ns-env-use)
+   (imports :initform (queue) :reader ns-env-imports)
+   (forms :initform (queue) :reader ns-env-forms)))
+
+(defvar *ns-env* nil)
+
+(defun ns-env-eval (form)
+  (if *ns-env*
+      (enq form (ns-env-forms *ns-env*))
+      (eval form)))
+
 (defun-1 #_refer-clojure (&rest args)
   (apply #'#_refer :|clojure.core| args))
 
@@ -422,28 +435,35 @@ nested)."
   (let* ((package (find-package p))
          (prefix (or prefix (package-name package))))
     (dolist (export (package-exports package))
-      (let ((qname (qualify-symbol prefix export)))
-        (eval `(alias-from ,export ,qname))))))
+      (let ((qname (string+ prefix "/" export)))
+        (ns-env-eval `(alias-from ,export ,qname))))))
 
-(defun-1 #_refer (ns &key (exclude nil) (only nil) (rename nil))
-  (let ((p (find-package ns)))
+(defun-1 #_refer (ns &key exclude only rename)
+  (let ((p (find-package ns))
+        (exclude (convert 'list exclude))
+        (only (convert 'list only)))
     (setup-qualified-names p)
-    (if (and exclude only) (use-package p)
-        (let* ((exports (package-exports p))
-               (exports
-                 (if only
-                     (intersection only exports :test #'string=)
-                     exports))
-               (exports
-                 (if exclude
-                     (set-difference exports exclude :test #'string=)
-                     exports)))
-          (import exports)
-          (when rename
-            (iterate (for (from to) in-map rename)
-              (let ((from (find-external-symbol from p :error t))
-                    (to (intern (string to))))
-                (eval `(alias-from ,from ,to)))))))))
+    (let* ((exports (package-exports p))
+           (exports
+             (if only
+                 (intersection only exports :test #'string=)
+                 exports))
+           (exports
+             (if exclude
+                 (set-difference exports exclude :test #'string=)
+                 exports)))
+      (if (set-equal exports (package-exports p) :test #'string=)
+          (if *ns-env*
+              (enq p (ns-env-use *ns-env*))
+              (use-package p))
+          (if *ns-env*
+              (enq (cons ns exports) (ns-env-imports *ns-env*))
+              (import exports))))
+    (unless (nil? rename)
+      (iterate (for (from to) in-map rename)
+        (let ((from (find-external-symbol from p :error t))
+              (to (string to)))
+          (ns-env-eval `(alias-from ,from ,to)))))))
 
 (defun-1 #_require (&rest args)
   "Implements Clojure require (and use, because)."
@@ -487,31 +507,38 @@ nested)."
   (apply #'#_require args))
 
 (define-clojure-macro #_ns (name &body refs)
-  (mvlet ((name (string name))
-          (refs docstr (body+docs+attrs refs)))
-    `(eval-always
-       ;; Use define-package instead of defpackage so SBCL complain
-       ;; about package variance.
+  (mvlet* ((name (string name))
+           (refs docstr (body+docs+attrs refs))
+           (e (make 'ns-env))
+           (*ns-env* e))
+    (unless (find :|refer-clojure| refs :key #'car)
+      (#_refer :|clojure.core|))
+    (dolist (ref refs)
+      (ematch ref
+        ;; TODO
+        (())
+        ((list* :|gen-class| _))
+        ((list* :|import| _))
+        ((list* :|load| _))
+        ((list* :|use| args)
+         (apply #_use args))
+        ((list* :|require| args)
+         (apply #_require args))
+        ((list* :|refer-clojure| args)
+         (apply #_refer-clojure args))))
+    `(progn
        (define-clojure-package ,(string name)
          (:use :clojure-classes)
+         (:mix ,@(mapcar #'package-name (qlist (ns-env-use e))))
+         ,@(let* ((symbols-by-package (qlist (ns-env-imports e))))
+             (loop for (package . symbols) in symbols-by-package
+                   for package-name = (package-name package)
+                   collect `(:import-from ,package-name
+                              ;; UIOP expects these to be symbols.
+                              ,@(mapcar #'make-keyword symbols))))
          ,@(unsplice (and docstr `(:documentation ,docstr))))
        (in-package ,(string name))
-       ,@(unsplice
-          (unless (find :|refer-clojure| refs :key #'car)
-            `(#_refer :|clojure.core|)))
-       ,@(loop for ref in refs
-               collect (ematch ref
-                         ;; TODO
-                         (())
-                         ((list* :|gen-class| _))
-                         ((list* :|import| _))
-                         ((list* :|load| _))
-                         ((list* :|use| args)
-                          `(#_use ,@args))
-                         ((list* :|require| args)
-                          `(apply #_require (#_quote ,args)))
-                         ((list* :|refer-clojure| args)
-                          `(apply #_refer-clojure (#_quote ,args)))))
+       ,@(nub (qlist (ns-env-forms *ns-env*)))
        (find-package ,name))))
 
 (define-clojure-macro #_in-ns (name)

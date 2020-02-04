@@ -21,6 +21,8 @@
 
 (defmacro define-clojure-package (name &body body)
   `(progn
+     ;; Use define-package instead of defpackage so SBCL doesn't
+     ;; complain about package variance.
      (uiop:define-package ,name ,@body)
      (declaim-clojure-packages ,name)))
 
