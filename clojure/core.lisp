@@ -504,7 +504,20 @@ nested)."
              (rec prefix libspec))))))))
 
 (defun-1 #_use (&rest args)
-  (apply #'#_require args))
+  (dolist (spec args)
+    (#_require
+     (ematch spec
+       ((type symbol)
+        (seq spec :|refer| :|all|))
+       ((type seq)
+        (let* ((tail (rest (convert 'list spec))))
+          (if (memq :|only| tail) spec
+              (convert 'seq
+                       (list* (fset:first spec)
+                              :|refer| :|all|
+                              tail)))
+          spec))
+       (otherwise spec)))))
 
 (define-clojure-macro #_ns (name &body refs)
   (mvlet* ((name (string name))
