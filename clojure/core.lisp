@@ -2807,8 +2807,9 @@ Analogous to `mapcar'."
             (multiple-value-bind (val val?) (lookup x key)
               (if val? val default)))
   #_IAssociative
-  (#_contains-key? (map key) (fset:contains? (sort-wrap map key)
-                                             (sorted-map-map map)))
+  (#_contains-key? (map key)
+                   (? (fset:contains? (sort-wrap map key)
+                                      (sorted-map-map map))))
   (#_assoc (map key value) (with map key value))
   #_IMap
   (#_-dissoc (map key keys)
