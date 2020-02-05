@@ -997,6 +997,10 @@ nested)."
          ;; TODO validity checking?
          (make-instance ',type 'map map))
        (export ',exports ,(symbol-package type))
+       ,@(loop for field in fields
+               for method-name = (symbolicate ".-" field)
+               collect `(defmethod* ,method-name ((self ,type))
+                          (#_get (record-map self) ',field)))
        (symbol-macrolet ,(loop for field in fields
                                collect `(,field (#_get (record-map %this) ',field)))
          (#_extend-type ,type ,@specs)))))
