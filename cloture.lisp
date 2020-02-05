@@ -16,11 +16,11 @@
 (fset:define-cross-type-compare-methods |clojure.core|:|false|)
 
 (defmethod fset:compare ((self |clojure.core|:|true|) (other |clojure.core|:|true|))
-  t)
+  :equal)
 (defmethod fset:compare ((self |clojure.core|:|false|) (other |clojure.core|:|false|))
-  t)
+  :equal)
 (defmethod fset:compare ((self |clojure.core|:|nil|) (other |clojure.core|:|nil|))
-  t)
+  :equal)
 
 (defmethod fset:convert ((type (eql 'fset:seq))
                          (x |clojure.core|:|nil|)
