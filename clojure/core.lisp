@@ -88,6 +88,13 @@ defmulti)."
   (defparameter *must-use-rest*
     '(or and)))
 
+(define-symbol-macro %clojure-env #.(fset:map (:lisp-env nil)))
+
+(eval-always
+  (defun get-clojure-env (lisp-env)
+    (fset:with (macroexpand-1 '%clojure-env lisp-env)
+               :lisp-env lisp-env)))
+
 (defmacro define-clojure-macro (name args &body body)
   (flet ((split-args-on (args kw)
            (if-let (tail (member kw args))
@@ -559,16 +566,19 @@ nested)."
 
 (define-clojure-macro #_defmacro (name &body body)
   (mvlet ((body docstr (body+docs+attrs body))
-          (forms (string-gensym 'forms)))
+          (forms (string-gensym 'forms))
+          (env-temp (string-gensym 'env)))
     `(#_do
       (define-clojure-macro ,name (&whole #_&form
                                           &body ,forms
-                                          &environment #_&env)
+                                          &environment ,env-temp)
         ,@(unsplice docstr)
-        (declare (ignorable #_&form #_&env))
-        (declojurize
-         (apply (#_fn ,@body)
-                (clojurize ,forms))))
+        (declare (ignorable #_&form))
+        (let ((#_&env (get-clojure-env ,env-temp)))
+          (declare (ignorable #_&env))
+          (declojurize
+           (apply (#_fn ,@body)
+                  (clojurize ,forms)))))
       (export-unless-private ,name)
       ',name)))
 
