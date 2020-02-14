@@ -2,9 +2,13 @@
 
 Cloture is an implementation of Clojure in Common Lisp. It is designed above all to interoperate well with Common Lisp; Clojure is read by the Lisp reader and Clojure namespaces are Lisp packages.
 
-Cloture is in very early (pre-alpha) stages, but it has progressed far enough to load a (lightly edited) version of [clojure.test](test.clj), allowing the [test suite][] to actually be written in Clojure.
+Cloture is in very early (pre-alpha) stages, but it has progressed far enough to load [clojure.test](test.clj), allowing the [test suite][] to actually be written in Clojure.
 
 Work so far has been focused on the critical path to get real Clojure code working in CL. But if there is interest from Clojurists I may work toward making it a more complete Clojure implementation.
+
+## Clojure vs. ClojureScript
+
+Cloture is closer to Clojure than to ClojureScript. Among other things, the plan is to support Clojure’s concurrency primitives (`atom`, `ref`, `agent`, `future`, `promise`). However, Cloture follows ClojureScript in making exclusive use of protocols - interfaces are not used or supported. Protocol names are also derived from ClojureScript.
 
 ## A note about FSet
 
@@ -16,11 +20,21 @@ Use `(cloture:repl)` to start a Clojure REPL. You can exit the REPL with `(quit)
 
 Note that not much work has been done yet on Clojure-style printing, so the “Print” in REPL is still mostly the Common Lisp printer.
 
-## Using Clojure from Lisp
+## Interoperation
 
-The design goal of Cloture is to keep things as close to Common Lisp as possible: Clojure is read by the Lisp reader and Clojure namespaces are just packages. But of course Clojure is case sensitive, so you will need to use pipe characters to call, for example, `|clojure.core|:|cons|`.
+### Using Clojure from Lisp
 
-Lisp’s nil is used only as the empty list; Clojure nil, true, and false are singletons. Use `cloture:truthy?` with Clojure predicates.
+The design goal of Cloture is to keep things as close to Common Lisp as possible: Clojure is read by the Lisp reader and Clojure namespaces are just packages. Clojure functions, however, usually have lower-case names, so to call them from Lisp you will need to quote them with pipe characters:
+
+    (|clojure.core|:|cons| 1 '(2))
+    => '(1 2)
+
+Lisp’s nil is used only as the empty list; Clojure nil, true, and false are singletons. To use Clojure predicates from Lisp, you can use `cloture:truthy?` to translate.
+
+    (cloture:truthy (|clojure.core|:|=| '(1 2 3) #(1 2 3)))
+    => T
+
+Use `cloture:truthy?` with Clojure predicates.
 
 Clojure files can be integrated into Lisp systems by making the system definition depend on Cloture `(:defsystem-depends-on ("cloture")` and using `"cloture:cljc"` as the file type.
 
@@ -28,7 +42,9 @@ Clojure files can be integrated into Lisp systems by making the system definitio
       :defsystem-depends-on ("cloture")
       :components ((:file "cloture:cljc" "my-clojure-code")))
 
-## Using Lisp from Clojure
+You can also use `"cloture:clj"` or `"cloture:cljs"` to load straight Clojure or ClojureScript files. Using `.cljc` is recommended, however.
+
+### Using Lisp from Clojure
 
 Since Clojure uses the Lisp reader, you can call Lisp functions just by uppercasing them.
 
