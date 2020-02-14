@@ -24,7 +24,7 @@ Note that not much work has been done yet on Clojure-style printing, so the “P
 
 ### Using Clojure from Lisp
 
-The design goal of Cloture is to keep things as close to Common Lisp as possible: Clojure is read by the Lisp reader and Clojure namespaces are just packages. Clojure functions, however, usually have lower-case names, so to call them from Lisp you will need to quote them with pipe characters:
+The design goal of Cloture is to keep things as close to Common Lisp as possible: Clojure is read by the Lisp reader and Clojure namespaces are just packages. Clojure packages and functions, however, usually have lower-case names, so to call them from Lisp you will need to quote them with pipe characters:
 
     (|clojure.core|:|cons| 1 '(2))
     => '(1 2)
@@ -33,8 +33,6 @@ Lisp’s nil is used only as the empty list; Clojure nil, true, and false are si
 
     (cloture:truthy (|clojure.core|:|=| '(1 2 3) #(1 2 3)))
     => T
-
-Use `cloture:truthy?` with Clojure predicates.
 
 Clojure files can be integrated into Lisp systems by making the system definition depend on Cloture `(:defsystem-depends-on ("cloture")` and using `"cloture:cljc"` as the file type.
 
@@ -65,6 +63,10 @@ In reader conditionals in `.cljc` files (and at the REPL), Cloture looks for a `
 ## License
 
 [Eclipse Public License][EPL].
+
+## Why?
+
+I would like to be able to use Clojure libraries from Common Lisp.
 
 ## Why “Cloture”?
 
