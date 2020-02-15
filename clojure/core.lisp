@@ -685,7 +685,8 @@ nested)."
   (#_satisfies? '#_ISeq x))
 
 (defun seq? (x)
-  (truthy? (#_seq x)))
+  (and (truthy? (#_seq? x))
+       (truthy? (#_seq x))))
 
 (defprotocol #_INext
   (#_next (seq)))
