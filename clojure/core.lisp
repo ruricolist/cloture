@@ -2884,3 +2884,9 @@ Analogous to `mapcar'."
         (if (typep xs 'fset:seq)
             (fset:subseq xs 0 (1- (fset:size xs)))
             (#_reverse (#_rest (#_reverse xs)))))))
+
+(defun-1 #_zipmap (keys vals)
+  (iterate
+    (for k in-seq keys)
+    (for v in-seq vals)
+    (collecting-map k v)))
