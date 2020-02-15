@@ -1,5 +1,5 @@
 (ns cloture.tests
-  (:require [clojure.test :refer [deftest is]])
+  (:require [clojure.test :refer [deftest is are]])
   (:require [clojure.string :as s])
   (:require [clojure.walk :as walk]))
 
@@ -764,7 +764,7 @@
 ;;; Check that templates work (`are` uses templates internally).
 
 (deftest template
-  (are [x y] [= x y]
+  (are [x y] (= x y)
     1 1
     2 2
     3 3))
