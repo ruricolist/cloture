@@ -123,7 +123,7 @@
 
 (define-clojure-package "clojure.walk"
   (:use)
-  (:export "postwalk" "postwalk-demo"))
+  (:export "postwalk" "postwalk-demo" "postwalk-replace"))
 
 (define-clojure-package "user"
   (:use "clojure.core"))

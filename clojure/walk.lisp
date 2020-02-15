@@ -38,3 +38,8 @@
                 (format t "~&Walked: ~a" form)
                 form)
               form))
+
+(defun-1 #_postwalk-replace (smap form)
+  (#_postwalk (lambda (f)
+                (#_lookup smap f f))
+              form))

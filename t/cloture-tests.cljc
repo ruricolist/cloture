@@ -1,6 +1,7 @@
 (ns cloture.tests
   (:require [clojure.test :refer [deftest is]])
-  (:require [clojure.string :as s]))
+  (:require [clojure.string :as s])
+  (:require [clojure.walk :as walk]))
 
 (deftest empty-test)
 
@@ -767,3 +768,13 @@
     1 1
     2 2
     3 3))
+
+(deftest postwalk-replace
+  (is (= (walk/postwalk-replace {:a 1 :b 2} [:a :b])
+         [1 2]))
+  (is (= (walk/postwalk-replace {:a 1 :b 2} [:a :b :c])
+         [1 2 :c]))
+  (is (= (walk/postwalk-replace {:a 1 :b 2} [:a :b [:a :b] :c])
+         [1 2 [1 2] :c]))
+  (is (= (walk/postwalk-replace {:x :X} {:a 1, :b :x, :c 3, :x 4})
+         {:X 4, :a 1, :b :X, :c 3})))
