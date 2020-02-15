@@ -759,3 +759,11 @@
   (is (= 42 (or 42 9999)))
   (is (false? (or nil false)))
   (is (nil? (or false nil))))
+
+;;; Check that templates work (`are` uses templates internally).
+
+(deftest template
+  (are [x y] [= x y]
+    1 1
+    2 2
+    3 3))
