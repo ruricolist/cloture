@@ -2365,8 +2365,8 @@ Analogous to `mapcar'."
   (if (seq? self)
       (if (seq? other)
           (and
-            (truthy? (#_= (#_first self) (#_first other)))
-            (truthy? (#_= (#_rest self) (#_rest other))))
+           (truthy? (#_= (#_first self) (#_first other)))
+           (truthy? (#_= (#_rest self) (#_rest other))))
           nil)
       (not (seq? other))))
 
