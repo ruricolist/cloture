@@ -109,13 +109,26 @@
 
 (-> falsy? (t) boolean)
 (defun falsy? (x)
-  ;; TODO false value?
   (or (eql x |clojure.core|:|false|)
       (eql x |clojure.core|:|nil|)))
+
+(define-compiler-macro falsy? (&whole call x)
+  (select x
+    (|clojure.core|:|true| nil)
+    (|clojure.core|:|false| t)
+    (|clojure.core|:|nil| t)
+    (otherwise call)))
 
 (-> truthy? (t) boolean)
 (defun truthy? (x)
   (not (falsy? x)))
+
+(define-compiler-macro truthy? (&whole call x)
+  (select x
+    (|clojure.core|:|true| t)
+    (|clojure.core|:|false| nil)
+    (|clojure.core|:|nil| nil)
+    (otherwise call)))
 
 (defun egal (x y)
   "Are X and Y equal according to Clojure?"
