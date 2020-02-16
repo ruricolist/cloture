@@ -763,13 +763,13 @@
 
 ;;; Check that templates work (`are` uses templates internally).
 
-(deftest template
+(deftest test-template
   (are [x y] (= x y)
     1 1
     2 2
     3 3))
 
-(deftest postwalk-replace
+(deftest test-postwalk-replace
   (is (= (walk/postwalk-replace {:a 1 :b 2} [:a :b])
          [1 2]))
   (is (= (walk/postwalk-replace {:a 1 :b 2} [:a :b :c])
