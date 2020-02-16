@@ -2370,23 +2370,6 @@ Analogous to `mapcar'."
           nil)
       (not (seq? other))))
 
-(define-do-macro doseq ((var seq &optional ret) &body body)
-  (let ((decls
-          (and (string= '_ var)
-            `((declare (ignore ,var))))))
-    `(mapf (lambda (,var) ,@decls ,@body) ,seq)))
-
-(define-clojure-macro #_doseq (binds &body body)
-  (ematch (convert 'list binds)
-    ((list pat seq)
-     (with-unique-names (temp)
-       `(doseq (,temp ,seq #_nil)
-          (#_let ,(seq pat temp)
-                 ,@body))))
-    ((list* pat seq binds)
-     `(#_doseq ,(seq pat seq)
-               (#_doseq ,(convert 'seq binds)
-                        ,@body)))))
 (defunion for-control
   skip
   halt)
@@ -2407,15 +2390,19 @@ Analogous to `mapcar'."
               '())))
       '()))
 
+(defmacro for* (binds &body body)
+  `(#_for ,binds ,@body))
+
 (define-clojure-macro #_for (binds &body body)
-  ;; TODO Fork cl-lc and actually implement list comprehensions.
   (let ((binds (convert 'list (assure seq binds))))
     (ematch binds
       ((list* pat form more)
-       (mvlet ((kwargs more (parse-leading-keywords more))
-               (temp (string-gensym 'temp)))
-         (when more
-           (trivia.fail:fail))
+       (mvlet* ((kwargs more (parse-leading-keywords more))
+                (temp (string-gensym 'temp))
+                (body (if more
+                          `(for* ,(convert 'seq more)
+                                 ,@body)
+                          `(#_do ,@body))))
          (destructuring-bind (&key |let| (|while| #_true) (|when| #_true))
              kwargs
            (let ((binds
@@ -2427,9 +2414,14 @@ Analogous to `mapcar'."
                                  (#_if-not ,|while|
                                            halt
                                            (#_if ,|when|
-                                                 (#_do ,@body)
+                                                 ,body
                                                  skip))))
                         ,form))))))))
+
+(define-clojure-macro #_doseq (binds &body body)
+  `(macrolet ((for* (binds body)
+                `(#_dorun (#_for ,binds ,@body))))
+     (#_for ,binds ,@body)))
 
 (defun-1 #_update-in (m ks f &rest args)
   (let ((ks (convert 'list ks))
