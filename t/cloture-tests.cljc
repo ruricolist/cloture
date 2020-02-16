@@ -778,3 +778,21 @@
          [1 2 [1 2] :c]))
   (is (= (walk/postwalk-replace {:x :X} {:a 1, :b :x, :c 3, :x 4})
          {:X 4, :a 1, :b :X, :c 3})))
+
+(deftest test-for
+  (is (= [0 6 12]
+         (for [x [0 1 2 3 4 5]
+               :let [y (* x 3)]
+               :when (even? y)]
+           y)))
+  (is (= '([1 1 1] [2 4 8] [3 9 27] [4 16 64] [5 25 125])
+         (for [x (range 1 6)
+               :let [y (* x x)
+                     z (* x x x)]]
+           [x y z])))
+  (is (= '(:c)
+         (for [[x y] '([:a 1] [:b 2] [:c 0]) :when (= y 0)]
+           x)))
+  (is (= '([0 0] [0 1] [0 2])
+         (for [x (range 3) :while (not= x 1) y (range 3)]
+           [x y]))))
