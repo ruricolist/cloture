@@ -2890,3 +2890,88 @@ Analogous to `mapcar'."
     (for k in-seq keys)
     (for v in-seq vals)
     (collecting-map k v)))
+
+(defclass array-map ()
+  ((alist :initarg :alist :reader array-map-alist)
+   (size :initarg :size :reader array-map-size))
+  (:documentation "A simple map that uses minimal space and maintains the insertion order.
+Implemented as an alist.")
+  (:default-initargs
+   :alist nil
+   :size 0))
+
+(fset:define-cross-type-compare-methods array-map)
+
+(defmethod fset:compare ((x array-map) (y array-map))
+  (let ((alist1 (array-map-alist x))
+        (alist2 (array-map-alist y)))
+    (set-equal alist1 alist2
+               :key #'car
+               :test #'egal)))
+
+(defun #_array-map (&rest args)
+  (mvlet ((alist size
+           (loop for (k v . nil) on args
+                 for i from 0
+                 collect (cons k v) into alist
+                 finally (return (values alist i)))))
+    (make 'array-map
+          :alist alist
+          :size size)))
+
+(defun array-map->map (am)
+  (iterate (for (k . v) in (array-map-alist am))
+    (collecting-map k v)))
+
+(defun reduce-array-map (map f init)
+  (iterate (for (k . v) in (array-map-alist map))
+    (reducing-kv k v by f initial-value init)))
+
+(extend-type array-map
+  #_ICounted
+  (#_count (x) (array-map-size x))
+  #_ISeqable
+  (#_seq (x) (#_seq (array-map->map x)))
+  #_ISeq
+  (#_first (x) (#_first (#_seq x)))
+  (#_rest (x) (#_rest (#_seq x)))
+  #_INext
+  (#_next (x) (#_seq x))
+  #_IEmptyableCollection
+  (#_empty (m) (make 'array-map))
+  #_ICollection
+  (#_-conj (map x) (#_-conj (array-map->map map) x))
+  #_IFn
+  (#_invoke (x arg) (#_lookup x arg))
+  #_ILookup
+  (#_lookup (x key) (#_lookup x key #_nil))
+  (#_lookup (x key default)
+            (let* ((alist (array-map-alist x))
+                   (pair (assoc key alist :test #'egal)))
+              (if pair
+                  (cdr pair)
+                  default)))
+  #_IAssociative
+  (#_contains-key? (map key)
+                   (let* ((alist (array-map-alist map)))
+                     (? (assoc key alist :test #'egal))))
+  (#_assoc (map key value) (#_assoc (array-map->map map) key value))
+  #_IMap
+  (#_-dissoc (map key keys)
+             (mvlet* ((alist (array-map-alist map))
+                      (new-alist new-size
+                       (iterate
+                         (for pair in alist)
+                         (for x = (car pair))
+                         (unless (or (egal key x)
+                                     (member x keys :test #'egal))
+                           (collect pair into new-alist)
+                           (sum 1 into new-size))
+                         (finally (return (values pair new-size))))))
+               (make 'array-map
+                     :alist new-alist
+                     :size new-size)))
+  #_IKVReduce
+  (#_kv-reduce (map f init) (reduce-array-map map f init))
+  #_IHash
+  (#_hash (coll) (#_hash-ordered-coll coll)))
