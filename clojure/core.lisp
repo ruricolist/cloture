@@ -1694,6 +1694,14 @@ nested)."
 (defun-1 #_new (class &rest args)
   (apply #'make-instance class args))
 
+(define-condition case-fallthrough (#_IllegalArgumentException)
+  ((keys :initarg :keys)
+   (value :initarg :value))
+  (:report (lambda (c s)
+             (with-slots (keys value) c
+               (format s "Case failed: ~s is not one of~%~s"
+                       value keys)))))
+
 (define-clojure-macro #_case (e &body body)
   (mvlet* ((default? (oddp (length body)))
            (clauses default
@@ -1701,9 +1709,15 @@ nested)."
                 (values (butlast body) (lastcar body))
                 (values body nil)))
            (clauses (batches clauses 2)))
-    `(case-using #'egal ,e
-       ,@clauses
-       ,@(unsplice (and default? `(otherwise ,default))))))
+    (once-only (e)
+      `(case-using #'egal ,e
+         ,@clauses
+         (otherwise
+          ,(if default?
+               default
+               `(error 'case-fallthrough
+                       :keys ',(mapcar #'car clauses)
+                       :value ,e)))))))
 
 (defun-1 #_comp (&rest fns)
   (if (null fns) #'identity
