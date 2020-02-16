@@ -34,6 +34,8 @@ Lisp’s nil is used only as the empty list; Clojure nil, true, and false are si
     (cloture:truthy (|clojure.core|:|=| '(1 2 3) #(1 2 3)))
     => T
 
+In this case, however, you should use `cloture:egal`, which tells you if two objects are equal according to Clojure’s idea of equality.
+
 Clojure files can be integrated into Lisp systems by making the system definition depend on Cloture `(:defsystem-depends-on ("cloture")` and using `"cloture:cljc"` as the file type.
 
     (defsystem ...

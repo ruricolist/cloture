@@ -117,11 +117,9 @@
 (defun truthy? (x)
   (not (falsy? x)))
 
-(defun clojure= (&rest xs)
-  "Are all of XS equal according to Clojure's idea of equality?"
-  (loop for x in xs
-        for y in (rest xs)
-        always (truthy? (|clojure.core|:= x y))))
+(defun egal (x y)
+  "Are X and Y equal according to Clojure?"
+  (truthy? (|clojure.core|:= x y)))
 
 (defun dissect-seq-pattern (pats)
   (mvlet* ((pats (convert 'list pats))
@@ -365,9 +363,6 @@ Also return (as a second value) a list of all the symbols bound."
 (defun egal-hash (x)
   ;; Use sxhash to reduce to the Lisp implementation's range.
   (sxhash (|clojure.core|:|hash| x)))
-
-(defun egal (x y)
-  (truthy? (|clojure.core|:= x y)))
 
 ;;; Hash tables that use Clojure's idea of equality.
 (define-custom-hash-table-constructor

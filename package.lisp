@@ -51,7 +51,8 @@
 
            #:truthy?
            #:falsy?
-           #:clojure=
+           #:nil?
+           #:egal
 
            #:defun-1
            #:expose-to-clojure
@@ -67,7 +68,6 @@
            #:declare-keywords
            #:proclaim-keywords
            #:nil?
-           #:not=
 
            #:repl
 

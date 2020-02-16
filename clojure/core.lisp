@@ -1531,9 +1531,6 @@ nested)."
                 always (or (eql x y)
                            (truthy? (#_equiv x y)))))))))
 
-(defun not= (&rest args)
-  (truthy? (apply #'#_not= args)))
-
 (defun-1 #_== (&rest args)
   (apply #'= args))
 
