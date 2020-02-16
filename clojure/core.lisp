@@ -1845,9 +1845,8 @@ nested)."
   ((n seq) (doall-n n seq) seq))
 
 (defun-1 #_dorun (&rest args)
-  ;; TODO avoid consing
   (apply #_doall args)
-  (values))
+  #_nil)
 
 (defun lazy-seq->list (lazy-seq)
   (iterate (for item in-seq lazy-seq)
