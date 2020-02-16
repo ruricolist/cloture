@@ -36,6 +36,13 @@ Lisp’s nil is used only as the empty list; Clojure nil, true, and false are si
 
 In this case, however, you should use `cloture:egal`, which tells you if two objects are equal according to Clojure’s idea of equality.
 
+Cloture exports Iterate drivers for working with collections that satisfy Clojure protocols:
+
+- `cloture:in-seq` iterates over `ISeq`.
+- `cloture:on-seq` iterates over the rests of `ISeq`.
+- `cloture:in-indexed` iterates over `IIndexed`.
+- `cloture:index-of-indexed` iterates over the indices of `IIndexed`.
+
 Clojure files can be integrated into Lisp systems by making the system definition depend on Cloture `(:defsystem-depends-on ("cloture")` and using `"cloture:cljc"` as the file type.
 
     (defsystem ...
