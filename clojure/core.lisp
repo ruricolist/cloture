@@ -2906,7 +2906,7 @@ Implemented as an alist.")
                :key #'car
                :test #'egal)))
 
-(defun #_array-map (&rest args)
+(defun-1 #_array-map (&rest args)
   (mvlet ((alist size
            (loop for (k v . nil) on args
                  for i from 0
