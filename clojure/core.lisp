@@ -2407,38 +2407,77 @@ Analogous to `mapcar'."
               '())))
       '()))
 
-(defmacro for* (binds &body body)
-  `(#_for ,binds ,@body))
+(defconstructor for-spec
+  (pat t)
+  (expr t)
+  (let t)
+  (while t)
+  (when t))
 
-(define-clojure-macro #_for (binds &body body)
-  (let ((binds (convert 'list (assure seq binds))))
+(defun parse-for-specs (binds &optional (form-name '#_for))
+  "Parse BINDS, the first argument to a `for' or `doseq' macro, into a
+  list of `for-spec' instances."
+  (nlet rec ((binds (convert 'list binds))
+             (acc '()))
     (ematch binds
       ((list* pat form more)
-       (mvlet* ((kwargs more (parse-leading-keywords more))
-                (temp (string-gensym 'temp))
-                (body (if more
-                          `(for* ,(convert 'seq more)
-                                 ,@body)
-                          `(#_do ,@body))))
+       (mvlet ((kwargs more (parse-leading-keywords more)))
          (destructuring-bind (&key |let| (|while| #_true) (|when| #_true))
              kwargs
-           (let ((binds
-                   (convert 'seq
-                            (list* pat temp
-                                   (convert 'list |let|)))))
-             `(call/for (lambda (,temp)
-                          (#_let ,binds
-                                 (#_if-not ,|while|
-                                           halt
-                                           (#_if ,|when|
-                                                 ,body
-                                                 skip))))
-                        ,form))))))))
+           (let ((spec (for-spec pat form |let| |while| |when|)))
+             (rec more (cons spec acc))))))
+      ((list)
+       (if (null acc)
+           (error 'clojure-syntax-error
+                  :message (fmt "No specs in ~s" form-name))
+           (nreverse acc))))))
+
+(define-clojure-macro #_for (binds &body body)
+  (let ((specs (parse-for-specs binds '#_for)))
+    (reduce (lambda (spec body)
+              (ematch spec
+                ((for-spec pat form binds while when)
+                 (let* ((temp (string-gensym 'temp))
+                        (binds (~>> binds
+                                    (convert 'list)
+                                    (list* pat temp)
+                                    (convert 'seq))))
+                   `(call/for (lambda (,temp)
+                                (#_let ,binds
+                                       (#_if-not ,while
+                                                 halt
+                                                 (#_if ,when
+                                                       ,body
+                                                       skip))))
+                              ,form)))))
+            specs
+            :from-end t
+            :initial-value `(#_do ,@body))))
 
 (define-clojure-macro #_doseq (binds &body body)
-  `(macrolet ((for* (binds body)
-                `(#_dorun (#_for ,binds ,@body))))
-     (#_for ,binds ,@body)))
+  (let ((specs (parse-for-specs binds '#_doseq))
+        (block (string-gensym 'block)))
+    `(#_do
+      (block ,block
+        ,(reduce (lambda (spec body)
+                   (ematch spec
+                     ((for-spec pat form binds while when)
+                      (let* ((temp (string-gensym 'temp))
+                             (binds (~>> binds
+                                         (convert 'list)
+                                         (list* pat temp)
+                                         (convert 'seq))))
+                        `(mapf (lambda (,temp)
+                                 (#_let ,binds
+                                        (#_if-not ,while
+                                                  (return-from ,block (values))
+                                                  (#_when ,when
+                                                          ,body))))
+                               ,form)))))
+                 specs
+                 :from-end t
+                 :initial-value `(#_do ,@body)))
+      #_nil)))
 
 (defun-1 #_update-in (m ks f &rest args)
   (let ((ks (convert 'list ks))
