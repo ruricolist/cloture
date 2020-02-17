@@ -208,7 +208,7 @@ backslash has already been consumed."
              (concatenate 'string "\\" (string result)))
             (t result)))))
 
-(defun interpol-reader (*stream* char arg &key (recursive-p t))
+(defun interpol-reader (*stream* char arg)
   "The actual reader function for the 'sub-character' #\?.
 
 This function can be used directly outside of a read table by passing `recursive-p` as NIL.
@@ -243,13 +243,12 @@ This function can be used directly outside of a read table by passing `recursive
           *saw-backslash*
           *readtable-copy*)
       (prog1
-          (inner-reader regex-mode extended-mode nil nil :recursive-p recursive-p)
+          (inner-reader regex-mode extended-mode nil nil)
         ;; consume the closing outer delimiter
         (read-char*)))))
 
-(defun inner-reader (regex-mode extended-mode quote-mode case-mode &key (recursive-p t))
-  "Helper function for INTERPOL-READER which does all the work. May
-call itself recursively."
+(defun inner-reader (regex-mode extended-mode quote-mode case-mode)
+  "Helper function for INTERPOL-READER which does all the work."
   ;; REGEX-MODE and EXTENDED-MODE as described above; QUOTE-MODE is
   ;; true if we're inside a \Q scope; CASE-MODE is true if we're
   ;; inside a \L or \U scope
