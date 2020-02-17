@@ -273,6 +273,9 @@ This is an issue for specializing on Clojure's nil, true, or false."
     ((list) `(#_do ,@body))
     ((list* (and pattern (type symbol)) expr bindings)
      `(let ((,pattern ,expr))
+        ,@(unsplice
+           (and (string= pattern '_)
+                `(declare (ignorable ,pattern))))
         (with-syms-fbound (,pattern)
           (clojure-let ,bindings
             ,@body))))
