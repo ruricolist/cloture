@@ -1894,6 +1894,9 @@ nested)."
                        (rec (#_rest seqs)))))))
     (rec seqs)))
 
+(define-clojure-macro #_lazy-cat (&rest xs)
+  `(concat ,@(mapcar (op `(lazy-seq ,_)) xs)))
+
 (defun-1 #_cycle (seq)
   (labels ((rec (tail)
              (if (seq? tail)
