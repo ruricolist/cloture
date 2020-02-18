@@ -1880,6 +1880,8 @@ nested)."
   (concat* seqs))
 
 (defun concat* (seqs)
+  ;; TODO non-left recursive version?
+  ;; https://groups.google.com/forum/#!topic/clojure-dev/ewBuyloeiFs/discussion
   (labels ((rec (seqs)
              (if (not (seq? seqs)) '()
                  (let ((seq1 (#_first seqs)))
