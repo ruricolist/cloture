@@ -796,3 +796,10 @@
   (is (= '([0 0] [0 1] [0 2])
          (for [x (range 3) :while (not= x 1) y (range 3)]
            [x y]))))
+
+;;; Careful not to return nil when the key is absent.
+
+(deftest test-select-keys
+  (is (empty? (select-keys {:a 1} [:b])))
+  (is (= {:a 1 :b 2}
+         (select-keys {:a 1 :b 2 :d 3} [:a :b :c]))))

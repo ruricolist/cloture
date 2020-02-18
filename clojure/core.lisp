@@ -3029,3 +3029,8 @@ Implemented as an alist.")
   (#_kv-reduce (map f init) (reduce-array-map map f init))
   #_IHash
   (#_hash (coll) (#_hash-ordered-coll coll)))
+
+(defun-1 #_select-keys (map keys)
+  (iterate (for key in-seq keys)
+    (when (truthy? (#_contains? map key))
+      (collecting-map key (#_lookup map key)))))
