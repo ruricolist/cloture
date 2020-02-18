@@ -1877,16 +1877,19 @@ nested)."
     (collecting-seq item)))
 
 (defun-1 #_concat (&rest seqs)
+  (concat* seqs))
+
+(defun concat* (seqs)
   (labels ((rec (seqs)
-             (if (null seqs) '()
-                 (let ((seq1 (first seqs)))
+             (if (not (seq? seqs)) '()
+                 (let ((seq1 (#_first seqs)))
                    (if (seq? seq1)
                        (lazy-seq
                          (cons (#_first seq1)
-                               (apply #'#_concat
-                                      (#_rest seq1)
-                                      (rest seqs))))
-                       (rec (rest seqs)))))))
+                               (concat*
+                                (cons (#_rest seq1)
+                                      (#_rest seqs)))))
+                       (rec (#_rest seqs)))))))
     (rec seqs)))
 
 (defun-1 #_cycle (seq)
@@ -2391,19 +2394,19 @@ Analogous to `mapcar'."
   skip
   halt)
 
-(defun call/for (fn seq)
+(defun process-for (seq)
   (if (seq? seq)
       (lazy-seq
         (nlet rec ((seq seq))
           (if (seq? seq)
-              (let ((first (funcall fn (#_first seq))))
+              (let ((first (#_first seq)))
                 (if (eq skip first)
                     (rec (#_rest seq))
                     (if (eq halt first)
                         '()
                         (lazy-seq
                           (cons first
-                                (call/for fn (#_rest seq)))))))
+                                (process-for (#_rest seq)))))))
               '())))
       '()))
 
@@ -2434,25 +2437,27 @@ Analogous to `mapcar'."
 
 (define-clojure-macro #_for (binds &body body)
   (let ((specs (parse-for-specs binds '#_for)))
-    (reduce (lambda (spec body)
-              (ematch spec
-                ((for-spec pat form binds while when)
-                 (let* ((temp (string-gensym 'temp))
-                        (binds (~>> binds
-                                    (convert 'list)
-                                    (list* pat temp)
-                                    (convert 'seq))))
-                   `(call/for (lambda (,temp)
-                                (#_let ,binds
-                                       (#_if-not ,while
-                                                 halt
-                                                 (#_if ,when
-                                                       ,body
-                                                       skip))))
-                              ,form)))))
-            specs
-            :from-end t
-            :initial-value `(#_do ,@body))))
+    `(process-for
+      ,(reduce (lambda (spec body)
+                 (ematch spec
+                   ((for-spec pat form binds while when)
+                    (let* ((temp (string-gensym 'temp))
+                           (binds (~>> binds
+                                       (convert 'list)
+                                       (list* pat temp)
+                                       (convert 'seq))))
+                      `(concat*
+                        (#_map (lambda (,temp)
+                                 (#_let ,binds
+                                        (#_if-not ,while
+                                                  '(,halt)
+                                                  (#_if ,when
+                                                        ,body
+                                                        '(,skip)))))
+                               ,form))))))
+               specs
+               :from-end t
+               :initial-value `(list (#_do ,@body))))))
 
 (define-clojure-macro #_doseq (binds &body body)
   (let ((specs (parse-for-specs binds '#_doseq))
