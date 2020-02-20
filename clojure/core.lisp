@@ -1488,7 +1488,7 @@ nested)."
      `(#_if ,test ,expr (#_cond ,@clauses)))))
 
 (define-clojure-macro #_letfn (fnspecs &body body)
-  (let* ((fnspecs (convert 'list fnspecs)))
+  (let* ((fnspecs (convert 'list (assure seq fnspecs))))
     `(fbindrec ,(loop for (name . body) in fnspecs
                       collect `(,name (#_fn ,name ,@body)))
        (symbol-macrolet ,(loop for (name . nil) in fnspecs

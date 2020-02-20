@@ -181,7 +181,7 @@
   (is (= client (let [{:as all} client] all))))
 
 (deftest destructure-keyword-arguments
-  (letfn ((optify [& {:as opts}] opts))
+  (letfn [(optify [& {:as opts}] opts)]
     (is (= {:x 1 :y 2}
            (optify :x 1 :y 2)))))
 
