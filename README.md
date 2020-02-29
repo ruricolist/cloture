@@ -10,6 +10,8 @@ Work so far has been focused on the critical path to get real Clojure code worki
 
 Cloture is closer to Clojure than to ClojureScript. Among other things, the plan is to support Clojure’s concurrency primitives (`atom`, `ref`, `agent`, `future`, `promise`). However, Cloture follows ClojureScript in making exclusive use of protocols - interfaces are not used or supported. Protocol names are also derived from ClojureScript.
 
+Like ClojureScript, Cloture supports `(catch :default)` to catch everything.
+
 ## A note about FSet
 
 Cloture uses [FSet][] seqs, maps, and sets to implement Clojure vectors, maps, and sets, respectively. This involves [a few hacks][fset-hacks] to FSet that might possibly affect other programs using FSet.
