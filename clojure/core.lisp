@@ -3034,3 +3034,6 @@ Implemented as an alist.")
   (iterate (for key in-seq keys)
     (when (truthy? (#_contains? map key))
       (collecting-map key (#_lookup map key)))))
+
+(defun-1 #_vector (&rest elts)
+  (convert 'seq elts))
