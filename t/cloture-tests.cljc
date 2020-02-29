@@ -1,5 +1,5 @@
 (ns cloture.tests
-  (:require [clojure.test :refer [deftest is are]])
+  (:require [clojure.test :refer [deftest is are testing]])
   (:require [clojure.string :as s])
   (:require [clojure.walk :as walk]))
 
@@ -103,6 +103,27 @@
 
 (deftest reader-conditional
   (is (= 1 #?(:cl 1 :clj 2))))
+
+(deftest reader-conditional-splicing
+  (is (= [1 2 3]
+         (vector #?@(:cl [1 2 3])))))
+
+(deftest reader-conditional-splicing-clr
+  ;; See https://clojure.org/guides/reader_conditionals.
+  (testing "splicing"
+    (is (= [] [#?@(:cl [])]))
+    (is (= [:a] [#?@(:cl [:a])]))
+    (is (= [:a :b] [#?@(:cl [:a :b])]))
+    (is (= [:a :b :c] [#?@(:cl [:a :b :c])]))
+    (is (= [:a :b :c] [#?@(:cl [:a :b :c])]))))
+
+#?@(:cl
+    [(defn clj-fn1 [] :abc)
+     (defn clj-fn2 [] :cde)])
+
+(deftest reader-conditional-splicing-toplevel
+  (is (= (clj-fn1) :abc))
+  (is (= (clj-fn2) :cde)))
 
 (deftest destructure-simple
   (is (= '(1 2 3)

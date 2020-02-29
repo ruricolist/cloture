@@ -2,6 +2,11 @@
 
 (defunit eof)
 
+(defconst %splicing-conditional '%splicing-conditional)
+
+(defmacro #.%splicing-conditional (&rest forms)
+  `(progn ,@forms))
+
 (defun subread (stream)
   (read stream t nil t))
 
@@ -19,15 +24,25 @@
 
 (defun read-conditional (stream char arg)
   (declare (ignore char arg))
-  (let ((forms (subread stream)))
-    (let* ((missing "missing")
-           (cl (getf forms :|cl| missing)))
-      (if (eql cl missing)
-          (let ((default (getf forms :|default| missing)))
-            (if (eql default missing)
-                (values)
-                default))
-          cl))))
+  (let* ((splicing?
+           (and (eql #\@ (peek-char nil stream))
+                (read-char stream)
+                t)))
+    (flet ((maybe-splice (form)
+             (if splicing?
+                 (ematch form
+                   ((list* '[] subforms)
+                    `(,%splicing-conditional ,@subforms)))
+                 form)))
+      (let* ((forms (subread stream))
+             (missing "missing")
+             (cl (getf forms :|cl| missing)))
+        (if (eql cl missing)
+            (let ((default (getf forms :|default| missing)))
+              (if (eql default missing)
+                  (values)
+                  (maybe-splice default)))
+            (maybe-splice cl))))))
 
 (defun read-nothing (stream char arg)
   (declare (ignore char arg))
