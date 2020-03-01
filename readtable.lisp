@@ -5,7 +5,7 @@
 (defconst %splicing-conditional '%splicing-conditional)
 
 (defmacro #.%splicing-conditional (&rest forms)
-  `(progn ,@forms))
+  `(|clojure.core|:|do| ,@forms))
 
 (defun subread (stream)
   (read stream t nil t))
