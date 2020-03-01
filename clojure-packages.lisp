@@ -128,6 +128,10 @@
 (define-clojure-package "user"
   (:use "clojure.core"))
 
+(define-clojure-package "cloture"
+  (:use)
+  (:export "funcall" "declare-keywords" "aref" "parse-integer" "expt"))
+
 (define-clojure-package #:cloture.impl
   (:documentation "Package used for the Clojure shortcut reader macro.")
   (:use
@@ -137,5 +141,6 @@
     "clojure.string"
     "clojure.template"
     "clojure.stacktrace"
-    "clojure.walk")
+    "clojure.walk"
+    "cloture")
   (:shadowing-import-from "clojure.core" "replace"))

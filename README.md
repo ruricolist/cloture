@@ -65,6 +65,14 @@ You will also need to spell out `CL:QUOTE` and `CL:FUNCTION` (or refer them), as
     (ns ...
       (:require [CL :refer [QUOTE FUNCTION]]))
 
+Cloture defines a Clojure namespace, `cloture`, whose exports are already conveniently lowercased and otherwise follow Clojure conventions.
+
+    (ns ...
+      (:require [cloture:refer [parse-integer]]))
+
+    (parse-integer "1234x" :start 1 :junk-allowed true)
+    => 234
+
 All Lisp sequences (lists, vectors, and extensible sequences on implementations that support them) implement ISeq.
 
 ## Reader conditionals

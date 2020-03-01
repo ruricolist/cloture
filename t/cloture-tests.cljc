@@ -1,7 +1,8 @@
 (ns cloture.tests
   (:require [clojure.test :refer [deftest is are testing]])
   (:require [clojure.string :as s])
-  (:require [clojure.walk :as walk]))
+  (:require [clojure.walk :as walk])
+  (:require [cloture :refer [parse-integer]]))
 
 (deftest empty-test)
 
@@ -824,3 +825,7 @@
   (is (empty? (select-keys {:a 1} [:b])))
   (is (= {:a 1 :b 2}
          (select-keys {:a 1 :b 2 :d 3} [:a :b :c]))))
+
+(deftest test-parse-integer
+  (is (= 234
+         (parse-integer "1234x" :start 1 :junk-allowed true))))
