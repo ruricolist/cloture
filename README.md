@@ -65,7 +65,7 @@ You will also need to spell out `CL:QUOTE` and `CL:FUNCTION` (or refer them), as
     (ns ...
       (:require [CL :refer [QUOTE FUNCTION]]))
 
-Cloture defines a Clojure namespace, `cloture`, whose exports are already conveniently lowercased and otherwise follow Clojure conventions.
+Cloture defines a Clojure namespace, `cloture`, with exports whose names (and keyword arguments!) are already conveniently lowercased and otherwise follow Clojure conventions:
 
     (ns ...
       (:require [cloture:refer [parse-integer]]))
