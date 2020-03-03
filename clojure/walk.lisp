@@ -5,7 +5,7 @@
   '(or list
     seq map set
     map-entry
-    sorted-map))
+    sy:tree-map))
 
 (defun-1 #_postwalk (f form)
   (fbind ((f (ifn-function f)))
@@ -24,7 +24,7 @@
                   (iterate (for (k v) in-map form)
                     (collecting-map (postwalk k) (postwalk v) into m)
                     (finally (return (f m)))))
-                 (sorted-map
+                 (sy:tree-map
                   (error (clojure-error "Cannot walk sorted map: ~a" form)))
                  (map-entry
                   (ematch form

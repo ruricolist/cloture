@@ -29,6 +29,24 @@
                      (setf ,gset (fset:less ,gset ,elt))
                      ,elt)))))))
 
+(defmacro-driver (for x in-tree-set s)
+  (with-unique-names (gset elt temp)
+    (let ((kwd (if generate 'iter:generate 'iter:for)))
+      `(progn
+         (iterate:with ,gset = ,s)
+         (,kwd ,x
+               next
+               (if (= 0 (sycamore:tree-set-count ,gset))
+                   (terminate)
+                   (multiple-value-bind (,temp ,elt)
+                       (sycamore:tree-set-remove-min ,gset)
+                     ,elt)))))))
+
+(defun tree-map-min (m)
+  (sy:do-tree-map ((k v) m)
+    (return-from tree-map-min
+      (values k v))))
+
 (defmacro-clause (for var in-plist plist)
   (destructuring-bind (k &optional v) var
     `(for (,k ,@(unsplice v))
@@ -75,6 +93,35 @@
          (test     `(and (not ,more?) (go ,iterate::*loop-end*))))
     (setf iterate::*loop-end-used?* t)
     (iterate::add-loop-body-wrapper `(with-fset-iterator (,iterator ,map)))
+    (iterate::return-driver-code :next (list setqs test)
+                                 :variable var-spec)))
+
+(defun tree-map-iterator (map)
+  (lambda ()
+    (let ((len (sycamore:tree-map-count map)))
+      (if (zerop len)
+          (values nil nil nil)
+          (multiple-value-bind (k v) (tree-map-min map)
+            (setf map (sy:tree-map-remove map k))
+            (values k v t))))))
+
+(defmacro with-tree-map-iterator ((name col) &body body)
+  `(fbind ((,name (tree-map-iterator ,col)))
+     ,@body))
+
+(iterate::defclause-driver (for key-val-vars in-tree-map map)
+  "Elements and keys of a Sycamore map."
+  (iterate::top-level-check)
+  (unless (consp key-val-vars)
+    (iterate::clause-error "~a should be a list of up to two variables: the first ~
+  for the keys, the second for the values." key-val-vars))
+  (let* ((iterator (gensym "SY-ITERATOR-"))
+         (more?    (gensym))
+         (var-spec `(values ,@key-val-vars ,more?))
+         (setqs    (iterate::do-dsetq var-spec `(,iterator)))
+         (test     `(and (not ,more?) (go ,iterate::*loop-end*))))
+    (setf iterate::*loop-end-used?* t)
+    (iterate::add-loop-body-wrapper `(with-tree-map-iterator (,iterator ,map)))
     (iterate::return-driver-code :next (list setqs test)
                                  :variable var-spec)))
 

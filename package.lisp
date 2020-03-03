@@ -17,6 +17,7 @@
     #:collecting)
   (:import-from #:cl-custom-hash-table
     #:define-custom-hash-table-constructor)
+  (:local-nicknames (#:sy #:sycamore))
   (:import-from #:fset
     #:equal?
     #:empty?
@@ -73,13 +74,20 @@
 
            #:regex
 
-           ;; Iterate drivers.
+           ;; Protocol drivers.
            #:in-seq
            #:on-seq
            #:in-indexed
            #:index-of-indexed
+
+           ;; Iterate drivers.
            #:in-map
            #:in-set
            #:in-fset-seq
            #:index-of-fset-seq
+
+           ;; Sycamore drivers.
+           #:in-tree-map
+           #:in-tree-set
+
            #:read-delimited-string))
