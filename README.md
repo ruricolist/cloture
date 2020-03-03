@@ -33,7 +33,7 @@ The design goal of Cloture is to keep things as close to Common Lisp as possible
 
 Lisp’s nil is used only as the empty list; Clojure nil, true, and false are singletons. To use Clojure predicates from Lisp, you can use `cloture:truthy?` to translate.
 
-    (cloture:truthy (|clojure.core|:|=| '(1 2 3) #(1 2 3)))
+    (cloture:truthy? (|clojure.core|:|=| '(1 2 3) #(1 2 3)))
     => T
 
 In this case, however, you should use `cloture:egal`, which tells you if two objects are equal according to Clojure’s idea of equality.
