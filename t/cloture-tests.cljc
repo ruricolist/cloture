@@ -710,6 +710,10 @@
         m2 {3 -7, 5 10, 15 20}]
     (is (= m1 m2))))
 
+(deftest test-sorted-map
+  (is (= '([:a 28] [:b 35] [:z 0])
+         (seq (sorted-map :z 0 :a 28 :b 35)))))
+
 (deftest test-map-vector-equality
   (let [v1 ["a" "b" "c"]
         v2 {0 "a" 1 "b" 2 "c"}]
