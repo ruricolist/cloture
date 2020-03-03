@@ -19,7 +19,8 @@
                "overlord"
                "global-vars"
                "esrap"
-               "iterate")
+               "iterate"
+               "sycamore")
   :in-order-to ((test-op (test-op "cloture-test")))
   :serial t
   :components ((:file "package")
