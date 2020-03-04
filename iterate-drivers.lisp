@@ -40,6 +40,7 @@
                    (terminate)
                    (multiple-value-bind (,temp ,elt)
                        (sycamore:tree-set-remove-min ,gset)
+                     (declare (ignore ,temp))
                      ,elt)))))))
 
 (defun tree-map-min (m)
