@@ -27,6 +27,10 @@
                          (set sy:tree-set)
                          &key)
   (sycamore:tree-set-list set))
+
+(defmethod fset:empty? ((set sy:tree-map))
+  (zerop (sycamore:tree-map-count set)))
+
 (fset:define-cross-type-compare-methods sy:tree-map)
 (fset:define-cross-type-compare-methods sy:tree-set)
 
