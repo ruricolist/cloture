@@ -28,7 +28,7 @@
     (let ((result (funcall comparator x y)))
       (case result
         (#.#_true -1)
-        (#.#_false 1)
+        (#.#_false 0)
         (t result)))))
 
 (defun-1 #_sorted-map (&rest keyvals)
