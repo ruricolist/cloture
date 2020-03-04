@@ -676,6 +676,8 @@ nested)."
 (defun conj (coll x &rest xs)
   (apply #'#_conj coll x xs))
 
+(define-modify-macro conjf (value) conj "Conj into a collection.")
+
 (defprotocol #_ISeq
   (#_first (seq))
   (#_rest (seq)))
