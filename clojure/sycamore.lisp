@@ -20,6 +20,13 @@
   (assert (not v-supplied?))
   (sycamore:tree-set-remove set k))
 
+(defmethod fset:empty? ((set sy:tree-set))
+  (zerop (sycamore:tree-set-count set)))
+
+(defmethod fset:convert ((type (eql 'list))
+                         (set sy:tree-set)
+                         &key)
+  (sycamore:tree-set-list set))
 (fset:define-cross-type-compare-methods sy:tree-map)
 (fset:define-cross-type-compare-methods sy:tree-set)
 
@@ -90,3 +97,45 @@
                          (always (and (truthy? (#_contains? other k1))
                                       (egal v1 (#_lookup other k1))))))
                   (coll= self other)))))
+
+(defun-1 #_sorted-set (&rest vals)
+  (apply #'#_sorted-set-by #'#_compare vals))
+
+(defun-1 #_sorted-set-by (comparator &rest vals)
+  (let* ((comparator (sycamore-comparator comparator))
+         (set (sy:make-tree-set comparator)))
+    (dolist (v vals set)
+      (conjf set v))))
+
+(extend-type sy:tree-set
+  #_ISeqable
+  (#_seq (set)
+         (if (zerop (sy:tree-set-count set)) #_nil
+             (sy:tree-set-list set)))
+  #_ISeq
+  (#_first (set)
+           ;; TODO sy:do-tree-set doesn't define a block.
+           (block nil
+             (sy:do-tree-set (x set)
+               (return x))))
+  (#_rest (set) (#_rest (#_seq set)))
+  #_INext
+  (#_next (set)
+          (if (zerop (sy:tree-set-count set)) #_nil
+              (#_next (#_seq set))))
+  ;; TODO Pending pull request.
+  ;; #_IEmptyableCollection
+  ;; (#_empty (set) (sy:empty-tree-set set))
+  #_ICollection
+  (#_-conj (set x) (sy:tree-set-insert set x))
+  #_IFn
+  (#_invoke (set arg) (#_lookup set arg))
+  #_IHash
+  (#_hash (set) (#_hash-ordered-coll set))
+  #_IEquiv
+  (#_equiv (self other)
+           (? (and (truthy? (#_set? other))
+                   (= (#_count self)
+                      (#_count other))
+                   (iter (for v in-tree-set self)
+                     (always (truthy? (#_contains? other v))))))))

@@ -2521,7 +2521,7 @@ Analogous to `mapcar'."
      (read-from-string string eof-error? eof))))
 
 (defun-1 #_set? (x)
-  (? (typep x 'set)))
+  (? (typep x '(or set sy:tree-set))))
 
 (defun-1 #_map? (x)
   (#_satisfies? '#_IMap x))

@@ -714,6 +714,14 @@
   (is (= '([:a 28] [:b 35] [:z 0])
          (seq (sorted-map :z 0 :a 28 :b 35)))))
 
+(deftest test-sorted-set
+  (is (= [1 2 3] (seq (sorted-set 1 2 3))))
+  (is (not (= [1 2 3] (sorted-set 1 2 3)))))
+
+
+(deftest test-set-not-seq
+  (is (not (seq? #{:x}))))
+
 (deftest test-map-vector-equality
   (let [v1 ["a" "b" "c"]
         v2 {0 "a" 1 "b" 2 "c"}]
