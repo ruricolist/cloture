@@ -712,12 +712,16 @@
 
 (deftest test-sorted-map
   (is (= '([:a 28] [:b 35] [:z 0])
-         (seq (sorted-map :z 0 :a 28 :b 35)))))
+         (seq (sorted-map :z 0 :a 28 :b 35))))
+  (is (not (= '([:a 28] [:b 35] [:z 0])
+              (sorted-map :z 0 :a 28 :b 35)))))
 
 (deftest test-sorted-set
   (is (= [1 2 3] (seq (sorted-set 1 2 3))))
   (is (not (= [1 2 3] (sorted-set 1 2 3)))))
 
+(deftest test-map-not-seq
+  (is (not (seq? {:x 1}))))
 
 (deftest test-set-not-seq
   (is (not (seq? #{:x}))))

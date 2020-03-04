@@ -687,7 +687,9 @@ nested)."
           (#_rest seq)))
 
 (defun-1 #_seq? (x)
-  (#_satisfies? '#_ISeq x))
+  (? (and (truthy? (#_satisfies? '#_ISeq x))
+          (falsy? (#_set? x))
+          (falsy? (#_map? x)))))
 
 (defun seq? (x)
   (and (truthy? (#_seq? x))
@@ -2392,6 +2394,8 @@ Analogous to `mapcar'."
   (if (seq? self)
       (if (seq? other)
           (and
+           (falsy? (#_map? other))
+           (falsy? (#_set? other))
            (truthy? (#_= (#_first self) (#_first other)))
            (truthy? (#_= (#_rest self) (#_rest other))))
           nil)
