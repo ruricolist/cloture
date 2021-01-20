@@ -3,7 +3,7 @@
   :license "EPL-1.0"
   :depends-on ("serapeum"
                "trivia.ppcre"
-               "cl-arrows"
+               "arrows"
                "fset"
                "named-readtables"
                "fare-utils"
