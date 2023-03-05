@@ -44,7 +44,7 @@
   (? (string$= suffix string)))
 
 (defn #_join
-  ((coll) (string-join coll))
+  ((coll) (string-join coll ""))
   ((sep coll) (string-join coll sep)))
 
 (defun replace-aux (s match replacement)

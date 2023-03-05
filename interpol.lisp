@@ -490,7 +490,7 @@ This function can be used directly outside of a read table by passing `recursive
     (if (every #'stringp result)
         ;; if all elements of RESULT are strings we can return a
         ;; constant string
-        (string-join result)
+        (string-join result "")
         ;; otherwise we have to wrap the PRINCs emitted above into a
         ;; WITH-OUTPUT-TO-STRING form
         `(with-output-to-string (,string-stream)
