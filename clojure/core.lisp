@@ -1648,7 +1648,7 @@ nested)."
   (class-of x))
 
 (defun-1 #_class? (x)
-  (typep x 'class))
+  (? (typep x 'class)))
 
 (defun-1 #_rand (&optional (n 1))
   (random (coerce n 'double-float)))
@@ -2770,7 +2770,7 @@ Analogous to `mapcar'."
   (distinct-aux (empty-set) coll))
 
 (defun-1 #_integer? (x)
-  (typep x 'integer))
+  (? (typep x 'integer)))
 
 (defun-1 #_every? (pred coll)
   (fbind ((pred (ifn-function pred)))
