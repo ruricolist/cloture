@@ -320,9 +320,6 @@ Also return (as a second value) a list of all the symbols bound."
         (attrs (and (typep (car body) 'map) (pop body))))
     (values body docs attrs)))
 
-(defun car+cdr (list)
-  (values (car list) (cdr list)))
-
 (defun var (sym &optional env)
   (or (find-var sym env)
       (error (clojure-error "Not a var: ~a" sym))))
