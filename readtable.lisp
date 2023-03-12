@@ -286,16 +286,18 @@
 
 (defun read-clojure-from-string (string
                                  &key (eof-error-p t)
-                                      eof-value
-                                      (start 0)
-                                      end
-                                      (package *package*))
-  (let ((*package* (find-package package)))
-    (with-input-from-string (in string :start start :end end)
-      (read-clojure in :eof-error-p eof-error-p
-                       :eof-value eof-value))))
+                                   eof-value
+                                   (start 0)
+                                   end
+                                   ((:package *package*)
+                                    (find-package "user")))
+  (with-input-from-string (in string :start start :end end)
+    (read-clojure in :eof-error-p eof-error-p
+                     :eof-value eof-value)))
 
-(defun slurp-clojure-stream (stream)
+(defun slurp-clojure-stream (stream
+                             &key ((:package *package*)
+                                   (find-package "user")))
   (loop for form
           = (read-clojure stream
                           :eof-error-p nil
@@ -303,18 +305,30 @@
         until (eql form eof)
         collect form))
 
-(defun slurp-clojure-file (file &key (package *package*))
-  (let ((*package* (find-package package)))
-    (with-input-from-file (stream file)
-      (slurp-clojure-stream stream))))
+(defun slurp-clojure-file (file &key ((:package *package*)
+                                      (find-package "user")))
+  (with-input-from-file (stream file)
+    (slurp-clojure-stream stream)))
 
-(defun load-clojure (file &rest args)
+(defun load-clojure (file &rest args
+                     &key ((:package *package*)
+                           (find-package "user"))
+                     &allow-other-keys)
+  (let ((*package* (find-package "user"))))
   (with-clojure-reader ()
     (apply #'load file args)))
 
-(defun compile-clojure (file &rest args)
-  (with-clojure-reader ()
-    (apply #'compile-file file args)))
+(defun compile-clojure (file &rest args
+                        &key ((:package *package*)
+                              (find-package "user"))
+                        &allow-other-keys)
+  (let ((*package* (find-package "user")))
+    (with-clojure-reader ()
+      (apply #'compile-file file args))))
 
-(defun compile-load-clojure (file)
+(defun compile-load-clojure (file &rest args
+                             &key
+                               ((:package *package*)
+                                (find-package "user"))
+                             &allow-other-keys)
   (load (compile-clojure file)))
