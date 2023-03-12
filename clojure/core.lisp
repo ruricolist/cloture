@@ -1630,10 +1630,11 @@ nested)."
     (ematch body
       ((list* dispatch-fn args)
        `(defalias-1 ,name
-            (make 'multimethod
-                  :name ',name
-                  :fn (ifn-function ,dispatch-fn)
-                  ,@args))))))
+            (make-instance
+             'multimethod
+             :name ',name
+             :fn (ifn-function ,dispatch-fn)
+             ,@args))))))
 
 (define-clojure-macro #_defmethod (name value params &body body)
   ;; Debugging is easier if we can see which dispatch value in the
