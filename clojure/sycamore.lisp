@@ -126,9 +126,8 @@
   (#_next (set)
           (if (zerop (sy:tree-set-count set)) #_nil
               (#_next (#_seq set))))
-  ;; TODO Pending pull request.
-  ;; #_IEmptyableCollection
-  ;; (#_empty (set) (sy:empty-tree-set set))
+  #_IEmptyableCollection
+  (#_empty (set) (sy:empty-tree-set set))
   #_ICollection
   (#_-conj (set x) (sy:tree-set-insert set x))
   #_IFn
