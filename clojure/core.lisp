@@ -2377,7 +2377,7 @@ nested)."
 Analogous to `mapl'."
   (let ((fn (ifn-function fn)))
     (nlet mapr ((seqs seqs))
-      (if (every #'seq? seqs)
+      (if (notany #'empty? seqs)
           (apply fn seqs)
           (return-from mapr nil))
       (mapr (mapcar #'#_rest seqs)))))
