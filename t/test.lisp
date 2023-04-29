@@ -7,4 +7,8 @@
 (in-readtable clojure-shortcut)
 
 (defun run-cloture-tests ()
-  (|clojure.test|:|run-tests| (find-package "cloture.tests")))
+  (let ((result
+          (|clojure.test|:|run-tests| (find-package "cloture.tests"))))
+    (when (and (zerop (fset:lookup result :|pass|))
+               (zerop (fset:lookup result :|fail|)))
+      (error "No tests run"))))
