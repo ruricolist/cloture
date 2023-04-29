@@ -691,9 +691,15 @@ nested)."
           (falsy? (#_set? x))
           (falsy? (#_map? x)))))
 
+(defun-1 #_seqable? (x)
+  (#_satisfies? '#_ISeqable x))
+
 (defun seq? (x)
   (and (truthy? (#_seq? x))
        (truthy? (#_seq x))))
+
+(defun seqable? (x)
+  (truthy? (#_seqable? x)))
 
 (defprotocol #_INext
   (#_next (seq)))
