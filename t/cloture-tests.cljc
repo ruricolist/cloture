@@ -692,9 +692,6 @@
   (is (= 1 (get (->Foo 1 2) :a)))
   (is (= true (get (->Foo 1 2) :c true)))
   (is (= 2 (count (->Foo 1 2))))
-  (is (= '([:a 1] [:b 2])
-         (map (fn [[k v]] [k v])
-              (->Foo 1 2))))
   (is (= (type (->Foo 1 2))
          (type (assoc (->Foo 1 2) :c 3))))
   (is (= (type (->Foo 1 2))
@@ -704,6 +701,11 @@
              type)))
   (is (not= (type (->Foo 1 2))
             (type (dissoc (->Foo 1 2) :b)))))
+
+(deftest test-defrecord-map
+  (is (= '([:a 1] [:b 2])
+         (map (fn [[k v]] [k v])
+              (->Foo 1 2)))))
 
 (deftest test-sorted-map-equality
   (let [m1 (sorted-map-by > 3 -7 5 10 15 20)
