@@ -1938,10 +1938,12 @@ nested)."
 
 (defun map/1 (fn col)
   (labels ((map/1 (fn col)
-             (if (not (seq? col)) '()
-                 (lazy-seq
-                   (cons (funcall fn (#_first col))
-                         (map/1 fn (#_rest col)))))))
+             (if (not (seqable? col)) '()
+                 (let ((col-seq (#_seq col)))
+                   (if (truthy? (#_empty? col-seq)) '()
+                       (lazy-seq
+                         (cons (funcall fn (#_first col-seq))
+                               (map/1 fn (#_rest col-seq)))))))))
     (map/1 (ifn-function fn) col)))
 
 (defun map/n (fn &rest cols)
