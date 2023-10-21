@@ -23,6 +23,9 @@
                "sycamore")
   :in-order-to ((test-op (test-op "cloture-test")))
   :serial t
+  :around-compile (lambda (thunk)
+                    (let ((*print-case* :upcase))
+                      (funcall thunk)))
   :components ((:file "package")
                (:static-file "core-syms.txt")
                (:static-file "pprint-syms.txt")
