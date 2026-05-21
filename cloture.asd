@@ -44,6 +44,7 @@
                 :serial t
                 :components ((:file "core")
                              (:file "sycamore")
+                             (:file "env")
                              (:file "core2-early")
                              (:file "core2")
                              (:file "pprint")

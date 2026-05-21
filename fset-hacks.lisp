@@ -53,42 +53,34 @@
     :seed seed :mix-only mix-only)))
 
 (defmethod murmurhash ((map map) &key (seed *default-seed*)
-                                      mix-only)
+                                   mix-only)
   (mask-int
    (murmurhash
     (list* '%set (size map) (map->alist map))
     :seed seed :mix-only mix-only)))
 
-;;; We want to be able to build on FSet's idea of equality, but we
-;;; also need FSet to take into account Clojure's idea of equality (so
-;;; that maps have the correct behavior). The following hack lets that
-;;; work by detecting and breaking recursion.
-
-(defmethod fset:compare (a b)
-  (handler-case
-      (without-recursion ()
-        (if (truthy? (|clojure.core|:|=| a b)) :equal :unequal))
-    (recursion-forbidden ()
-      (call-next-method))))
-
-(defmethod fset:compare :around ((a symbol) (b symbol))
-  (flet ((compare-by-name (a b)
-           (let ((name1 (symbol-name a))
-                 (name2 (symbol-name b)))
-             (eif (or (find #\/ name1)
-                      (find #\/ name2))
-                 (call-next-method)
-                 (if (equal name1 name2)
-                     :equal
-                     (call-next-method))))))
+(defun compare-symbols-clojure-style (a b)
+  (declare (symbol a b))
+  (labels ((next ()
+             (eql a b))
+           (compare-by-name (a b)
+             (let ((name1 (symbol-name a))
+                   (name2 (symbol-name b)))
+               (eif (or (find #\/ name1)
+                        (find #\/ name2))
+                   (next)
+                   (if (equal name1 name2)
+                       :equal
+                       (next))))))
+    (declare (inline next))
     (eif (keywordp a)
-        (call-next-method)
+        (next)
         (eif (keywordp b)
-            (call-next-method)
+            (next)
             (let ((package1 (symbol-package a)))
               (eif (clojure-package? package1)
                   (let ((package2 (symbol-package b)))
                     (eif (clojure-package? package2)
                         (compare-by-name a b)
-                        (call-next-method)))
-                  (call-next-method)))))))
+                        (next)))
+                  (next)))))))

@@ -87,12 +87,12 @@
                 (withf out k v)
                 (finally (return out)))))
           maps
-          :initial-value (empty-map)))
+          :initial-value (empty-clojure-map)))
 
 (defun merge-meta! (obj map)
   (setf (meta obj)
         (merge-maps (or (meta obj)
-                        (empty-map))
+                        (empty-clojure-map))
                     map)))
 
 (defun meta-ref (obj key)
@@ -103,7 +103,7 @@
   (synchronized (obj)
     (let ((meta
             (or (meta obj)
-                (empty-map))))
+                (empty-clojure-map))))
       (setf (meta obj)
             (with meta key value)))))
 
@@ -133,6 +133,33 @@
 (defun egal (x y)
   "Are X and Y equal according to Clojure?"
   (truthy? (|clojure.core|:= x y)))
+
+(defun egal-compare (x y)
+  (if (egal x y) :equal :unequal))
+
+(defun egal-hash (x)
+  ;; Use sxhash to reduce to the Lisp implementation's range.
+  (sxhash (|clojure.core|:|hash| x)))
+
+(fset:define-hash-function egal-compare egal-hash)
+
+(defun empty-clojure-map ()
+  (fset:empty-ch-map |clojure.core|:|nil| 'egal-compare 'egal-compare))
+
+(defun empty-clojure-set ()
+  (fset:empty-ch-set 'egal-compare))
+
+(defun clojure-map (&rest pairs)
+  (let ((col (fset:make-transient (empty-clojure-map))))
+    (doplist (k v pairs)
+      (fset:include! col k v))
+    (fset:make-persistent col)))
+
+(defun clojure-set (&rest elts)
+  (let ((col (fset:make-transient (empty-clojure-set))))
+    (dolist (elt elts)
+      (fset:include! col elt))
+    (fset:make-persistent col)))
 
 (defun dissect-seq-pattern (pats)
   (mvlet* ((pats (convert 'list pats))
@@ -236,12 +263,10 @@
     (collect v)))
 
 (defun list->map (l)
-  (let ((pairs (batches l 2 :even t)))
-    (reduce (lambda (map pair)
-              (destructuring-bind (key value) pair
-                (fset:with map key value)))
-            pairs
-            :initial-value (empty-map))))
+  (apply #'clojure-map l))
+
+(defun list->set (l)
+  (apply #'clojure-set l))
 
 ;;; TODO
 (defun obj->pattern (obj &key rest)
@@ -258,17 +283,17 @@ Also return (as a second value) a list of all the symbols bound."
                  (seq
                   (let ((pats (mapcar #'obj->pattern (convert 'list obj))))
                     `(or (clojuresque-list ,@pats)
-                       ;; NB this matches lists with too few arguments.
-                       (sequential ,@pats))))
+                         ;; NB this matches lists with too few arguments.
+                         (sequential ,@pats))))
                  ((cons (eql {}) t)
                   (obj->pattern (list->map (rest obj))))
                  (map
                   (let* ((alist (map->alist obj))
                          (as (cdr (pop-assoc :|as| alist)))
                          (or-map (or (cdr (pop-assoc :|or| alist))
-                                     (empty-map)))
+                                     (empty-clojure-map)))
                          (or-map
-                           (let ((map (empty-map)))
+                           (let ((map (empty-clojure-map)))
                              (iterate (for (k v) in-map or-map)
                                (withf map (make-keyword k) v)
                                (finally (return map)))))
@@ -369,10 +394,6 @@ Also return (as a second value) a list of all the symbols bound."
                      (string-gensym (slice (string tree) 0 -1))))
                   (otherwise tree)))
               tree)))
-
-(defun egal-hash (x)
-  ;; Use sxhash to reduce to the Lisp implementation's range.
-  (sxhash (|clojure.core|:|hash| x)))
 
 ;;; Hash tables that use Clojure's idea of equality.
 (define-custom-hash-table-constructor

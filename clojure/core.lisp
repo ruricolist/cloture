@@ -88,13 +88,6 @@ defmulti)."
   (defparameter *must-use-rest*
     '(or and)))
 
-(define-symbol-macro %clojure-env #.(fset:map (:lisp-env nil)))
-
-(eval-always
-  (defun get-clojure-env (lisp-env)
-    (fset:with (macroexpand-1 '%clojure-env lisp-env)
-               :lisp-env lisp-env)))
-
 (defmacro define-clojure-macro (name args &body body)
   (flet ((split-args-on (args kw)
            (if-let (tail (member kw args))
@@ -220,7 +213,7 @@ This is an issue for specializing on Clojure's nil, true, or false."
      ',name))
 
 (defun-1 #_ns-interns (ns)
-  (let ((map (empty-map))
+  (let ((map (empty-clojure-map))
         (ns (#_the-ns ns)))
     (do-symbols (s ns map)
       (when (eql (symbol-package s) ns)
@@ -920,7 +913,7 @@ nested)."
    (map :type map :accessor record-map
         :initarg map))
   (:default-initargs
-   map (empty-map)))
+   map (empty-clojure-map)))
 
 (defmethod print-object ((self record-object) stream)
   (print-unreadable-object (self stream :type t)
@@ -1011,10 +1004,11 @@ nested)."
        (declare-absolute-class ,type)
        (defun-1 ,constructor-name (,@fields)
          (,map-constructor-name
-          (fset:map
+          (clojure-map
            ,@(loop for field in fields
                    for key in keys
-                   collect `(,key ,field)))))
+                   collect key
+                   collect field))))
        (defun-1 ,arrow-constructor-name (,@fields)
          (,constructor-name ,@fields))
        (defun-1 ,map-constructor-name (map)
@@ -1077,6 +1071,13 @@ nested)."
 (extend-type package
   #_IEquiv
   (#_equiv (x y) (? (eql x y))))
+
+(extend-type symbol
+  #_IEquiv
+  (#_equiv (x y)
+           (if (symbolp y)
+               (? (compare-symbols-clojure-style x y))
+               #_false)))
 
 (defun-1 #_str (&rest args)
   (with-output-to-string (s)
@@ -1153,7 +1154,7 @@ nested)."
   (#_lookup (coll _ default) default)
   #_IAssociative
   (#_contains-key? (coll _) #_false)
-  (#_assoc (coll k v) (fset:map (k v)))
+  (#_assoc (coll k v) (fset:with (empty-clojure-map) k v))
   #_IEquiv
   (#_equiv (self other) (#_nil? other))
   #_IReduce
@@ -1178,7 +1179,7 @@ nested)."
   (#_lookup (coll _ default) default)
   (#_lookup (coll _) #_nil)
   #_IEquiv
-  (#_equiv (n x) (or (null x) (and (#_seq? x)) (#_empty? x)))
+  (#_equiv (n x) (or (null x) (and (#_seq? x) (#_empty? x))))
   #_IReduce
   (#_internal-reduce (coll _ start) start)
   (#_internal-reduce (coll f) (ifncall f)))
@@ -1379,7 +1380,7 @@ nested)."
   (list (map-entry-key self)
         (map-entry-val self)))
 
-(extend-type map
+(extend-type fset:map
   #_ISeqable
   (#_seq (map)
          (if (empty? map) #_nil
@@ -1394,7 +1395,7 @@ nested)."
   #_INext
   (#_next (map) (#_next (#_seq map)))
   #_IEmptyableCollection
-  (#_empty (map) (fset:empty-map))
+  (#_empty (map) (empty-clojure-map))
   #_ICollection
   (#_-conj (map x)
            (if (truthy? (#_map? x))
@@ -1414,14 +1415,17 @@ nested)."
                    (iterate (for (k v) in-map map)
                      (reducing-kv k v by f initial-value init))))
   #_IHash
-  (#_hash (coll) (#_hash-unordered-coll coll)))
+  (#_hash (coll) (#_hash-unordered-coll coll))
+  #_IEquiv
+  (#_equiv (x y) (? (and (truthy? (#_map? y))
+                         (fset:equal? x y)))))
 
 (extend-type hash-table
   #_IKVReduce
   (#_kv-reduce (ht f init)
                (hash-fold f init ht)))
 
-(extend-type set
+(extend-type fset:set
   #_ISeqable
   (#_seq (set)
          (if (empty? set) #_nil
@@ -1434,7 +1438,7 @@ nested)."
           (if (empty? set) #_nil
               (#_next (seq set))))
   #_IEmptyableCollection
-  (#_empty (set) (fset:empty-set))
+  (#_empty (set) (empty-clojure-set))
   #_ICollection
   (#_-conj (set x) (with set x))
   #_IFn
@@ -1444,7 +1448,7 @@ nested)."
   #_IEquiv
   (#_equiv (self other)
            (? (and (truthy? (#_set? other))
-                (fset:equal? self other)))))
+                   (fset:equal? self other)))))
 
 ;;; In Clojure only keywords (all keywords) and /qualified/ symbols
 ;;; are interned; unqualified symbols are not interned. Two
@@ -2059,7 +2063,7 @@ nested)."
                       (withf map1 key val2)))
                 (finally (return map1))))
             maps
-            :initial-value (empty-map))))
+            :initial-value (empty-clojure-map))))
 
 (defconstructor #_reduced
   (value t))
@@ -2508,7 +2512,7 @@ Analogous to `mapcar'."
   (let ((ks (convert 'list ks))
         (f (ifn-function f)))
     (labels ((rec (m ks)
-               (let ((m (if (nil? m) (empty-map) m)))
+               (let ((m (if (nil? m) (empty-clojure-map) m)))
                  (match ks
                    ((list) m)
                    ((list key)
@@ -2526,7 +2530,7 @@ Analogous to `mapcar'."
 
 (defn #_read-string
   ((string)
-   (#_read-string (empty-map) string))
+   (#_read-string (empty-clojure-map) string))
   ((map string)
    (let* ((*readtable* (find-readtable 'cloture))
           (eof (#_lookup map :|eof| :|eofthrow|))
@@ -2622,11 +2626,11 @@ Analogous to `mapcar'."
 
 (defclass transient-map (transient)
   ((coll :type map))
-  (:default-initargs :coll (empty-map)))
+  (:default-initargs :coll (empty-clojure-map)))
 
 (defclass transient-set (transient)
   ((coll :type set))
-  (:default-initargs :coll (empty-set)))
+  (:default-initargs :coll (empty-clojure-set)))
 
 (extend-protocol #_IEditableCollection
   seq
@@ -2776,7 +2780,7 @@ Analogous to `mapcar'."
                     (rec (#_rest coll)))))))))
 
 (defun-1 #_distinct (coll)
-  (distinct-aux (empty-set) coll))
+  (distinct-aux (empty-clojure-set) coll))
 
 (defun-1 #_integer? (x)
   (? (typep x 'integer)))
@@ -2804,7 +2808,7 @@ Analogous to `mapcar'."
 (defun-1 #_hash-map (&rest keys-and-vals &key &allow-other-keys)
   (reduce (lambda (map kv) (with map (first kv) (second kv)))
           (batches keys-and-vals 2 :even t)
-          :initial-value (empty-map)))
+          :initial-value (empty-clojure-map)))
 
 (defun-1 #_max-key (k x &rest xs)
   (reduce #'max (cons x xs) :key (ifn-function k)))
@@ -2917,9 +2921,10 @@ Implemented as an alist.")
   (#_hash (coll) (#_hash-ordered-coll coll)))
 
 (defun-1 #_select-keys (map keys)
+  (let ((map (empty-clojure-map))))
   (iterate (for key in-seq keys)
     (when (truthy? (#_contains? map key))
-      (collecting-map key (#_lookup map key)))))
+      (fset:includef map key (#_lookup map key)))))
 
 (defun-1 #_vector (&rest elts)
   (convert 'seq elts))

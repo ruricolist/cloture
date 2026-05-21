@@ -6,15 +6,15 @@ Cloture is in very early (pre-alpha) stages, but it has progressed far enough to
 
 Work so far has been focused on the critical path to get real Clojure code working in CL. But if there is interest from Clojurists I may work toward making it a more complete Clojure implementation.
 
+## Requirements
+
+You will need a fairly recent version of [FSet][] (>=2.4.4).
+
 ## Clojure vs. ClojureScript
 
 Cloture is closer to Clojure than to ClojureScript. Among other things, the plan is to support Clojure’s concurrency primitives (`atom`, `ref`, `agent`, `future`, `promise`). However, Cloture follows ClojureScript in making exclusive use of protocols - interfaces are not used or supported. Protocol names are also derived from ClojureScript.
 
 Like ClojureScript, Cloture supports `(catch :default)` to catch everything.
-
-## A note about FSet
-
-Cloture uses [FSet][] seqs, maps, and sets to implement Clojure vectors, maps, and sets, respectively. This involves [a few hacks][fset-hacks] to FSet that might possibly affect other programs using FSet.
 
 ## Starting a REPL
 
@@ -96,6 +96,5 @@ Beside the obvious: [cloture][] is a parliamentary procedure to end debate on a 
 [EPL]: https://opensource.org/licenses/EPL-1.0
 [ClojureScript]: https://clojurescript.org/
 [FSet]: https://github.com/slburson/fset
-[fset-hacks]: https://github.com/ruricolist/cloture/blob/master/fset-hacks.lisp
 [clojure.test]: https://github.com/ruricolist/cloture/blob/master/clojure/test.cljc
 [test suite]: https://github.com/ruricolist/cloture/blob/master/t/cloture-tests.cljc

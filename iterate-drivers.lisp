@@ -58,7 +58,7 @@
      ,@body))
 
 (defmacro-clause (collecting-set x &optional into var)
-  `(reducing ,x by #'fset:with into ,var initial-value (empty-set)))
+  `(reducing ,x by #'fset:with into ,var initial-value (empty-clojure-set)))
 
 (defmacro-clause (collecting-seq x &optional into var)
   `(reducing ,x by #'fset:with-last into ,var initial-value (empty-seq)))
@@ -68,7 +68,7 @@
     (fset:with map k v)))
 
 (defmacro-clause (collecting-map-aux kv &optional into var)
-  `(reducing ,kv by #'with-kv into ,var initial-value (empty-map)))
+  `(reducing ,kv by #'with-kv into ,var initial-value (empty-clojure-map)))
 
 (defmacro collecting-map (k v &rest args)
   `(collecting-map-aux (cons ,k ,v) ,@args))

@@ -5,9 +5,10 @@
 
 (defpackage :cloture.qq
   (:use :uiop :fare-utils :cl)
-  (:import-from :fset
-    :seq :convert :empty-map :empty-seq :empty-set)
-  (:import-from :cloture :clojurize :[] :|#{}| :{} :list->map :autogensyms)
+  (:import-from :fset :seq :convert :empty-seq)
+  (:import-from :cloture
+   :clojurize :[] :|#{}| :{} :list->map :list->set :autogensyms
+   :empty-clojure-set :empty-clojure-map)
   (:shadowing-import-from :fset :map :set)
   (:shadow #:list #:list* #:cons #:append #:nconc #:quote)
   (:shadow #:kwote #:quotep #:n-vector #:make-vector)
@@ -42,7 +43,7 @@
 (defun make-vector (l) (coerce l 'simple-vector))
 (defun make-seq (l) (convert 'seq l))
 (defun make-map (l) (list->map l))
-(defun make-set (l) (convert 'set l))
+(defun make-set (l) (list->set l))
 (defun n-vector (n contents)
   (if (null n) (make-vector contents)
       (let ((a (make-array n :element-type t)))
@@ -143,7 +144,7 @@
 (defun k-n-set (n l)
   (cond
     ((null l)
-     (k-literal (empty-set)))
+     (k-literal (empty-clojure-set)))
     ((quotep l)
      (k-literal (n-set n (single-arg l))))
     (n (list 'n-set n l))
@@ -152,7 +153,7 @@
 (defun k-n-map (n l)
   (cond
     ((null l)
-     (k-literal (empty-map)))
+     (k-literal (empty-clojure-map)))
     ((quotep l)
      (k-literal (n-map n (single-arg l))))
     (n (list 'n-map n l))
