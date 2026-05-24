@@ -316,9 +316,9 @@
   (is (nil? (seq [])))
   (is (ALEXANDRIA:SET-EQUAL '(1 2 3) (seq #{1 2 3})))
   (is (not= '([:x 1] [:y 2])
-            (seq {:X 1 :Y 2})))
+            (sort (seq {:X 1 :Y 2}))))
   (is (= '([:x 1] [:y 2])
-         (seq {:x 1 :y 2}))))
+         (sort (seq {:x 1 :y 2})))))
 
 (deftest test-empty?
   (is (empty? '()))

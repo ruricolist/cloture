@@ -69,6 +69,15 @@ defmulti)."
 (defun nil? (x)
   (eql x #_nil))
 
+(defun-1 #_boolean? (x)
+  (? (typep x 'clojure-boolean)))
+
+(defun-1 #_true? (x)
+  (? (eql x #_true)))
+
+(defun-1 #_false? (x)
+  (? (eql x #_false)))
+
 (defun-1 #_identical? (x y)
   (? (eq x y)))
 
@@ -742,6 +751,31 @@ nested)."
                   :protocol '#_IFn
                   :object ifn))))
 
+(defun predicate-comparator (pred)
+  (fbind (pred)
+    (lambda (x y)
+      (cond ((pred x y) -1)
+            ((pred y x) 1)
+            (t 0)))))
+
+(defun comparator-predicate (comp)
+  (fbind (comp)
+    (lambda (x y)
+      (eql (comp x y) -1))))
+
+(defun-1 #_comparator (pred)
+  (fbind ((pred (ifn-function pred)))
+    (named-lambda comparator (x y)
+      ;; NB Deviating slightly from Clojure by making comparator a
+      ;; no-op on functions that are already comparators.
+      (let ((lt (pred x y)))
+        (cond ((fixnump lt) lt)
+              ((truthy? lt) -1)
+              (t (let ((gt (pred y x)))
+                   (cond ((fixnump gt) gt)
+                         ((truthy? gt) 1)
+                         (t 0)))))))))
+
 (defun-1 #_ifn? (x)
   (#_satisfies? '#_IFn x))
 
@@ -1355,7 +1389,9 @@ nested)."
          (case n
            (0 (map-entry-key me))
            (1 (map-entry-val me))
-           (t not-found))))
+           (t not-found)))
+  #_IComparable
+  (#_compare (x y) (#_compare (seq x) y)))
 
 (defmethod fset:convert ((type (eql 'list))
                          (self map-entry)
@@ -2557,12 +2593,6 @@ Analogous to `mapcar'."
 (defun-1 #_contains? (coll key)
   (? (not (eq not-there (#_get coll key not-there)))))
 
-(defun-1 #_aget (array idx &rest idxs)
-  (apply #'aref array idx idxs))
-
-(defun-1 #_aclone (array)
-  (copy-array array))
-
 (defun-1 #_vec (x)
   (convert 'seq x))
 
@@ -2902,10 +2932,11 @@ Implemented as an alist.")
   (#_hash (coll) (#_hash-ordered-coll coll)))
 
 (defun-1 #_select-keys (map keys)
-  (let ((map (empty-clojure-map))))
-  (iterate (for key in-seq keys)
-    (when (truthy? (#_contains? map key))
-      (fset:includef map key (#_lookup map key)))))
+  (let ((map (empty-clojure-map)))
+    (iterate (for key in-seq keys)
+      (when (truthy? (#_contains? map key))
+        (fset:includef map key (#_lookup map key))))
+    map))
 
 (defun-1 #_vector (&rest elts)
   (convert 'seq elts))

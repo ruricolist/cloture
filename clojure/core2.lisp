@@ -178,3 +178,33 @@
 
 (defn mapcat [f & colls]
   (apply concat (apply map f colls)))
+
+(defn aclone [arr]
+  (ALEXANDRIA:COPY-ARRAY arr))
+
+(defn aget
+  ([arr i] (CL:AREF arr i))
+  ([arr i & is] (CL:APPLY (CL:FUNCTION CL:AREF) arr i is)))
+
+(defn aset
+  ([arr i val] (CL:SETF (CL:AREF arr i) val))
+  ([arr i j & iv]
+   (CL:SETF (CL:APPLY (CL:FUNCTION CL:AREF) arr i j (CL:BUTLAST iv))
+            (ALEXANDRIA:LASTCAR iv))))
+
+;;; TODO Return vectors?
+
+(defn sort
+  ([coll] (sort compare coll))
+  ([comp coll]
+   (if (seq coll)
+     (seq (CL:STABLE-SORT
+           (to-array coll)
+           (CLOTURE::COMPARATOR-PREDICATE
+            (comparator comp))))
+     nil)))
+
+(defn sort-by
+  ([keyfn coll] (sort-by keyfn compare coll))
+  ([keyfn comp coll]
+   (sort (fn [x y] (compare (keyfn x) (keyfn y))) coll)))
