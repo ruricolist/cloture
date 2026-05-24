@@ -43,6 +43,7 @@
                (:module "clojure"
                 :serial t
                 :components ((:file "core")
+                             (:file "core-vars")
                              (:file "sycamore")
                              (:file "env")
                              (:file "core2-early")

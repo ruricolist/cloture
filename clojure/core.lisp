@@ -234,32 +234,15 @@ This is an issue for specializing on Clojure's nil, true, or false."
        ,@(loop for (clj cl) in pairs
                collect `(expose-to-clojure-1 ,clj ,cl)))))
 
-(expose-to-clojure
-  #_*out* *standard-output*
-  #_*err* *standard-error*
-  #_*in* *standard-input*
-  #_*ns* *package*)
-
-(expose-to-clojure
-  #_*1 *
-  #_*2 **
-  #_*3 ***)
-
-(expose-to-clojure
-  #_*print-length* *print-length*
-  #_*print-level* *print-level*
-  #_*print-readably* *print-readably*
-  #_*read-eval* *read-eval*)
-
 (defmacro with-syms-fbound (syms &body body)
   (assert (every #'symbolp syms))
   (assert (notany #'keywordp syms))
   (let ((syms (remove '_ syms :test #'string=)))
     (with-unique-names (args)
-      `(macrolet ,(loop for sym in syms
-                        collect `(,sym (&rest ,args)
-                                       (list* 'ifncall ',sym ,args)))
-         ,@body))))
+                       `(macrolet ,(loop for sym in syms
+                                         collect `(,sym (&rest ,args)
+                                                        (list* 'ifncall ',sym ,args)))
+                          ,@body))))
 
 (define-clojure-macro clojure-let (bindings &body body)
   (match bindings
@@ -1521,7 +1504,6 @@ nested)."
           (ifn-apply f (symbol-value root) args))))
 
 (defvar *assert* #_true)
-(expose-to-clojure #_*assert* *assert*)
 
 (define-clojure-macro #_assert (test &optional message)
   `(when (truthy? *assert*)
@@ -2676,7 +2658,6 @@ Analogous to `mapcar'."
   (mask-int (murmurhash::hash-integer count hash-basis t)))
 
 (defvar *unchecked-math* #_false)
-(expose-to-clojure #_*unchecked-math* *unchecked-math*)
 
 (declaim
  (inline
@@ -2928,3 +2909,7 @@ Implemented as an alist.")
 
 (defun-1 #_vector (&rest elts)
   (convert 'seq elts))
+
+;;; Needed for bootstrapping.
+(defun-1 #_empty? (xs)
+  (#_not (#_seq xs)))

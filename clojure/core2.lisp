@@ -57,9 +57,6 @@
   ([map k] (get map k nil))
   ([map k not-found] (lookup map k not-found)))
 
-(defn empty? [xs]
-  (not (seq xs)))
-
 (defmacro if-let
   ([binds then] `(if-let ~binds ~then nil))
   ([[binds test] then else]
