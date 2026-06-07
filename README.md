@@ -45,7 +45,7 @@ Cloture exports Iterate drivers for working with collections that satisfy Clojur
 - `cloture:in-indexed` iterates over `IIndexed`.
 - `cloture:index-of-indexed` iterates over the indices of `IIndexed`.
 
-Clojure files can be integrated into Lisp systems by making the system definition depend on Cloture `(:defsystem-depends-on ("cloture")` and using `"cloture:cljc"` as the file type.
+Clojure files can be integrated into Lisp systems by making the system definition depend on Cloture `:defsystem-depends-on ("cloture")` and using `"cloture:cljc"` as the file type.
 
     (defsystem ...
       :defsystem-depends-on ("cloture")
