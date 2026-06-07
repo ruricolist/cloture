@@ -454,8 +454,8 @@ Also return (as a second value) a list of all the symbols bound."
   (match body
     ((list* (and cond-map (type map))
             body)
-     (let ((pre (lookup cond-map :|pre|))
-           (post (lookup cond-map :|post|)))
+     (let ((pre (fset:contains? cond-map :|pre|))
+           (post (fset:contains? cond-map :|post|)))
        (if (or pre post)
            (values body pre post)
            (trivia.fail:fail))))
