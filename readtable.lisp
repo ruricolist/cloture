@@ -295,6 +295,9 @@
     (read-clojure in :eof-error-p eof-error-p
                      :eof-value eof-value)))
 
+(defun eval-clojure-string (string &rest args)
+  (|clojure.core|:|eval| (apply #'read-clojure-from-string string args)))
+
 (defun slurp-clojure-stream (stream
                              &key ((:package *package*)
                                    (find-package "user")))

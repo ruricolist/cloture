@@ -40,6 +40,7 @@
            #:meta-ref
            #:read-clojure
            #:read-clojure-from-string
+           #:eval-clojure-string
            #:slurp-clojure-stream
            #:slurp-clojure-file
            #:load-clojure
