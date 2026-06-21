@@ -2932,11 +2932,12 @@ Implemented as an alist.")
   (#_hash (coll) (#_hash-ordered-coll coll)))
 
 (defun-1 #_select-keys (map keys)
-  (let ((map (empty-clojure-map)))
+  ;; TODO Use fset:restrict?
+  (let ((map-out (empty-clojure-map)))
     (iterate (for key in-seq keys)
       (when (truthy? (#_contains? map key))
-        (fset:includef map key (#_lookup map key))))
-    map))
+        (fset:includef map-out key (#_lookup map key))))
+    map-out))
 
 (defun-1 #_vector (&rest elts)
   (convert 'seq elts))
