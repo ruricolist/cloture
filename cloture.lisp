@@ -268,6 +268,9 @@
 (defun list->set (l)
   (apply #'clojure-set l))
 
+(defun list->seq (l)
+  (convert 'seq l))
+
 ;;; TODO
 (defun obj->pattern (obj &key rest)
   "Convert OBJ into a Trivia destructuring pattern.
