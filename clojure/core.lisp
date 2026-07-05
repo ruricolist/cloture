@@ -1391,7 +1391,7 @@ nested)."
            (1 (map-entry-val me))
            (t not-found)))
   #_IComparable
-  (#_compare (x y) (#_compare (seq x) y)))
+  (#_compare (x y) (#_compare x y)))
 
 (defmethod fset:convert ((type (eql 'list))
                          (self map-entry)
@@ -1437,7 +1437,10 @@ nested)."
   (#_hash (coll) (#_hash-unordered-coll coll))
   #_IEquiv
   (#_equiv (x y) (? (and (truthy? (#_map? y))
-                         (fset:equal? x y)))))
+                         (fset:equal?
+                          ;; Convert from replay maps.
+                          (convert 'clojure-map x)
+                          (convert 'clojure-map y))))))
 
 (extend-type hash-table
   #_IKVReduce
@@ -2632,53 +2635,29 @@ Analogous to `mapcar'."
    (persistent? :initform nil :type boolean
                 :accessor transient-persistent?)))
 
-(defclass transient-vector (transient)
-  ((coll :type seq))
-  (:default-initargs :coll (empty-seq)))
-
-(defclass transient-map (transient)
-  ((coll :type map))
-  (:default-initargs :coll (empty-clojure-map)))
-
-(defclass transient-set (transient)
-  ((coll :type set))
-  (:default-initargs :coll (empty-clojure-set)))
-
 (extend-protocol #_IEditableCollection
   seq
-  (#_as-transient (seq)
-                  (make 'transient-vector :coll seq))
+  (#_as-transient (seq) (fset:make-transient seq))
   map
-  (#_as-transient (map)
-                  (make 'transient-map :coll map))
+  (#_as-transient (map) (fset:make-transient map))
   set
-  (#_as-transient (set)
-                  (make 'transient-set :coll set)))
+  (#_as-transient (set) (fset:make-transient set)))
 
 (defun-1 #_transient (coll)
   (#_as-transient coll))
 
-(defun check-not-persistent (transient)
-  (when (transient-persistent? transient)
-    (error 'already-persistent
-           :transient transient)))
-
 (defun-1 #_persistent! (transient)
-  (check-not-persistent transient)
-  (with-slots (coll persistent?) transient
-    (prog1 (shiftf coll (#_empty coll))
-      (setf persistent? t))))
+  (unless (typep transient 'fset:transient-collection)
+    (error 'already-persistent :transient transient))
+  (fset:make-persistent transient))
 
 (defun-1 #_conj! (&optional (coll nil coll-supplied?)
                             (x nil x-supplied?))
   (cond ((not coll-supplied?)
-         (make 'transient-vector :coll (seq)))
+         (#_as-transient (seq)))
         ((not x-supplied?)
          coll)
-        (t
-         (prog1 coll
-           (setf (transient-coll coll)
-                 (conj (transient-coll coll) x))))))
+        (t (fset:include! coll x))))
 
 (define-clojure-macro #_set! (x val)
   `(setf ,x ,val))
@@ -2846,90 +2825,11 @@ Analogous to `mapcar'."
     (for v in-seq vals)
     (collecting-map k v)))
 
-(defclass array-map ()
-  ((alist :initarg :alist :reader array-map-alist)
-   (size :initarg :size :reader array-map-size))
-  (:documentation "A simple map that uses minimal space and maintains the insertion order.
-Implemented as an alist.")
-  (:default-initargs
-   :alist nil
-   :size 0))
-
-(fset:define-cross-type-compare-methods array-map)
-
-(defmethod fset:compare ((x array-map) (y array-map))
-  (let ((alist1 (array-map-alist x))
-        (alist2 (array-map-alist y)))
-    (set-equal alist1 alist2
-               :key #'car
-               :test #'egal)))
-
 (defun-1 #_array-map (&rest args)
-  (mvlet ((alist size
-           (loop for (k v . nil) on args
-                 for i from 0
-                 collect (cons k v) into alist
-                 finally (return (values alist i)))))
-    (make 'array-map
-          :alist alist
-          :size size)))
-
-(defun array-map->map (am)
-  (iterate (for (k . v) in (array-map-alist am))
-    (collecting-map k v)))
-
-(defun reduce-array-map (map f init)
-  (iterate (for (k . v) in (array-map-alist map))
-    (reducing-kv k v by f initial-value init)))
-
-(extend-type array-map
-  #_ICounted
-  (#_count (x) (array-map-size x))
-  #_ISeqable
-  (#_seq (x) (#_seq (array-map->map x)))
-  #_ISeq
-  (#_first (x) (#_first (#_seq x)))
-  (#_rest (x) (#_rest (#_seq x)))
-  #_INext
-  (#_next (x) (#_seq x))
-  #_IEmptyableCollection
-  (#_empty (m) (make 'array-map))
-  #_ICollection
-  (#_-conj (map x) (#_-conj (array-map->map map) x))
-  #_IFn
-  (#_invoke (x arg) (#_lookup x arg))
-  #_ILookup
-  (#_lookup (x key) (#_lookup x key #_nil))
-  (#_lookup (x key default)
-            (let* ((alist (array-map-alist x))
-                   (pair (assoc key alist :test #'egal)))
-              (if pair
-                  (cdr pair)
-                  default)))
-  #_IAssociative
-  (#_contains-key? (map key)
-                   (let* ((alist (array-map-alist map)))
-                     (? (assoc key alist :test #'egal))))
-  (#_assoc (map key value) (#_assoc (array-map->map map) key value))
-  #_IMap
-  (#_-dissoc (map key keys)
-             (mvlet* ((alist (array-map-alist map))
-                      (new-alist new-size
-                       (iterate
-                         (for pair in alist)
-                         (for x = (car pair))
-                         (unless (or (egal key x)
-                                     (member x keys :test #'egal))
-                           (collect pair into new-alist)
-                           (sum 1 into new-size))
-                         (finally (return (values pair new-size))))))
-               (make 'array-map
-                     :alist new-alist
-                     :size new-size)))
-  #_IKVReduce
-  (#_kv-reduce (map f init) (reduce-array-map map f init))
-  #_IHash
-  (#_hash (coll) (#_hash-ordered-coll coll)))
+  (let ((map (fset:make-transient (empty-clojure-replay-map))))
+    (doplist (k v args)
+      (fset:include! map k v))
+    (fset:make-persistent map)))
 
 (defun-1 #_select-keys (map keys)
   ;; TODO Use fset:restrict?

@@ -8,7 +8,8 @@
   (:import-from :fset :seq :convert :empty-seq)
   (:import-from :cloture
    :clojurize :[] :|#{}| :{} :list->map :list->set :autogensyms
-   :empty-clojure-set :empty-clojure-map)
+   :empty-clojure-set :empty-clojure-map
+   :empty-clojure-replay-map)
   (:shadowing-import-from :fset :map :set)
   (:shadow #:list #:list* #:cons #:append #:nconc #:quote)
   (:shadow #:kwote #:quotep #:n-vector #:make-vector)

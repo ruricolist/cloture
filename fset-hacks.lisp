@@ -84,3 +84,6 @@
                         (compare-by-name a b)
                         (next)))
                   (next)))))))
+
+(defmethod fset:hash-value ((rm fset:ch-replay-map))
+  (fset::ch-map-tree-hash-value (fset::ch-replay-map-contents rm) #'fset:hash-value))

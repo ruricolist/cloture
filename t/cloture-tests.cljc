@@ -52,6 +52,7 @@
   (is (not= '(1 2 3 4) [2 3 4])))
 
 (deftest read-map
+  ;; NB This depends on this array-map optimization.
   (is (= '([:x 1] [:y 2] [:z 3])
          (seq {:x 1 :y 2 :z 3})))
   ;; Clojure's behavior differs from FSet here; worth fixing?
@@ -316,9 +317,9 @@
   (is (nil? (seq [])))
   (is (ALEXANDRIA:SET-EQUAL '(1 2 3) (seq #{1 2 3})))
   (is (not= '([:x 1] [:y 2])
-            (sort (seq {:X 1 :Y 2}))))
+            (seq {:X 1 :Y 2})))
   (is (= '([:x 1] [:y 2])
-         (sort (seq {:x 1 :y 2})))))
+         (seq {:x 1 :y 2}))))
 
 (deftest test-empty?
   (is (empty? '()))

@@ -146,12 +146,39 @@
 (defun empty-clojure-map ()
   (fset:empty-ch-map |clojure.core|:|nil| 'egal-compare 'egal-compare))
 
+(defun clojure-map? (x)
+  (and (typep x 'fset:map)
+       (if (typep x 'fset:replay-map)
+           nil
+           (fset:equal? (empty-clojure-map)
+                        (fset:empty-map-like x)))))
+
+(defmethod convert ((to-type (eql 'clojure-map)) x &key)
+  (cond ((clojure-map? x) x)
+        ((typep x 'fset:map)
+         (let ((map (empty-clojure-map)))
+           (fset:do-map (k v x)
+             (fset:includef map k v))
+           map))
+        (t
+         (convert 'clojure-map (convert 'map x)))))
+
+(defun empty-clojure-replay-map ()
+  (fset:empty-ch-replay-map |clojure.core|:|nil| 'egal-compare 'egal-compare))
+
 (defun empty-clojure-set ()
   (fset:empty-ch-set 'egal-compare))
 
-(defun clojure-map (&rest pairs)
-  (let ((col (fset:make-transient (empty-clojure-map))))
-    (doplist (k v pairs)
+(defun clojure-map (&rest plist)
+  "Construct a clojure map from PAIRS.
+This is used when constructing literal maps, so it may actually return
+an array map below a given threshold."
+  (let* ((empty-map
+           (if (length> plist 16)
+               (empty-clojure-map)
+               (empty-clojure-replay-map)))
+         (col (fset:make-transient empty-map)))
+    (doplist (k v plist)
       (fset:include! col k v))
     (fset:make-persistent col)))
 
@@ -276,7 +303,39 @@
   "Convert OBJ into a Trivia destructuring pattern.
 Also return (as a second value) a list of all the symbols bound."
   (let ((syms (queue)))
-    (labels ((obj->pattern (obj)
+    (labels ((alist->pattern (alist)
+               (let* ((as (cdr (pop-assoc :|as| alist)))
+                      (or-map (or (cdr (pop-assoc :|or| alist))
+                                  (empty-clojure-map)))
+                      (or-map
+                        (let ((map (empty-clojure-map)))
+                          (iterate (for (k v) in-map or-map)
+                            (withf map (make-keyword k) v)
+                            (finally (return map)))))
+                      (keys (cdr (pop-assoc :|keys| alist)))
+                      (strs (cdr (pop-assoc :|strs| alist)))
+                      (syms (cdr (pop-assoc :|syms| alist)))
+                      (alist
+                        (append
+                         (and keys
+                              (loop for key in (convert 'list keys)
+                                    collect `(,key . ,(make-keyword key))))
+                         (and strs
+                              (loop for str in (convert 'list strs)
+                                    collect `(,str . ,(string str))))
+                         (and syms
+                              (loop for sym in (convert 'list syms)
+                                    collect `(,sym . ',sym)))
+                         alist))
+                      (list
+                        (loop for (obj . key) in alist
+                              for default = (|clojure.core|:|lookup| or-map key)
+                              for pat = (obj->pattern obj)
+                              collect (list pat key default))))
+                 (if rest
+                     `(rest-associative ,list :as ,as)
+                     `(associative ,list :as ,as))))
+             (obj->pattern (obj)
                (etypecase obj
                  (keyword obj)
                  ((eql |clojure.core|:&) obj)
@@ -290,39 +349,7 @@ Also return (as a second value) a list of all the symbols bound."
                          (sequential ,@pats))))
                  ((cons (eql {}) t)
                   (obj->pattern (list->map (rest obj))))
-                 (map
-                  (let* ((alist (map->alist obj))
-                         (as (cdr (pop-assoc :|as| alist)))
-                         (or-map (or (cdr (pop-assoc :|or| alist))
-                                     (empty-clojure-map)))
-                         (or-map
-                           (let ((map (empty-clojure-map)))
-                             (iterate (for (k v) in-map or-map)
-                               (withf map (make-keyword k) v)
-                               (finally (return map)))))
-                         (keys (cdr (pop-assoc :|keys| alist)))
-                         (strs (cdr (pop-assoc :|strs| alist)))
-                         (syms (cdr (pop-assoc :|syms| alist)))
-                         (alist
-                           (append
-                            (and keys
-                                 (loop for key in (convert 'list keys)
-                                       collect `(,key . ,(make-keyword key))))
-                            (and strs
-                                 (loop for str in (convert 'list strs)
-                                       collect `(,str . ,(string str))))
-                            (and syms
-                                 (loop for sym in (convert 'list syms)
-                                       collect `(,sym . ',sym)))
-                            alist))
-                         (list
-                           (loop for (obj . key) in alist
-                                 for default = (|clojure.core|:|lookup| or-map key)
-                                 for pat = (obj->pattern obj)
-                                 collect (list pat key default))))
-                    (if rest
-                        `(rest-associative ,list :as ,as)
-                        `(associative ,list :as ,as)))))))
+                 (map (alist->pattern (map->alist obj))))))
       (values (obj->pattern obj)
               (qlist syms)))))
 
@@ -345,7 +372,8 @@ Also return (as a second value) a list of all the symbols bound."
 
 (defun body+docs+attrs (body)
   (let ((docs (and (stringp (car body)) (pop body)))
-        (attrs (and (typep (car body) 'map) (pop body))))
+        (attrs (and (typep (car body) 'map)
+                    (pop body))))
     (values body docs attrs)))
 
 (defun var (sym &optional env)
