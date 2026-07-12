@@ -2633,23 +2633,31 @@ Analogous to `mapcar'."
   ((coll :initarg :coll :type t
          :accessor transient-coll)
    (persistent? :initform nil :type boolean
-                :accessor transient-persistent?)))
+                :accessor transient-persistent?))
+  (:documentation "Wrapper for a transient."))
+
+(defun make-transient (coll)
+  (make 'transient :coll (fset:make-transient coll)))
+
+(defun make-persistent (transient)
+  (prog1 (fset:make-persistent (transient-coll transient))
+    (setf (transient-persistent? transient) t)))
 
 (extend-protocol #_IEditableCollection
   seq
-  (#_as-transient (seq) (fset:make-transient seq))
+  (#_as-transient (seq) (make-transient seq))
   map
-  (#_as-transient (map) (fset:make-transient map))
+  (#_as-transient (map) (make-transient map))
   set
-  (#_as-transient (set) (fset:make-transient set)))
+  (#_as-transient (set) (make-transient set)))
 
 (defun-1 #_transient (coll)
   (#_as-transient coll))
 
 (defun-1 #_persistent! (transient)
-  (unless (typep transient 'fset:transient-collection)
+  (when (transient-persistent? transient)
     (error 'already-persistent :transient transient))
-  (fset:make-persistent transient))
+  (make-persistent transient))
 
 (defun-1 #_conj! (&optional (coll nil coll-supplied?)
                             (x nil x-supplied?))
