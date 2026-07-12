@@ -8,7 +8,7 @@ Work so far has been focused on the critical path to get real Clojure code worki
 
 ## Requirements
 
-You will need a fairly recent version of [FSet][] (>=2.4.4).
+You will need a fairly recent version of [FSet][] (>=2.4.6).
 
 ## Clojure vs. ClojureScript
 
