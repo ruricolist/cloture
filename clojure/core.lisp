@@ -1178,7 +1178,16 @@ nested)."
   (#_lookup (coll _ default) default)
   (#_lookup (coll _) #_nil)
   #_IEquiv
-  (#_equiv (n x) (or (null x) (and (#_seq? x)) (#_empty? x)))
+  (#_equiv (n x)
+           (? (or (null x)
+                  ;; Check it is a non-nil, non-map, non-set seq before
+                  ;; checking if empty: `empty?' has no method for a
+                  ;; non-seqable, and nil is not an empty list.
+                  (and (not (nil? x))
+                       (truthy? (#_seq? x))
+                       (falsy? (#_map? x))
+                       (falsy? (#_set? x))
+                       (truthy? (#_empty? x))))))
   #_IReduce
   (#_internal-reduce (coll _ start) start)
   (#_internal-reduce (coll f) (ifncall f)))
@@ -2408,7 +2417,15 @@ Analogous to `mapcar'."
            (truthy? (#_= (#_first self) (#_first other)))
            (truthy? (#_= (#_rest self) (#_rest other))))
           nil)
-      (not (seq? other))))
+      ;; SELF is an empty sequential collection. Only another empty
+      ;; sequential collection is equal to it -- not a number, not nil, and
+      ;; not an empty map or set.
+      (and (not (seq? other))
+           (not (nil? other))
+           (falsy? (#_map? other))
+           (falsy? (#_set? other))
+           (seqable? other)
+           (truthy? (#_empty? other)))))
 
 (defunion for-control
   skip
