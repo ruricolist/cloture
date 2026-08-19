@@ -181,3 +181,17 @@
 
 (defn mapcat [f & colls]
   (apply concat (apply map f colls)))
+
+(defn some? [x]
+  (not (nil? x)))
+
+(defn any? [_] true)
+
+(defn mapv [f & colls]
+  (vec (apply map f colls)))
+
+(defn filterv [pred coll]
+  (vec (filter pred coll)))
+
+(defn keep [f coll]
+  (filter some? (map f coll)))

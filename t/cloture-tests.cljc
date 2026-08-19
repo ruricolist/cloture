@@ -896,3 +896,30 @@
     [] 4
     '(1 2) '(1 2 3)
     '(1 2 3) [1 2 3 4]))
+
+(deftest test-some?
+  (is (false? (some? nil)))
+  (is (true? (some? false)))
+  (is (true? (some? 0)))
+  (is (true? (some? []))))
+
+(deftest test-any?
+  (is (true? (any? nil)))
+  (is (true? (any? 1)))
+  (is (true? (any? "x"))))
+
+(deftest test-mapv
+  (is (= [2 3 4] (mapv inc [1 2 3])))
+  (is (= [] (mapv inc [])))
+  (is (vector? (mapv inc [1 2 3])))
+  (is (= [5 7 9] (mapv + [1 2 3] [4 5 6]))))
+
+(deftest test-filterv
+  (is (= [2 4] (filterv even? [1 2 3 4])))
+  (is (= [] (filterv even? [1 3])))
+  (is (vector? (filterv even? [1 2]))))
+
+(deftest test-keep
+  (is (= '(1 3) (keep (fn [x] (if (odd? x) x nil)) [1 2 3])))
+  (is (= '(false) (keep (fn [x] (if (= x 1) false nil)) [1 2])))
+  (is (= '() (keep (fn [_] nil) [1 2 3]))))
