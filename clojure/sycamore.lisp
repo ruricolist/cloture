@@ -49,7 +49,7 @@
   (let* ((comparator (sycamore-comparator comparator))
          (smap (sy:make-tree-map comparator)))
     (loop for (key val) in (batches keyvals 2 :even t)
-          do (setf smap (#_assoc smap key val)))
+          do (setf smap (#_-assoc smap key val)))
     smap))
 
 (extend-type sy:tree-map
@@ -81,7 +81,7 @@
   (#_lookup (m key default) (sy:tree-map-find m key default))
   #_IAssociative
   (#_contains-key? (m key) (? (sy:tree-map-contains m key)))
-  (#_assoc (m key value) (sy:tree-map-insert m key value))
+  (#_-assoc (m key value) (sy:tree-map-insert m key value))
   #_IMap
   (#_-dissoc (m key keys)
              (#_reduce #'sy:tree-map-remove m (cons key keys)))

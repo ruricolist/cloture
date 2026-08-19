@@ -6,9 +6,19 @@
 (in-package :cloture.test)
 (in-readtable clojure-shortcut)
 
+(defun counter (result key)
+  (or (fset:lookup result key) 0))
+
 (defun run-cloture-tests ()
-  (let ((result
-          (|clojure.test|:|run-tests| (find-package "cloture.tests"))))
-    (when (and (zerop (fset:lookup result :|pass|))
-               (zerop (fset:lookup result :|fail|)))
-      (error "No tests run"))))
+  "Run the suite. Signals an error unless every test passed, so that
+`asdf:test-system' exits non-zero on a red suite."
+  (let* ((result (|clojure.test|:|run-tests| (find-package "cloture.tests")))
+         (pass (counter result :|pass|))
+         (fail (counter result :|fail|))
+         (errors (counter result :|error|)))
+    (when (and (zerop pass) (zerop fail) (zerop errors))
+      (error "No tests run"))
+    (unless (and (zerop fail) (zerop errors))
+      (error "~a failure~:p and ~a error~:p in ~a assertion~:p."
+             fail errors (+ pass fail errors)))
+    result))

@@ -44,6 +44,67 @@
                   (maybe-splice default)))
             (maybe-splice cl))))))
 
+(defun terminating-macro-char-p (char)
+  (multiple-value-bind (function non-terminating-p) (get-macro-character char)
+    (and function (not non-terminating-p))))
+
+(defun token-terminator-p (char)
+  "Does CHAR end a token? A comma is whitespace in the cloture readtable."
+  (or (whitespacep char)
+      (eql char #\,)
+      (terminating-macro-char-p char)))
+
+(defun read-token-string (stream)
+  "The characters up to the next token terminator."
+  (with-output-to-string (out)
+    (loop for char = (peek-char nil stream nil nil t)
+          while (and char (not (token-terminator-p char)))
+          do (write-char (read-char stream nil nil t) out))))
+
+(defun keyword-name (token)
+  "TOKEN's keyword name. A leading colon means the namespace is implied: a
+prefix is resolved as an alias of the current namespace, and no prefix means
+the current namespace itself."
+  (if (string^= ":" token)
+      (let* ((name (subseq token 1))
+             (slash (position #\/ name)))
+        (if slash
+            (let ((prefix (subseq name 0 slash)))
+              (string+ (or (ns-alias-target prefix) prefix)
+                       "/" (subseq name (1+ slash))))
+            (string+ (package-name *package*) "/" name)))
+      token))
+
+(defun read-clojure-keyword (stream char)
+  "Read a keyword, resolving a leading double colon against the namespace."
+  (if (eql (peek-char nil stream nil nil t) #\|)
+      (progn
+        (unread-char char stream)
+        (let ((*readtable* (find-readtable 'cloture-escaped-keyword)))
+          (read stream t nil t)))
+      (let ((token (read-token-string stream)))
+        (unless *read-suppress*
+          (callable-keyword (make-keyword (keyword-name token)))))))
+
+(defun maybe-invoke (forms)
+  "FORMS, as a call of its head. Clojure calls the result of an expression;
+Common Lisp permits only a symbol or a lambda in that position."
+  (if (and (consp (first forms))
+           ;; A lambda is already legal in this position, and a vector head is
+           ;; an fn arity clause -- ([x] body) -- not a call.
+           (not (member (car (first forms)) (list 'cl:lambda '[]))))
+      (list* '%invoke forms)
+      forms))
+
+(defun read-clojure-list (stream char)
+  "Read a parenthesized Clojure form, fbinding every keyword literal in it.
+Returns the form as a list."
+  (declare (ignore char))
+  (let ((forms (read-delimited-list #\) stream t)))
+    (unless *read-suppress*
+      (fbind-keywords-in forms))
+    (maybe-invoke forms)))
+
 (defun read-nothing (stream char arg)
   (declare (ignore char arg))
   (let ((*read-suppress* t))
@@ -75,7 +136,7 @@
 
 (defun read-quote (stream char)
   (declare (ignore char))
-  `(|clojure.core|:|quote| ,(subread stream)))
+  `(|clojure.core|:|quote| ,(uninvoke (subread stream))))
 
 (defvar *anon*)
 
@@ -112,7 +173,8 @@
             (rest (and variadic? '(&rest %&))))
         ;; NB This must return a lambda so it can be used in function position.
         `(lambda (,@pos-args ,@rest)
-           ,forms)))))
+           (with-syms-fbound (,@pos-args ,@(and variadic? '(%&)))
+             ,forms))))))
 
 (defun read-anon (stream char arg)
   (declare (ignore char arg))
@@ -123,7 +185,7 @@
              (*anon* anon)
              (forms
                (let ((*readtable* (find-readtable 'function-literal)))
-                 (read-delimited-list #\) stream t))))
+                 (maybe-invoke (read-delimited-list #\) stream t)))))
         (function-literal-lambda anon forms))))
 
 (defun read-%arg (stream char)
@@ -138,7 +200,7 @@
                        (cons next
                              (loop while (digit-char-p (peek-char nil stream))
                                    collect (read-char stream nil nil t))))
-                     (chars (coerce 'string chars))
+                     (chars (coerce chars 'string))
                      (n (parse-integer chars)))
                 (%n n)))
              (t
@@ -218,6 +280,10 @@
   (:case :preserve)
   ;; Clojure quote.
   (:macro-char #\' 'read-quote)
+  ;; Lists, with callable keywords.
+  (:macro-char #\( 'read-clojure-list)
+  ;; Keywords, with ::name resolved against the namespace.
+  (:macro-char #\: 'read-clojure-keyword t)
   ;; Clojure characters.
   (:macro-char #\\ 'read-clojure-char)
   ;; Clojure numbers.
@@ -248,6 +314,10 @@
   (:dispatch-macro-char #\# #\( 'read-anon)
   ;; Read eval.
   (:dispatch-macro-char #\# #\= 'read-eval))
+
+(defreadtable cloture-escaped-keyword
+  (:merge cloture)
+  (:syntax-from :standard #\: #\:))
 
 (defreadtable function-literal
   (:merge cloture)
@@ -315,8 +385,10 @@
                            (find-package "user"))
                      &allow-other-keys)
   (let ((*package* (find-package "user"))))
-  (with-clojure-reader ()
-    (apply #'load file args)))
+  (multiple-value-prog1
+      (with-clojure-reader ()
+        (apply #'load file args))
+    (fbind-all-keywords)))
 
 (defun compile-clojure (file &rest args
                         &key ((:package *package*)

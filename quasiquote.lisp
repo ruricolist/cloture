@@ -34,9 +34,16 @@
 ;; Note that we want our own tokens for decompilation reasons,
 ;; but as functions they must evaluate the usual way.
 (defun list (&rest r) r) ;; (apply #'cl:list r)
-(defun list* (&rest r) (apply #'cl:list* r))
-(defun cons (x y) (cl:cons x y))
-(defun append (&rest r) (apply #'cl:append r))
+(defun list* (&rest r)
+  ;; The tail is spliced, so it must be a list before cl:list* consumes it.
+  (apply #'cl:list*
+         (cl:append (cl:butlast r)
+                    (cl:list (cloture::splice-clojure-seq (cl:car (cl:last r)))))))
+(defun cons (x y) (cl:cons x (cloture::splice-clojure-seq y)))
+(defun append (&rest r)
+  ;; Clojure splices any seqable, so a lazy-seq or an FSet collection must
+  ;; become a list before cl:append sees it as a tail.
+  (apply #'cl:append (cl:mapcar #'cloture::splice-clojure-seq r)))
 (defun nconc (&rest r) (apply #'cl:nconc r))
 ;; These supporting functions don't have a standard name
 (defun make-vector (l) (coerce l 'simple-vector))
@@ -479,12 +486,27 @@ of the result of the top operation applied to the expression"
        (k-n-set nil (quasiquote-expand
                      (read-delimited-list #\} stream t))))))
 
+(defun uninvoke-template (form)
+  "FORM with cloture's %invoke markers removed from its template parts.
+An unquoted subform is code, and keeps them."
+  (cond ((not (consp form)) form)
+        ((or (unquotep form)
+             (unquote-splicing-p form)
+             (unquote-nsplicing-p form))
+         form)
+        (t
+         (let ((form (if (eq (cl:car form) 'cloture::%invoke)
+                         (cl:cdr form)
+                         form)))
+           (cl:cons (uninvoke-template (cl:car form))
+                    (uninvoke-template (cl:cdr form)))))))
+
 (defun read-read-time-backquote (stream char)
   (declare (ignore char))
-  (values (autogensyms (macroexpand-1 (read-quasiquote stream)))))
+  (values (autogensyms (macroexpand-1 (uninvoke-template (read-quasiquote stream))))))
 (defun read-macroexpand-time-backquote (stream char)
   (declare (ignore char))
-  (read-quasiquote stream))
+  (uninvoke-template (read-quasiquote stream)))
 (defun read-backquote (stream char)
   #-quasiquote-at-macro-expansion-time (read-read-time-backquote stream char)
   #+quasiquote-at-macro-expansion-time (read-macroexpand-time-backquote stream char))

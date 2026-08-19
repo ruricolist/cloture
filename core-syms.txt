@@ -392,6 +392,9 @@ odd?
 or
 *out*
 parents
+parse-boolean
+parse-double
+parse-long
 partial
 partition
 partition-all

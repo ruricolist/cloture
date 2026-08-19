@@ -43,6 +43,8 @@
     nil))
 
 (defn conj
+  ([] [])
+  ([coll] coll)
   ([coll x] (-conj coll x))
   ([coll x & xs] (reduce -conj coll (cons x xs))))
 
@@ -115,7 +117,9 @@
   ([] [])
   ([to] to)
   ([to from]
-   (apply conj to (seq from))))
+   (apply conj to (seq from)))
+  ([to xform from]
+   (transduce xform conj to from)))
 
 (defn max
   ([x] x)
@@ -176,8 +180,139 @@
 (defn complement [f]
   (fn [& args] (not (apply f args))))
 
-(defn remove [pred coll]
-  (filter (complement pred) coll))
-
 (defn mapcat [f & colls]
   (apply concat (apply map f colls)))
+
+(defn some? [x]
+  (not (nil? x)))
+
+(defn any? [_] true)
+
+(defn mapv [f & colls]
+  (vec (apply map f colls)))
+
+(defn filterv [pred coll]
+  (vec (filter pred coll)))
+
+
+
+(defn vary-meta [obj f & args]
+  (with-meta obj (apply f (meta obj) args)))
+
+(defn assoc
+  ([map k v] (-assoc map k v))
+  ([map k v & kvs]
+   (let [m (-assoc map k v)]
+     (if (seq kvs)
+       (apply assoc m kvs)
+       m))))
+
+(defn update
+  ([m k f] (assoc m k (f (get m k))))
+  ([m k f & args] (assoc m k (apply f (get m k) args))))
+
+(defn frequencies [coll]
+  (reduce (fn [counts x] (assoc counts x (inc (get counts x 0)))) {} coll))
+
+(defn some [pred coll]
+  (let [s (seq coll)]
+    (if s
+      (let [v (pred (first s))]
+        (if v v (some pred (rest s))))
+      nil)))
+
+(defn not-any? [pred coll] (not (some pred coll)))
+
+(defn every? [pred coll]
+  (let [s (seq coll)]
+    (if s
+      (if (pred (first s)) (every? pred (rest s)) false)
+      true)))
+
+(defn not-every? [pred coll] (not (every? pred coll)))
+
+(defn take-while [pred coll]
+  (lazy-seq
+   (let [s (seq coll)]
+     (when s
+       (when (pred (first s))
+         (cons (first s) (take-while pred (rest s))))))))
+
+(defn drop-while [pred coll]
+  (let [s (seq coll)]
+    (if (and s (pred (first s)))
+      (drop-while pred (rest s))
+      s)))
+
+(defn split-at [n coll] [(vec (take n coll)) (vec (drop n coll))])
+
+(defn split-with [pred coll]
+  [(vec (take-while pred coll)) (vec (drop-while pred coll))])
+
+(defn not-empty [coll] (if (seq coll) coll nil))
+
+(defn interleave
+  ([] [])
+  ([c1] (lazy-seq c1))
+  ([c1 c2]
+   (lazy-seq
+    (let [s1 (seq c1) s2 (seq c2)]
+      (when (and s1 s2)
+        (cons (first s1) (cons (first s2) (interleave (rest s1) (rest s2)))))))))
+
+(defn map-indexed [f coll]
+  (let [step (fn step [idx s]
+               (lazy-seq
+                (let [s (seq s)]
+                  (when s
+                    (cons (f idx (first s)) (step (inc idx) (rest s)))))))]
+    (step 0 coll)))
+
+(defn keep-indexed [f coll]
+  (filter some? (map-indexed f coll)))
+
+(defn partition
+  ([n coll] (partition n n coll))
+  ([n step coll]
+   (lazy-seq
+    (let [s (seq coll)]
+      (when s
+        (let [p (vec (take n s))]
+          (when (= n (count p))
+            (cons p (partition n step (drop step s))))))))))
+
+(defn partition-all
+  ([n coll] (partition-all n n coll))
+  ([n step coll]
+   (lazy-seq
+    (let [s (seq coll)]
+      (when s
+        (cons (vec (take n s)) (partition-all n step (drop step s))))))))
+
+(defn run! [proc coll]
+  (reduce (fn [_ x] (proc x) nil) nil coll)
+  nil)
+
+(defn distinct? [& xs] (= (count xs) (count (set xs))))
+
+(defn requiring-resolve [sym]
+  (let [v (resolve sym)]
+    (if v
+      v
+      (do (require (symbol (namespace sym)))
+          (resolve sym)))))
+
+(defn some-fn [& preds]
+  (fn [& args]
+    (some (fn [p] (some p args)) preds)))
+
+(defn every-pred [& preds]
+  (fn [& args]
+    (every? (fn [p] (every? p args)) preds)))
+
+(defn coll? [x]
+  (and (not (string? x))
+       (or (vector? x) (map? x) (set? x) (seq? x))))
+
+(defn list? [x]
+  (and (coll? x) (not (vector? x)) (not (map? x)) (not (set? x))))

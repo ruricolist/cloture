@@ -79,7 +79,7 @@ defmulti)."
 (defun-1 #_even? (n) (? (evenp n)))
 
 (defmacro #_quote (x)
-  `(quote ,(clojurize x)))
+  `(quote ,(clojurize (uninvoke x))))
 
 (defun-1 #_eval (x)
   (eval (declojurize x)))
@@ -442,11 +442,16 @@ nested)."
   (apply #'#_refer :|clojure.core| args))
 
 (defun setup-qualified-names (p &optional prefix)
+  "Alias P's exports under P's own name, and under PREFIX when one is given."
   (let* ((package (find-package p))
-         (prefix (or prefix (package-name package))))
-    (dolist (export (package-exports package))
-      (let ((qname (string+ prefix "/" export)))
-        (ns-env-eval `(alias-from ,export ,qname))))))
+         (full (package-name package))
+         (names (remove-duplicates (list full (if prefix (string prefix) full))
+                                   :test #'equal)))
+    (dolist (name names)
+      (unless (equal name full)
+        (ns-env-eval `(eval-always (register-ns-alias ,name ,full))))
+      (dolist (export (package-exports package))
+        (ns-env-eval `(alias-from ,export ,(string+ name "/" export)))))))
 
 (defun-1 #_refer (ns &key exclude only rename)
   (let ((p (find-package ns))
@@ -593,6 +598,19 @@ nested)."
 
 (defun-1 #_throw (arg)
   (error arg))
+
+(defun-1 #_ex-info (msg map &optional (cause #_nil))
+  (#_ExceptionInfo. msg map cause))
+
+(defun-1 #_ex-data (x)
+  (if (typep x '#_ExceptionInfo)
+      (exception-info-data x)
+      #_nil))
+
+(defun-1 #_ex-message (x)
+  (if (typep x 'condition)
+      (#_.getMessage x)
+      #_nil))
 
 (def #_Throwable (find-class 'condition))
 
@@ -757,8 +775,8 @@ nested)."
 (defun ifn-function (ifn)
   (cond ((functionp ifn) ifn)
         ((keywordp ifn)
-         (lambda (map)
-           (#_lookup map ifn)))
+         (lambda (map &optional (not-found #_nil))
+           (#_lookup map ifn not-found)))
         ((satisfies? '#_IFn ifn)
          (lambda (&rest args)
            (apply #'#_invoke ifn args)))
@@ -801,7 +819,7 @@ nested)."
 
 (defprotocol #_IAssociative
   (#_contains-key? (coll k))
-  (#_assoc (coll k v)))
+  (#_-assoc (coll k v)))
 
 (defprotocol #_IMap
   (#_-dissoc (coll k ks)))
@@ -949,9 +967,9 @@ nested)."
   (#_next (x) (#_next (record-map x)))
   #_IAssociative
   (#_contains-key? (x key) (#_contains-key? (record-map x) key))
-  (#_assoc (x key value)
+  (#_-assoc (x key value)
            (make-instance (class-of x)
-                          'map (#_assoc (record-map x)
+                          'map (#_-assoc (record-map x)
                                         key value)))
   #_IMap
   (#_-dissoc (x key keys)
@@ -1070,6 +1088,21 @@ nested)."
   #_INext
   (#_next (x) (#_seq (#_rest x))))
 
+(extend-type |clojure.core|:|true|
+  #_Object
+  (#_toString (x) (declare (ignore x)) "true"))
+
+(extend-type |clojure.core|:|false|
+  #_Object
+  (#_toString (x) (declare (ignore x)) "false"))
+
+(extend-type symbol
+  #_Object
+  (#_toString (x)
+             (if (keywordp x)
+                 (string+ ":" (symbol-name x))
+                 (symbol-name x))))
+
 (extend-type <regex>
   #_Object
   (#_toString (x) (regex-string x)))
@@ -1129,7 +1162,10 @@ nested)."
 
 (extend-protocol #_ICounted
   #_nil (#_count (x) 0)
-  sequence (#_count (x) (length x))
+  sequence (#_count (x)
+                   (if (and (consp x) (not (alexandria:proper-list-p x)))
+                       (length (seq->list x))
+                       (length x)))
   seq (#_count (x) (size x))
   map (#_count (x) (size x))
   set (#_count (x) (size x))
@@ -1153,7 +1189,7 @@ nested)."
   (#_lookup (coll _ default) default)
   #_IAssociative
   (#_contains-key? (coll _) #_false)
-  (#_assoc (coll k v) (fset:map (k v)))
+  (#_-assoc (coll k v) (fset:map (k v)))
   #_IEquiv
   (#_equiv (self other) (#_nil? other))
   #_IReduce
@@ -1178,7 +1214,16 @@ nested)."
   (#_lookup (coll _ default) default)
   (#_lookup (coll _) #_nil)
   #_IEquiv
-  (#_equiv (n x) (or (null x) (and (#_seq? x)) (#_empty? x)))
+  (#_equiv (n x)
+           (? (or (null x)
+                  ;; Check it is a non-nil, non-map, non-set seq before
+                  ;; checking if empty: `empty?' has no method for a
+                  ;; non-seqable, and nil is not an empty list.
+                  (and (not (nil? x))
+                       (truthy? (#_seq? x))
+                       (falsy? (#_map? x))
+                       (falsy? (#_set? x))
+                       (truthy? (#_empty? x))))))
   #_IReduce
   (#_internal-reduce (coll _ start) start)
   (#_internal-reduce (coll f) (ifncall f)))
@@ -1288,10 +1333,11 @@ nested)."
 
 (extend-type fset:seq
   #_IVector
-  (#_assoc-n (coll val n)
-             (if (< n (size coll))
+  (#_assoc-n (coll n val)
+             (if (<= 0 n (size coll))
                  (with coll n val)
-                 (error (clojure-program-error "Bad index for ~a" coll))))
+                 (error (#_IndexOutOfBoundsException.
+                         (fmt "Bad index ~a for ~a" n coll)))))
   #_ISeq
   (#_first (x) (if (empty? x) #_nil (fset:first x)))
   (#_rest (x) (if (empty? x) () (fset:subseq x 1)))
@@ -1318,9 +1364,11 @@ nested)."
                  (fset:subseq c 0 (1- (size c)))))
   #_IAssociative
   (#_contains-key? (seq idx) (? (< -1 idx (size seq))))
-  (#_assoc (seq idx value)
-           (if (numberp idx)
-               (#_assoc-n seq idx value)))
+  (#_-assoc (seq idx value)
+           (if (integerp idx)
+               (#_assoc-n seq idx value)
+               (error (#_IllegalArgumentException.
+                       (fmt "Key must be integer: ~a" idx)))))
   #_IKVReduce
   (#_kv-reduce (seq f init)
                (if (empty? seq) seq
@@ -1404,7 +1452,7 @@ nested)."
   (#_invoke (x arg) (#_lookup x arg))
   #_IAssociative
   (#_contains-key? (map key) (? (fset:contains? map key)))
-  (#_assoc (map key value) (with map key value))
+  (#_-assoc (map key value) (with map key value))
   #_IMap
   (#_-dissoc (map key keys)
              (#_reduce #'less map (cons key keys)))
@@ -1691,8 +1739,16 @@ nested)."
   (find-package name))
 
 (defun-1 #_ns-resolve (ns sym)
+  "The var SYM names, or nil. A function var resolves to the function, a
+dynamic var to the symbol holding its value."
   (declare (ignore ns))
-  (macroexpand (assure symbol sym)))
+  (let ((expansion (macroexpand (assure symbol sym))))
+    (cond ((and (consp expansion) (eq (first expansion) 'function))
+           (let ((name (second expansion)))
+             (if (fboundp name) (fdefinition name) #_nil)))
+          ((not (eql expansion sym)) expansion)
+          ((fboundp sym) (fdefinition sym))
+          (t #_nil))))
 
 (defun-1 #_resolve (sym)
   (#_ns-resolve #_*ns* sym))
@@ -1700,7 +1756,7 @@ nested)."
 (defun-1 #_symbol (ns &optional name)
   (if (not (nil? name))
       (intern name (#_the-ns ns))
-      (intern name)))
+      (intern ns)))
 
 (defun-1 #_symbol? (x)
   (? (and (symbolp x) (not (keywordp x)))))
@@ -1951,13 +2007,56 @@ nested)."
     (map/1 (lambda (args) (apply fn args))
            (zip cols))))
 
+(defun transducer (step)
+  "A transducer whose two-argument arity is STEP, called with the reducing
+function and the reduction's result and input."
+  (lambda (rf)
+    (let ((rf (ifn-function rf)))
+      (lambda (&rest args)
+        (ematch args
+          ((list) (funcall rf))
+          ((list result) (funcall rf result))
+          ((list result input) (funcall step rf result input)))))))
+
+(defun map-transducer (f)
+  (let ((f (ifn-function f)))
+    (transducer (lambda (rf result input)
+                  (funcall rf result (funcall f input))))))
+
+(defun filter-transducer (pred)
+  (let ((pred (ifn-function pred)))
+    (transducer (lambda (rf result input)
+                  (if (truthy? (funcall pred input))
+                      (funcall rf result input)
+                      result)))))
+
+(defun remove-transducer (pred)
+  (let ((pred (ifn-function pred)))
+    (transducer (lambda (rf result input)
+                  (if (truthy? (funcall pred input))
+                      result
+                      (funcall rf result input))))))
+
+(defun keep-transducer (f)
+  (let ((f (ifn-function f)))
+    (transducer (lambda (rf result input)
+                  (let ((value (funcall f input)))
+                    (if (eql value #_nil)
+                        result
+                        (funcall rf result value)))))))
+
 (defun-1 #_map (fn &rest colls)
   (ematch colls
-    ((list) '())
+    ((list) (map-transducer fn))
     ((list coll) (map/1 fn coll))
     ((list* _ _) (apply #'map/n fn colls))))
 
-(defun-1 #_filter (pred coll)
+(defun-1 #_filter (pred &optional (coll nil coll-supplied?))
+  (if (not coll-supplied?)
+      (filter-transducer pred)
+      (filter-seq pred coll)))
+
+(defun filter-seq (pred coll)
   (fbind ((pred (ifn-function pred)))
     (if (not (seq? coll)) '()
         (lazy-seq
@@ -1965,7 +2064,7 @@ nested)."
             (if (not (seq? coll)) '()
                 (multiple-value-bind (first rest) (first+rest coll)
                   (if (truthy? (pred first))
-                      (cons first (#_filter pred rest))
+                      (cons first (filter-seq pred rest))
                       (filter* rest)))))))))
 
 (defun repeatedly (fn &optional n)
@@ -2408,7 +2507,15 @@ Analogous to `mapcar'."
            (truthy? (#_= (#_first self) (#_first other)))
            (truthy? (#_= (#_rest self) (#_rest other))))
           nil)
-      (not (seq? other))))
+      ;; SELF is an empty sequential collection. Only another empty
+      ;; sequential collection is equal to it -- not a number, not nil, and
+      ;; not an empty map or set.
+      (and (not (seq? other))
+           (not (nil? other))
+           (falsy? (#_map? other))
+           (falsy? (#_set? other))
+           (seqable? other)
+           (truthy? (#_empty? other)))))
 
 (defunion for-control
   skip
@@ -2514,9 +2621,9 @@ Analogous to `mapcar'."
                    ((list key)
                     (let* ((old (#_lookup m key))
                            (new (apply f old args)))
-                      (#_assoc m key new)))
+                      (#_-assoc m key new)))
                    ((list* key keys)
-                    (#_assoc m key (rec (#_lookup m key) keys)))))))
+                    (#_-assoc m key (rec (#_lookup m key) keys)))))))
       (rec m ks))))
 
 (defun-1 #_subvec (v start &optional end)
@@ -2578,7 +2685,12 @@ Analogous to `mapcar'."
   (copy-array array))
 
 (defun-1 #_vec (x)
-  (convert 'seq x))
+  ;; A cloture seq may be an improper list -- a cons whose tail is another
+  ;; seqable -- and handing one to FSet's converter faults the heap.
+  (convert 'seq
+           (if (and (consp x) (not (alexandria:proper-list-p x)))
+               (seq->list x)
+               x)))
 
 (defun-1 #_partial (fn &rest args)
   (apply #'partial fn args))
@@ -2781,6 +2893,30 @@ Analogous to `mapcar'."
 (defun-1 #_integer? (x)
   (? (typep x 'integer)))
 
+(defun-1 #_number? (x)
+  (? (typep x 'number)))
+
+(defun-1 #_float? (x)
+  (? (typep x 'float)))
+
+(defun-1 #_double? (x)
+  (? (typep x 'double-float)))
+
+(defun-1 #_int? (x)
+  (? (typep x 'integer)))
+
+(defun-1 #_pos-int? (x)
+  (? (and (typep x 'integer) (plusp x))))
+
+(defun-1 #_neg-int? (x)
+  (? (and (typep x 'integer) (minusp x))))
+
+(defun-1 #_nat-int? (x)
+  (? (and (typep x 'integer) (not (minusp x)))))
+
+(defun-1 #_boolean? (x)
+  (? (or (eq x #_true) (eq x #_false))))
+
 (defun-1 #_every? (pred coll)
   (fbind ((pred (ifn-function pred)))
     (if (iterate (for item in-seq coll)
@@ -2798,8 +2934,8 @@ Analogous to `mapcar'."
   (? (typep x 'fset:seq)))
 
 (defn #_keyword
-  ((name) (make-keyword name))
-  ((ns name) (make-keyword (string+ ns "/" name))))
+  ((name) (callable-keyword (make-keyword name)))
+  ((ns name) (callable-keyword (make-keyword (string+ ns "/" name)))))
 
 (defun-1 #_hash-map (&rest keys-and-vals &key &allow-other-keys)
   (reduce (lambda (map kv) (with map (first kv) (second kv)))
@@ -2895,7 +3031,7 @@ Implemented as an alist.")
   (#_contains-key? (map key)
                    (let* ((alist (array-map-alist map)))
                      (? (assoc key alist :test #'egal))))
-  (#_assoc (map key value) (#_assoc (array-map->map map) key value))
+  (#_-assoc (map key value) (#_-assoc (array-map->map map) key value))
   #_IMap
   (#_-dissoc (map key keys)
              (mvlet* ((alist (array-map-alist map))
@@ -2923,3 +3059,109 @@ Implemented as an alist.")
 
 (defun-1 #_vector (&rest elts)
   (convert 'seq elts))
+
+(defun seq->list (coll)
+  "COLL's elements as a Common Lisp list."
+  (nreverse (#_reduce (lambda (acc x) (cons x acc)) '() coll)))
+
+(defun sort-predicate (comp)
+  "A two-argument Common Lisp predicate from the Clojure comparator COMP."
+  (let ((fn (ifn-function comp)))
+    (lambda (a b)
+      (let ((result (funcall fn a b)))
+        (if (numberp result)
+            (minusp result)
+            (truthy? result))))))
+
+(defn #_sort
+  ((coll) (#_sort #'#_compare coll))
+  ((comp coll)
+   (convert 'seq (stable-sort (seq->list coll) (sort-predicate comp)))))
+
+(defn #_sort-by
+  ((keyfn coll) (#_sort-by keyfn #'#_compare coll))
+  ((keyfn comp coll)
+   (let ((key (ifn-function keyfn))
+         (pred (sort-predicate comp)))
+     (convert 'seq
+              (stable-sort (seq->list coll)
+                           (lambda (a b) (funcall pred (funcall key a) (funcall key b))))))))
+
+(defun-1 #_shuffle (coll)
+  (convert 'seq (alexandria:shuffle (seq->list coll))))
+
+(defun-1 #_rand-nth (coll)
+  (let ((list (seq->list coll)))
+    (if (null list)
+        (error (#_IndexOutOfBoundsException. "rand-nth on an empty collection"))
+        (nth (random (length list)) list))))
+
+(defun-1 #_parse-long (s)
+  (check-type s string)
+  (if (ppcre:scan "^[+-]?[0-9]+$" s)
+      (values (parse-integer s))
+      #_nil))
+
+(defun-1 #_parse-double (s)
+  (check-type s string)
+  (if (ppcre:scan "^[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?$" s)
+      (or (ignore-errors
+           (let ((value (with-standard-io-syntax
+                          (let ((*read-eval* nil)
+                                (*read-default-float-format* 'double-float))
+                            (read-from-string s)))))
+             (and (realp value) (float value 1d0))))
+          #_nil)
+      #_nil))
+
+(defun-1 #_parse-boolean (s)
+  (check-type s string)
+  (cond ((string= s "true") #_true)
+        ((string= s "false") #_false)
+        (t #_nil)))
+
+(defun-1 #_compare-and-set! (atom old new)
+  (? (atomics:cas (atom-value atom) old new)))
+
+(defun-1 #_namespace (x)
+  (etypecase x
+    (string #_nil)
+    (symbol
+     (let* ((name (symbol-name x))
+            (slash (position #\/ name)))
+       (cond ((and slash (plusp slash)) (subseq name 0 slash))
+             ((keywordp x) #_nil)
+             ((and (symbol-package x) (clojure-package? (symbol-package x)))
+              (package-name (symbol-package x)))
+             (t #_nil))))))
+
+(defn #_transduce
+  ((xform f coll)
+   (#_transduce xform f (funcall (ifn-function f)) coll))
+  ((xform f init coll)
+   (let ((rf (funcall (ifn-function xform) f)))
+     (funcall (ifn-function rf)
+              (#_reduce rf init coll)))))
+
+(defn #_keep
+  ((f) (keep-transducer f))
+  ((f coll)
+   (#_filter (lambda (x) (? (not (eql x #_nil))))
+             (#_map f coll))))
+
+(defn #_remove
+  ((pred) (remove-transducer pred))
+  ((pred coll)
+   (let ((pred (ifn-function pred)))
+     (#_filter (lambda (x) (? (not (truthy? (funcall pred x))))) coll))))
+
+(extend-type symbol
+  #_IDeref
+  (#_deref (x) (symbol-value x)))
+
+(extend-type function
+  #_IDeref
+  (#_deref (x) x))
+
+(defun-1 #_boolean (x)
+  (? (truthy? x)))

@@ -13,8 +13,14 @@
   (:documentation "Sub-root of all Clojure conditions.")
   (:default-initargs :cause #_nil)
   (:report (lambda (c s)
-             (with-slots (message) c
-               (format s "~a" message)))))
+             (cond ((slot-boundp c 'message)
+                    (format s "~a" (slot-value c 'message)))
+                   ((and (typep c 'simple-condition)
+                         (simple-condition-format-control c))
+                    (apply #'format s
+                           (simple-condition-format-control c)
+                           (simple-condition-format-arguments c)))
+                   (t (format s "~a" (type-of c)))))))
 
 (defmacro define-simple-error-constructor (name)
   (let* ((ctor-name (string+ name "."))
@@ -43,6 +49,9 @@
 (defcondition* #_IllegalStateException (#_RuntimeException) ())
 (define-simple-error-constructor #_IllegalStateException)
 
+(defcondition* #_IndexOutOfBoundsException (#_RuntimeException) ())
+(define-simple-error-constructor #_IndexOutOfBoundsException)
+
 (defcondition* #_ArityException (#_IllegalArgumentException)
   ((actual :initarg :actual)
    (name :initarg :name))
@@ -60,6 +69,12 @@
 
 (defcondition* #_AssertionError (#_Exception) ())
 (define-simple-error-constructor #_AssertionError)
+
+(defcondition* #_ExceptionInfo (#_RuntimeException)
+  ((data :initarg :data :reader exception-info-data)))
+
+(defun #_ExceptionInfo. (msg data &optional (cause #_nil))
+  (make-condition '#_ExceptionInfo :message msg :data data :cause cause))
 
 (defcondition* #_IllegalAccessError (#_Error) ()) ;Skipping some parents.
 (define-simple-error-constructor #_IllegalAccessError)

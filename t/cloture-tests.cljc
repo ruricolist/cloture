@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest is are testing]])
   (:require [clojure.string :as s])
   (:require [clojure.walk :as walk])
+  (:require [clojure.set :as set])
   (:require [cloture :refer [parse-integer]]))
 
 (deftest empty-test)
@@ -847,3 +848,384 @@
 (deftest test-parse-integer
   (is (= 234
          (parse-integer "1234x" :start 1 :junk-allowed true))))
+
+;;; A prefix is not an equal. Sequential equality must compare lengths in
+;;; both directions, and an empty sequential collection must not swallow
+;;; nil, a number, an empty map or an empty set.
+
+(deftest test-sequential-equality-is-length-sensitive
+  (is (= '(1 2 3) [1 2 3]))
+  (is (not= '(1 2) '(1 2 3)))
+  (is (not= '(1 2 3) '(1 2)))
+  (is (not= '(1 2 3) [1 2 3 4]))
+  (is (not= '(1 2 3 4) [1 2 3]))
+  (is (not= [1] [1 2]))
+  (is (not= [1 2] [1]))
+  (is (not= '([:x 1] [:y 2]) (seq {:x 1 :y 2 :z 3})))
+  (is (not= (map inc [1 2]) '(2 3 4))))
+
+(deftest test-empty-collection-equality
+  (testing "empty sequential collections are equal to each other"
+    (is (= () []))
+    (is (= [] ()))
+    (is (= (list) []))
+    (is (= (rest [1]) []))
+    (is (= (rest '(1)) ())))
+  (testing "an empty sequential collection is not equal to nil"
+    (is (not= () nil))
+    (is (not= nil ()))
+    (is (not= [] nil))
+    (is (not= nil [])))
+  (testing "an empty sequential collection is not equal to an empty map or set"
+    (is (not= () {}))
+    (is (not= [] {}))
+    (is (not= () #{}))
+    (is (not= [] #{})))
+  (testing "an empty sequential collection is not equal to a non-collection"
+    (is (not= [] 4))
+    (is (not= () 4))
+    (is (not= [] ""))
+    (is (not= () ""))))
+
+(deftest test-equality-is-symmetric
+  (are [x y] (= (= x y) (= y x))
+    () nil
+    [] nil
+    () []
+    [] {}
+    () #{}
+    [] 4
+    '(1 2) '(1 2 3)
+    '(1 2 3) [1 2 3 4]))
+
+(deftest test-some?
+  (is (false? (some? nil)))
+  (is (true? (some? false)))
+  (is (true? (some? 0)))
+  (is (true? (some? []))))
+
+(deftest test-any?
+  (is (true? (any? nil)))
+  (is (true? (any? 1)))
+  (is (true? (any? "x"))))
+
+(deftest test-mapv
+  (is (= [2 3 4] (mapv inc [1 2 3])))
+  (is (= [] (mapv inc [])))
+  (is (vector? (mapv inc [1 2 3])))
+  (is (= [5 7 9] (mapv + [1 2 3] [4 5 6]))))
+
+(deftest test-filterv
+  (is (= [2 4] (filterv even? [1 2 3 4])))
+  (is (= [] (filterv even? [1 3])))
+  (is (vector? (filterv even? [1 2]))))
+
+(deftest test-keep
+  (is (= '(1 3) (keep (fn [x] (if (odd? x) x nil)) [1 2 3])))
+  (is (= '(false) (keep (fn [x] (if (= x 1) false nil)) [1 2])))
+  (is (= '() (keep (fn [_] nil) [1 2 3]))))
+
+(deftest test-numeric-predicates
+  (testing "number?"
+    (is (true? (number? 1)))
+    (is (true? (number? 1.5)))
+    (is (false? (number? "1")))
+    (is (false? (number? nil))))
+  (testing "int?"
+    (is (true? (int? 1)))
+    (is (false? (int? 1.5)))
+    (is (false? (int? "1"))))
+  (testing "float? and double?"
+    (is (true? (float? 1.5)))
+    (is (false? (float? 1)))
+    (is (true? (double? 1.5)))
+    (is (false? (double? 1))))
+  (testing "signed integer predicates"
+    (is (true? (pos-int? 1)))
+    (is (false? (pos-int? 0)))
+    (is (false? (pos-int? -1)))
+    (is (false? (pos-int? 1.5)))
+    (is (true? (neg-int? -1)))
+    (is (false? (neg-int? 0)))
+    (is (true? (nat-int? 0)))
+    (is (true? (nat-int? 1)))
+    (is (false? (nat-int? -1)))))
+
+(deftest test-boolean?
+  (is (true? (boolean? true)))
+  (is (true? (boolean? false)))
+  (is (false? (boolean? nil)))
+  (is (false? (boolean? 0)))
+  (is (false? (boolean? "true"))))
+
+(deftest test-conj-arities
+  (is (= [] (conj)))
+  (is (= [1] (conj [1])))
+  (is (= [1 2] (conj [1] 2)))
+  (is (= [1 2 3] (conj [1] 2 3))))
+
+(deftest test-lower-case
+  (is (= "ab" (s/lower-case "AB")))
+  (is (= "ab1" (s/lower-case "Ab1")))
+  (is (= "" (s/lower-case ""))))
+
+(deftest test-symbol-one-arity
+  (testing "one argument names an unqualified symbol"
+    (is (symbol? (symbol "colour")))
+    (is (= "colour" (name (symbol "colour"))))
+    (is (= (symbol "colour") (symbol "colour"))))
+  (testing "two arguments name a symbol in that namespace"
+    (is (symbol? (symbol "clojure.core" "inc")))
+    (is (= "inc" (name (symbol "clojure.core" "inc"))))
+    (is (not= (symbol "inc") (symbol "clojure.core" "inc")))))
+
+(deftest test-vary-meta
+  (testing "the metadata map is passed through the fn"
+    (is (= {:a 1 :b 2}
+           (meta (vary-meta (with-meta [1 2] {:a 1}) assoc :b 2)))))
+  (testing "the value itself is unchanged"
+    (is (= [1 2] (vary-meta (with-meta [1 2] {:a 1}) assoc :b 2))))
+  (testing "no metadata means the fn sees nil"
+    (is (= {:b 2} (meta (vary-meta [1 2] assoc :b 2))))))
+
+(deftest test-ex-info
+  (testing "message and data round-trip"
+    (let [e (ex-info "boom" {:a 1})]
+      (is (= "boom" (ex-message e)))
+      (is (= {:a 1} (ex-data e)))))
+  (testing "an ex-info is throwable and catchable"
+    (is (= "boom" (try (throw (ex-info "boom" {:a 1}))
+                       (catch Exception e (ex-message e)))))
+    (is (= {:a 1} (try (throw (ex-info "boom" {:a 1}))
+                       (catch Exception e (ex-data e))))))
+  (testing "ex-data is nil for anything else"
+    (is (nil? (ex-data (Exception. "plain"))))
+    (is (nil? (ex-data 4)))
+    (is (nil? (ex-message 4)))))
+
+(deftest test-keyword-call
+  (testing "a keyword looks itself up in a map"
+    (is (= 1 (:a {:a 1 :b 2})))
+    (is (nil? (:missing {:a 1}))))
+  (testing "a second argument is the not-found value"
+    (is (= :dflt (:missing {:a 1} :dflt)))
+    (is (= 1 (:a {:a 1} :dflt))))
+  (testing "a keyword is callable as a higher-order function"
+    (is (= [1 2] (mapv :a [{:a 1} {:a 2}])))
+    (is (= [{:a 1}] (filterv :a [{:a 1} {:b 2}]))))
+  (testing "a keyword built at run time is callable too"
+    (is (= [1] (mapv (keyword "a") [{:a 1}])))
+    (is (= [nil] (mapv (keyword "b") [{:a 1}]))))
+  (testing "a namespaced keyword is callable"
+    (is (= 1 (:my.ns/a {:my.ns/a 1})))))
+
+(deftest test-assoc-arities
+  (testing "a map takes any number of key/value pairs"
+    (is (= {:a 1} (assoc {} :a 1)))
+    (is (= {:a 1 :b 2} (assoc {} :a 1 :b 2)))
+    (is (= {:a 1 :b 2 :c 3} (assoc {} :a 1 :b 2 :c 3)))
+    (is (= {:a 2} (assoc {:a 1} :a 2))))
+  (testing "a vector associates by index"
+    (is (= [:x 2 3] (assoc [1 2 3] 0 :x)))
+    (is (= [:x 2 :z] (assoc [1 2 3] 0 :x 2 :z)))
+    (is (= :x (get (assoc [1 2 3] 0 :x) 0))))
+  (testing "an index one past the end appends"
+    (is (= [1 2 3 4] (assoc [1 2 3] 3 4))))
+  (testing "a bad index is an error"
+    (is (thrown? Exception (assoc [1 2 3] 9 :oob)))
+    (is (thrown? Exception (assoc [1 2 3] :k :v)))))
+
+(deftest test-update
+  (is (= {:a 2} (update {:a 1} :a inc)))
+  (is (= {:a 3} (update {:a 1} :a + 2))))
+
+(deftest test-string-trim
+  (is (= "a b" (s/trim "  a b  ")))
+  (is (= "a  " (s/triml "  a  ")))
+  (is (= "  a" (s/trimr "  a  ")))
+  (is (= "a" (s/trim-newline "a\n")))
+  (is (= "a" (s/trim-newline "a\r\n"))))
+
+(deftest test-string-blank?
+  (is (true? (s/blank? "")))
+  (is (true? (s/blank? "   \t\n")))
+  (is (true? (s/blank? nil)))
+  (is (false? (s/blank? "a")))
+  (is (false? (s/blank? " a "))))
+
+(deftest test-string-capitalize
+  (is (= "Foo" (s/capitalize "fOO")))
+  (is (= "A" (s/capitalize "a")))
+  (is (= "" (s/capitalize ""))))
+
+(deftest test-string-split
+  (is (= ["a" "b" "c"] (s/split "a,b,c" #",")))
+  (is (= ["a" "b,c"] (s/split "a,b,c" #"," 2)))
+  (testing "trailing empty strings are dropped"
+    (is (= ["a" "" "b"] (s/split "a,,b,," #","))))
+  (is (= ["a" "b"] (s/split-lines "a\nb")))
+  (is (= ["a" "b"] (s/split-lines "a\r\nb"))))
+
+(deftest test-string-search
+  (is (true? (s/includes? "hello" "ell")))
+  (is (false? (s/includes? "hello" "z")))
+  (is (= 2 (s/index-of "hello" "l")))
+  (is (= 3 (s/last-index-of "hello" "l")))
+  (is (nil? (s/index-of "hello" "z"))))
+
+(deftest test-sort
+  (is (= [1 2 3] (sort [3 1 2])))
+  (is (= [3 2 1] (sort > [3 1 2])))
+  (is (= [] (sort [])))
+  (is (= ["a" "bb"] (sort-by count ["bb" "a"])))
+  (is (= [[1] [1 2]] (sort-by count [[1 2] [1]]))))
+
+(deftest test-frequencies
+  (is (= {:a 2 :b 1} (frequencies [:a :b :a])))
+  (is (= {} (frequencies []))))
+
+(deftest test-seq-additions
+  (is (= [1 3] (vec (take-while odd? [1 3 4 5]))))
+  (is (= [4 5] (vec (drop-while odd? [1 3 4 5]))))
+  (is (= [[1 2] [3]] (split-at 2 [1 2 3])))
+  (is (= [[1 3] [4]] (split-with odd? [1 3 4])))
+  (is (nil? (not-empty [])))
+  (is (= [1] (not-empty [1])))
+  (is (= [1 :a 2 :b] (vec (interleave [1 2] [:a :b]))))
+  (is (= [[0 :a] [1 :b]] (vec (map-indexed (fn [i x] [i x]) [:a :b]))))
+  (is (= [[1 2] [3 4]] (vec (partition 2 [1 2 3 4 5]))))
+  (is (= [[1 2] [3]] (vec (partition-all 2 [1 2 3]))))
+  (is (true? (distinct? 1 2 3)))
+  (is (false? (distinct? 1 2 2))))
+
+(deftest test-parse
+  (is (= 42 (parse-long "42")))
+  (is (= -7 (parse-long "-7")))
+  (is (nil? (parse-long "4x")))
+  (is (= 1.5 (parse-double "1.5")))
+  (is (nil? (parse-double "x")))
+  (is (true? (parse-boolean "true")))
+  (is (false? (parse-boolean "false")))
+  (is (nil? (parse-boolean "maybe"))))
+
+(deftest test-compare-and-set
+  (let [a (atom 1)]
+    (is (true? (compare-and-set! a 1 2)))
+    (is (= 2 @a))
+    (is (false? (compare-and-set! a 9 3)))
+    (is (= 2 @a))))
+
+(deftest test-namespace
+  (is (= "a" (namespace :a/b)))
+  (is (nil? (namespace :b))))
+
+(deftest test-transducers
+  (testing "into with a transducer"
+    (is (= [2 3 4] (into [] (map inc) [1 2 3])))
+    (is (= [1 3] (into [] (filter odd?) [1 2 3])))
+    (is (= [2] (into [] (remove odd?) [1 2 3])))
+    (is (= {1 1 3 3} (into {} (keep (fn [x] (if (odd? x) [x x] nil))) [1 2 3]))))
+  (testing "transduce"
+    (is (= 9 (transduce (map inc) + 0 [1 2 3])))
+    (is (= 9 (transduce (map inc) + [1 2 3])))
+    (is (= 4 (transduce (filter odd?) + [1 2 3]))))
+  (testing "the sequence arities still work"
+    (is (= [2 3 4] (vec (map inc [1 2 3]))))
+    (is (= [1 3] (vec (filter odd? [1 2 3]))))
+    (is (= [2] (vec (remove odd? [1 2 3]))))
+    (is (= [1 3] (vec (keep (fn [x] (if (odd? x) x nil)) [1 2 3]))))
+    (is (= [2] (vec (into [] [2]))))))
+
+(defmacro splice-lazy-into-case [x]
+  `(case ~x ~@(map identity [:k :b])))
+
+(defmacro splice-vector-into-case [x]
+  `(case ~x ~@[:k :b]))
+
+(deftest test-splice-seqable
+  (testing "~@ of a lazy seq splices, it does not dot the tail"
+    (is (= :b (splice-lazy-into-case :k))))
+  (testing "~@ of a vector splices"
+    (is (= :b (splice-vector-into-case :k)))))
+
+(deftest test-improper-seq
+  (testing "a cons onto a vector is a seq, not a dotted pair"
+    (is (= [1 2 3] (vec (cons 1 [2 3]))))
+    (is (= 3 (count (cons 1 [2 3]))))
+    (is (= '(1 2 3) (cons 1 [2 3])))))
+
+(deftest test-symbol-ordering
+  (testing "keywords sort by name, including qualified ones"
+    (is (= [:a :b :c] (sort [:b :a :c])))
+    (is (= [:x/a :x/b] (sort [:x/b :x/a])))
+    (is (= -1 (compare :x/a :x/b)))))
+
+(deftest test-str-of-keyword
+  (is (= ":a" (str :a)))
+  (is (= ":x/a" (str :x/a)))
+  (is (= "true" (str true)))
+  (is (= "" (str nil)))
+  (is (= ":a:b" (str :a :b))))
+
+(deftest test-resolve-and-deref
+  (testing "resolve answers something callable and derefable"
+    (is (= 2 (apply (resolve (symbol "clojure.core" "inc")) [1])))
+    (is (= 2 (apply (deref (resolve (symbol "clojure.core" "inc"))) [1]))))
+  (testing "an unbound name resolves to nil"
+    (is (nil? (resolve (symbol "clojure.core" "no-such-fn-at-all"))))))
+
+(deftest test-boolean-and-coll
+  (is (true? (boolean 1)))
+  (is (false? (boolean nil)))
+  (is (false? (boolean false)))
+  (is (true? (coll? [])))
+  (is (true? (coll? {})))
+  (is (false? (coll? :a)))
+  (is (false? (coll? "s"))))
+
+(deftest test-set-difference
+  (is (= #{1} (set/difference #{1 2} #{2})))
+  (is (= #{1 2} (set/difference #{1 2}))))
+
+(deftest test-some-fn-every-pred
+  (is (true? (boolean (apply (some-fn odd? nil?) [1]))))
+  (is (false? (boolean (apply (some-fn even?) [1]))))
+  (is (true? (apply (every-pred odd? pos?) [1])))
+  (is (false? (apply (every-pred odd? pos?) [-1]))))
+
+(deftest test-expression-in-function-position
+  (testing "the result of an expression is callable"
+    (is (= 2 ((fn [x] (inc x)) 1)))
+    (is (= 1 ((keyword "a") {:a 1})))
+    (is (= 7 ((constantly 7))))
+    (is (= [6 4] ((juxt inc dec) 5)))
+    (is (= 2 ((:a {:a inc}) 1))))
+  (testing "an anonymous function's argument is callable"
+    (is (= [2 0] (vec (map #(%1 1) [inc dec])))))
+  (testing "a quoted list keeps its shape"
+    (is (= 2 (count '((a b) c))))
+    (is (= 2 (count (quote ((a b) c)))))
+    (is (= '(a b) (first '((a b) c)))))
+  (testing "a syntax-quoted list keeps its shape"
+    (is (= 2 (count `((a b) c))))
+    (is (= 2 (count (let [x 5] `((f ~x) y)))))
+    (is (= 5 (second (first (let [x 5] `((f ~x) y))))))))
+
+(deftest test-namespaced-keywords
+  (testing "a double colon implies the current namespace"
+    (is (= (keyword "cloture.tests" "implied") ::implied))
+    (is (= "cloture.tests" (namespace ::implied)))
+    (is (= "implied" (name ::implied))))
+  (testing "a prefix resolves through the namespace's aliases"
+    (is (= (keyword "clojure.string" "x") ::s/x))
+    (is (= "clojure.string" (namespace ::s/x))))
+  (testing "a single colon keyword is unqualified"
+    (is (nil? (namespace :plain)))
+    (is (= :plain (keyword "plain"))))
+  (testing "an unknown prefix stays as written"
+    (is (= "nosuchalias" (namespace ::nosuchalias/x)))))
+
+(deftest test-fully-qualified-names
+  (is (= "a" (clojure.string/trim "  a  ")))
+  (is (= "A" (clojure.string/upper-case "a")))
+  (is (= 2 (clojure.core/inc 1))))

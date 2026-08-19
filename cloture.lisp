@@ -309,6 +309,60 @@ Also return (as a second value) a list of all the symbols bound."
 (defun proclaim-keywords (&rest keywords)
   (fbind-keywords keywords))
 
+(defun fbind-keywords-in (form)
+  "Fbind every keyword that occurs anywhere in the cons tree FORM."
+  (labels ((walk (x)
+             (cond ((keywordp x) (fbind-keywords x))
+                   ((consp x) (walk (car x)) (walk (cdr x))))))
+    (walk form)))
+
+(defvar *ns-aliases* (make-hash-table :test 'equal)
+  "Maps (namespace-name . alias) to the aliased namespace's name.")
+
+(defun register-ns-alias (alias target)
+  "Record that ALIAS names TARGET in the current namespace."
+  (setf (gethash (cons (package-name *package*) (string alias)) *ns-aliases*)
+        (string target)))
+
+(defun ns-alias-target (alias)
+  "The namespace ALIAS names in the current namespace, or nil."
+  (gethash (cons (package-name *package*) (string alias)) *ns-aliases*))
+
+(defmacro %invoke (fn &rest args)
+  "Call FN, which is any expression, on ARGS."
+  `(ifncall ,fn ,@args))
+
+(defun uninvoke (form)
+  "FORM with every %invoke marker removed, so that it reads as data."
+  (if (consp form)
+      (let ((form (if (eq (car form) '%invoke) (cdr form) form)))
+        (cons (uninvoke (car form))
+              (uninvoke (cdr form))))
+      form))
+
+(defun splice-clojure-seq (x)
+  "X's elements as a Common Lisp list, when X is a Clojure collection.
+A list, a string and anything not seqable are returned unchanged."
+  (cond ((or (null x) (consp x) (stringp x)) x)
+        ((eql x |clojure.core|:|nil|) '())
+        ((seqable? x)
+         (nreverse (|clojure.core|:|reduce|
+                    (lambda (acc element) (cons element acc))
+                    '()
+                    x)))
+        (t x)))
+
+(defun fbind-all-keywords ()
+  "Fbind every keyword in the KEYWORD package that has no function binding."
+  (do-external-symbols (symbol (find-package "KEYWORD"))
+    (unless (fboundp symbol)
+      (fbind-keywords symbol))))
+
+(defun callable-keyword (keyword)
+  "KEYWORD, fbound so that it can be called as a function of one map."
+  (fbind-keywords keyword)
+  keyword)
+
 (defmacro declare-keywords (&rest keywords)
   `(eval-always
      (proclaim-keywords ,@keywords)))

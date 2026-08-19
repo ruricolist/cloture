@@ -18,3 +18,6 @@
   (let ((*package* (find-package "user")))
     (with-clojure-reader ()
       (call-next-method))))
+
+(defmethod asdf:perform :after ((o asdf:load-op) (c clj))
+  (fbind-all-keywords))
