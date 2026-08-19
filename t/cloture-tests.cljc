@@ -847,3 +847,52 @@
 (deftest test-parse-integer
   (is (= 234
          (parse-integer "1234x" :start 1 :junk-allowed true))))
+
+;;; A prefix is not an equal. Sequential equality must compare lengths in
+;;; both directions, and an empty sequential collection must not swallow
+;;; nil, a number, an empty map or an empty set.
+
+(deftest test-sequential-equality-is-length-sensitive
+  (is (= '(1 2 3) [1 2 3]))
+  (is (not= '(1 2) '(1 2 3)))
+  (is (not= '(1 2 3) '(1 2)))
+  (is (not= '(1 2 3) [1 2 3 4]))
+  (is (not= '(1 2 3 4) [1 2 3]))
+  (is (not= [1] [1 2]))
+  (is (not= [1 2] [1]))
+  (is (not= '([:x 1] [:y 2]) (seq {:x 1 :y 2 :z 3})))
+  (is (not= (map inc [1 2]) '(2 3 4))))
+
+(deftest test-empty-collection-equality
+  (testing "empty sequential collections are equal to each other"
+    (is (= () []))
+    (is (= [] ()))
+    (is (= (list) []))
+    (is (= (rest [1]) []))
+    (is (= (rest '(1)) ())))
+  (testing "an empty sequential collection is not equal to nil"
+    (is (not= () nil))
+    (is (not= nil ()))
+    (is (not= [] nil))
+    (is (not= nil [])))
+  (testing "an empty sequential collection is not equal to an empty map or set"
+    (is (not= () {}))
+    (is (not= [] {}))
+    (is (not= () #{}))
+    (is (not= [] #{})))
+  (testing "an empty sequential collection is not equal to a non-collection"
+    (is (not= [] 4))
+    (is (not= () 4))
+    (is (not= [] ""))
+    (is (not= () ""))))
+
+(deftest test-equality-is-symmetric
+  (are [x y] (= (= x y) (= y x))
+    () nil
+    [] nil
+    () []
+    [] {}
+    () #{}
+    [] 4
+    '(1 2) '(1 2 3)
+    '(1 2 3) [1 2 3 4]))
