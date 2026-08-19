@@ -1192,3 +1192,40 @@
   (is (false? (boolean (apply (some-fn even?) [1]))))
   (is (true? (apply (every-pred odd? pos?) [1])))
   (is (false? (apply (every-pred odd? pos?) [-1]))))
+
+(deftest test-expression-in-function-position
+  (testing "the result of an expression is callable"
+    (is (= 2 ((fn [x] (inc x)) 1)))
+    (is (= 1 ((keyword "a") {:a 1})))
+    (is (= 7 ((constantly 7))))
+    (is (= [6 4] ((juxt inc dec) 5)))
+    (is (= 2 ((:a {:a inc}) 1))))
+  (testing "an anonymous function's argument is callable"
+    (is (= [2 0] (vec (map #(%1 1) [inc dec])))))
+  (testing "a quoted list keeps its shape"
+    (is (= 2 (count '((a b) c))))
+    (is (= 2 (count (quote ((a b) c)))))
+    (is (= '(a b) (first '((a b) c)))))
+  (testing "a syntax-quoted list keeps its shape"
+    (is (= 2 (count `((a b) c))))
+    (is (= 2 (count (let [x 5] `((f ~x) y)))))
+    (is (= 5 (second (first (let [x 5] `((f ~x) y))))))))
+
+(deftest test-namespaced-keywords
+  (testing "a double colon implies the current namespace"
+    (is (= (keyword "cloture.tests" "implied") ::implied))
+    (is (= "cloture.tests" (namespace ::implied)))
+    (is (= "implied" (name ::implied))))
+  (testing "a prefix resolves through the namespace's aliases"
+    (is (= (keyword "clojure.string" "x") ::s/x))
+    (is (= "clojure.string" (namespace ::s/x))))
+  (testing "a single colon keyword is unqualified"
+    (is (nil? (namespace :plain)))
+    (is (= :plain (keyword "plain"))))
+  (testing "an unknown prefix stays as written"
+    (is (= "nosuchalias" (namespace ::nosuchalias/x)))))
+
+(deftest test-fully-qualified-names
+  (is (= "a" (clojure.string/trim "  a  ")))
+  (is (= "A" (clojure.string/upper-case "a")))
+  (is (= 2 (clojure.core/inc 1))))

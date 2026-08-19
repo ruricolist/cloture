@@ -79,7 +79,7 @@ defmulti)."
 (defun-1 #_even? (n) (? (evenp n)))
 
 (defmacro #_quote (x)
-  `(quote ,(clojurize x)))
+  `(quote ,(clojurize (uninvoke x))))
 
 (defun-1 #_eval (x)
   (eval (declojurize x)))
@@ -442,11 +442,16 @@ nested)."
   (apply #'#_refer :|clojure.core| args))
 
 (defun setup-qualified-names (p &optional prefix)
+  "Alias P's exports under P's own name, and under PREFIX when one is given."
   (let* ((package (find-package p))
-         (prefix (or prefix (package-name package))))
-    (dolist (export (package-exports package))
-      (let ((qname (string+ prefix "/" export)))
-        (ns-env-eval `(alias-from ,export ,qname))))))
+         (full (package-name package))
+         (names (remove-duplicates (list full (if prefix (string prefix) full))
+                                   :test #'equal)))
+    (dolist (name names)
+      (unless (equal name full)
+        (ns-env-eval `(eval-always (register-ns-alias ,name ,full))))
+      (dolist (export (package-exports package))
+        (ns-env-eval `(alias-from ,export ,(string+ name "/" export)))))))
 
 (defun-1 #_refer (ns &key exclude only rename)
   (let ((p (find-package ns))

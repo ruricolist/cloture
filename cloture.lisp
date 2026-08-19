@@ -316,6 +316,30 @@ Also return (as a second value) a list of all the symbols bound."
                    ((consp x) (walk (car x)) (walk (cdr x))))))
     (walk form)))
 
+(defvar *ns-aliases* (make-hash-table :test 'equal)
+  "Maps (namespace-name . alias) to the aliased namespace's name.")
+
+(defun register-ns-alias (alias target)
+  "Record that ALIAS names TARGET in the current namespace."
+  (setf (gethash (cons (package-name *package*) (string alias)) *ns-aliases*)
+        (string target)))
+
+(defun ns-alias-target (alias)
+  "The namespace ALIAS names in the current namespace, or nil."
+  (gethash (cons (package-name *package*) (string alias)) *ns-aliases*))
+
+(defmacro %invoke (fn &rest args)
+  "Call FN, which is any expression, on ARGS."
+  `(ifncall ,fn ,@args))
+
+(defun uninvoke (form)
+  "FORM with every %invoke marker removed, so that it reads as data."
+  (if (consp form)
+      (let ((form (if (eq (car form) '%invoke) (cdr form) form)))
+        (cons (uninvoke (car form))
+              (uninvoke (cdr form))))
+      form))
+
 (defun splice-clojure-seq (x)
   "X's elements as a Common Lisp list, when X is a Clojure collection.
 A list, a string and anything not seqable are returned unchanged."
