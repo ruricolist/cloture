@@ -43,6 +43,8 @@
     nil))
 
 (defn conj
+  ([] [])
+  ([coll] coll)
   ([coll x] (-conj coll x))
   ([coll x & xs] (reduce -conj coll (cons x xs))))
 

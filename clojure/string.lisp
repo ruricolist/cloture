@@ -74,3 +74,7 @@
 (defun-1 |clojure.string|:|upper-case| (s)
   (check-type s string)
   (string-upcase s))
+
+(defun-1 |clojure.string|:|lower-case| (s)
+  (check-type s string)
+  (string-downcase s))

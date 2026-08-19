@@ -2798,6 +2798,30 @@ Analogous to `mapcar'."
 (defun-1 #_integer? (x)
   (? (typep x 'integer)))
 
+(defun-1 #_number? (x)
+  (? (typep x 'number)))
+
+(defun-1 #_float? (x)
+  (? (typep x 'float)))
+
+(defun-1 #_double? (x)
+  (? (typep x 'double-float)))
+
+(defun-1 #_int? (x)
+  (? (typep x 'integer)))
+
+(defun-1 #_pos-int? (x)
+  (? (and (typep x 'integer) (plusp x))))
+
+(defun-1 #_neg-int? (x)
+  (? (and (typep x 'integer) (minusp x))))
+
+(defun-1 #_nat-int? (x)
+  (? (and (typep x 'integer) (not (minusp x)))))
+
+(defun-1 #_boolean? (x)
+  (? (or (eq x #_true) (eq x #_false))))
+
 (defun-1 #_every? (pred coll)
   (fbind ((pred (ifn-function pred)))
     (if (iterate (for item in-seq coll)

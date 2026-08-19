@@ -923,3 +923,47 @@
   (is (= '(1 3) (keep (fn [x] (if (odd? x) x nil)) [1 2 3])))
   (is (= '(false) (keep (fn [x] (if (= x 1) false nil)) [1 2])))
   (is (= '() (keep (fn [_] nil) [1 2 3]))))
+
+(deftest test-numeric-predicates
+  (testing "number?"
+    (is (true? (number? 1)))
+    (is (true? (number? 1.5)))
+    (is (false? (number? "1")))
+    (is (false? (number? nil))))
+  (testing "int?"
+    (is (true? (int? 1)))
+    (is (false? (int? 1.5)))
+    (is (false? (int? "1"))))
+  (testing "float? and double?"
+    (is (true? (float? 1.5)))
+    (is (false? (float? 1)))
+    (is (true? (double? 1.5)))
+    (is (false? (double? 1))))
+  (testing "signed integer predicates"
+    (is (true? (pos-int? 1)))
+    (is (false? (pos-int? 0)))
+    (is (false? (pos-int? -1)))
+    (is (false? (pos-int? 1.5)))
+    (is (true? (neg-int? -1)))
+    (is (false? (neg-int? 0)))
+    (is (true? (nat-int? 0)))
+    (is (true? (nat-int? 1)))
+    (is (false? (nat-int? -1)))))
+
+(deftest test-boolean?
+  (is (true? (boolean? true)))
+  (is (true? (boolean? false)))
+  (is (false? (boolean? nil)))
+  (is (false? (boolean? 0)))
+  (is (false? (boolean? "true"))))
+
+(deftest test-conj-arities
+  (is (= [] (conj)))
+  (is (= [1] (conj [1])))
+  (is (= [1 2] (conj [1] 2)))
+  (is (= [1 2 3] (conj [1] 2 3))))
+
+(deftest test-lower-case
+  (is (= "ab" (s/lower-case "AB")))
+  (is (= "ab1" (s/lower-case "Ab1")))
+  (is (= "" (s/lower-case ""))))
