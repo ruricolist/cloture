@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest is are testing]])
   (:require [clojure.string :as s])
   (:require [clojure.walk :as walk])
+  (:require [clojure.set :as set])
   (:require [cloture :refer [parse-integer]]))
 
 (deftest empty-test)
@@ -1134,3 +1135,60 @@
     (is (= [2] (vec (remove odd? [1 2 3]))))
     (is (= [1 3] (vec (keep (fn [x] (if (odd? x) x nil)) [1 2 3]))))
     (is (= [2] (vec (into [] [2]))))))
+
+(defmacro splice-lazy-into-case [x]
+  `(case ~x ~@(map identity [:k :b])))
+
+(defmacro splice-vector-into-case [x]
+  `(case ~x ~@[:k :b]))
+
+(deftest test-splice-seqable
+  (testing "~@ of a lazy seq splices, it does not dot the tail"
+    (is (= :b (splice-lazy-into-case :k))))
+  (testing "~@ of a vector splices"
+    (is (= :b (splice-vector-into-case :k)))))
+
+(deftest test-improper-seq
+  (testing "a cons onto a vector is a seq, not a dotted pair"
+    (is (= [1 2 3] (vec (cons 1 [2 3]))))
+    (is (= 3 (count (cons 1 [2 3]))))
+    (is (= '(1 2 3) (cons 1 [2 3])))))
+
+(deftest test-symbol-ordering
+  (testing "keywords sort by name, including qualified ones"
+    (is (= [:a :b :c] (sort [:b :a :c])))
+    (is (= [:x/a :x/b] (sort [:x/b :x/a])))
+    (is (= -1 (compare :x/a :x/b)))))
+
+(deftest test-str-of-keyword
+  (is (= ":a" (str :a)))
+  (is (= ":x/a" (str :x/a)))
+  (is (= "true" (str true)))
+  (is (= "" (str nil)))
+  (is (= ":a:b" (str :a :b))))
+
+(deftest test-resolve-and-deref
+  (testing "resolve answers something callable and derefable"
+    (is (= 2 (apply (resolve (symbol "clojure.core" "inc")) [1])))
+    (is (= 2 (apply (deref (resolve (symbol "clojure.core" "inc"))) [1]))))
+  (testing "an unbound name resolves to nil"
+    (is (nil? (resolve (symbol "clojure.core" "no-such-fn-at-all"))))))
+
+(deftest test-boolean-and-coll
+  (is (true? (boolean 1)))
+  (is (false? (boolean nil)))
+  (is (false? (boolean false)))
+  (is (true? (coll? [])))
+  (is (true? (coll? {})))
+  (is (false? (coll? :a)))
+  (is (false? (coll? "s"))))
+
+(deftest test-set-difference
+  (is (= #{1} (set/difference #{1 2} #{2})))
+  (is (= #{1 2} (set/difference #{1 2}))))
+
+(deftest test-some-fn-every-pred
+  (is (true? (boolean (apply (some-fn odd? nil?) [1]))))
+  (is (false? (boolean (apply (some-fn even?) [1]))))
+  (is (true? (apply (every-pred odd? pos?) [1])))
+  (is (false? (apply (every-pred odd? pos?) [-1]))))

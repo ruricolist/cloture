@@ -1083,6 +1083,14 @@ nested)."
   #_INext
   (#_next (x) (#_seq (#_rest x))))
 
+(extend-type |clojure.core|:|true|
+  #_Object
+  (#_toString (x) (declare (ignore x)) "true"))
+
+(extend-type |clojure.core|:|false|
+  #_Object
+  (#_toString (x) (declare (ignore x)) "false"))
+
 (extend-type symbol
   #_Object
   (#_toString (x)

@@ -311,7 +311,8 @@
     (every? (fn [p] (every? p args)) preds)))
 
 (defn coll? [x]
-  (or (vector? x) (map? x) (set? x) (seq? x)))
+  (and (not (string? x))
+       (or (vector? x) (map? x) (set? x) (seq? x))))
 
 (defn list? [x]
-  (and (seq? x) (not (vector? x)) (not (map? x)) (not (set? x))))
+  (and (coll? x) (not (vector? x)) (not (map? x)) (not (set? x))))
