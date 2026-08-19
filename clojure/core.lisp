@@ -1709,7 +1709,7 @@ nested)."
 (defun-1 #_symbol (ns &optional name)
   (if (not (nil? name))
       (intern name (#_the-ns ns))
-      (intern name)))
+      (intern ns)))
 
 (defun-1 #_symbol? (x)
   (? (and (symbolp x) (not (keywordp x)))))

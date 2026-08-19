@@ -967,3 +967,13 @@
   (is (= "ab" (s/lower-case "AB")))
   (is (= "ab1" (s/lower-case "Ab1")))
   (is (= "" (s/lower-case ""))))
+
+(deftest test-symbol-one-arity
+  (testing "one argument names an unqualified symbol"
+    (is (symbol? (symbol "colour")))
+    (is (= "colour" (name (symbol "colour"))))
+    (is (= (symbol "colour") (symbol "colour"))))
+  (testing "two arguments name a symbol in that namespace"
+    (is (symbol? (symbol "clojure.core" "inc")))
+    (is (= "inc" (name (symbol "clojure.core" "inc"))))
+    (is (not= (symbol "inc") (symbol "clojure.core" "inc")))))
