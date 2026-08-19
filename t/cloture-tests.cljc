@@ -1001,3 +1001,19 @@
     (is (nil? (ex-data (Exception. "plain"))))
     (is (nil? (ex-data 4)))
     (is (nil? (ex-message 4)))))
+
+(deftest test-keyword-call
+  (testing "a keyword looks itself up in a map"
+    (is (= 1 (:a {:a 1 :b 2})))
+    (is (nil? (:missing {:a 1}))))
+  (testing "a second argument is the not-found value"
+    (is (= :dflt (:missing {:a 1} :dflt)))
+    (is (= 1 (:a {:a 1} :dflt))))
+  (testing "a keyword is callable as a higher-order function"
+    (is (= [1 2] (mapv :a [{:a 1} {:a 2}])))
+    (is (= [{:a 1}] (filterv :a [{:a 1} {:b 2}]))))
+  (testing "a keyword built at run time is callable too"
+    (is (= [1] (mapv (keyword "a") [{:a 1}])))
+    (is (= [nil] (mapv (keyword "b") [{:a 1}]))))
+  (testing "a namespaced keyword is callable"
+    (is (= 1 (:my.ns/a {:my.ns/a 1})))))

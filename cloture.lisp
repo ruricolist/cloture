@@ -309,6 +309,18 @@ Also return (as a second value) a list of all the symbols bound."
 (defun proclaim-keywords (&rest keywords)
   (fbind-keywords keywords))
 
+(defun fbind-keywords-in (form)
+  "Fbind every keyword that occurs anywhere in the cons tree FORM."
+  (labels ((walk (x)
+             (cond ((keywordp x) (fbind-keywords x))
+                   ((consp x) (walk (car x)) (walk (cdr x))))))
+    (walk form)))
+
+(defun callable-keyword (keyword)
+  "KEYWORD, fbound so that it can be called as a function of one map."
+  (fbind-keywords keyword)
+  keyword)
+
 (defmacro declare-keywords (&rest keywords)
   `(eval-always
      (proclaim-keywords ,@keywords)))

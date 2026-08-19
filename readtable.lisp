@@ -44,6 +44,15 @@
                   (maybe-splice default)))
             (maybe-splice cl))))))
 
+(defun read-clojure-list (stream char)
+  "Read a parenthesized Clojure form, fbinding every keyword literal in it.
+Returns the form as a list."
+  (declare (ignore char))
+  (let ((forms (read-delimited-list #\) stream t)))
+    (unless *read-suppress*
+      (fbind-keywords-in forms))
+    forms))
+
 (defun read-nothing (stream char arg)
   (declare (ignore char arg))
   (let ((*read-suppress* t))
@@ -218,6 +227,8 @@
   (:case :preserve)
   ;; Clojure quote.
   (:macro-char #\' 'read-quote)
+  ;; Lists, with callable keywords.
+  (:macro-char #\( 'read-clojure-list)
   ;; Clojure characters.
   (:macro-char #\\ 'read-clojure-char)
   ;; Clojure numbers.

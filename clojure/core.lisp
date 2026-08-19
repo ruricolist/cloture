@@ -770,8 +770,8 @@ nested)."
 (defun ifn-function (ifn)
   (cond ((functionp ifn) ifn)
         ((keywordp ifn)
-         (lambda (map)
-           (#_lookup map ifn)))
+         (lambda (map &optional (not-found #_nil))
+           (#_lookup map ifn not-found)))
         ((satisfies? '#_IFn ifn)
          (lambda (&rest args)
            (apply #'#_invoke ifn args)))
@@ -2852,8 +2852,8 @@ Analogous to `mapcar'."
   (? (typep x 'fset:seq)))
 
 (defn #_keyword
-  ((name) (make-keyword name))
-  ((ns name) (make-keyword (string+ ns "/" name))))
+  ((name) (callable-keyword (make-keyword name)))
+  ((ns name) (callable-keyword (make-keyword (string+ ns "/" name)))))
 
 (defun-1 #_hash-map (&rest keys-and-vals &key &allow-other-keys)
   (reduce (lambda (map kv) (with map (first kv) (second kv)))
