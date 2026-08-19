@@ -1083,6 +1083,13 @@ nested)."
   #_INext
   (#_next (x) (#_seq (#_rest x))))
 
+(extend-type symbol
+  #_Object
+  (#_toString (x)
+             (if (keywordp x)
+                 (string+ ":" (symbol-name x))
+                 (symbol-name x))))
+
 (extend-type <regex>
   #_Object
   (#_toString (x) (regex-string x)))
@@ -1142,7 +1149,10 @@ nested)."
 
 (extend-protocol #_ICounted
   #_nil (#_count (x) 0)
-  sequence (#_count (x) (length x))
+  sequence (#_count (x)
+                   (if (and (consp x) (not (alexandria:proper-list-p x)))
+                       (length (seq->list x))
+                       (length x)))
   seq (#_count (x) (size x))
   map (#_count (x) (size x))
   set (#_count (x) (size x))
@@ -1716,8 +1726,16 @@ nested)."
   (find-package name))
 
 (defun-1 #_ns-resolve (ns sym)
+  "The var SYM names, or nil. A function var resolves to the function, a
+dynamic var to the symbol holding its value."
   (declare (ignore ns))
-  (macroexpand (assure symbol sym)))
+  (let ((expansion (macroexpand (assure symbol sym))))
+    (cond ((and (consp expansion) (eq (first expansion) 'function))
+           (let ((name (second expansion)))
+             (if (fboundp name) (fdefinition name) #_nil)))
+          ((not (eql expansion sym)) expansion)
+          ((fboundp sym) (fdefinition sym))
+          (t #_nil))))
 
 (defun-1 #_resolve (sym)
   (#_ns-resolve #_*ns* sym))
@@ -2654,7 +2672,12 @@ Analogous to `mapcar'."
   (copy-array array))
 
 (defun-1 #_vec (x)
-  (convert 'seq x))
+  ;; A cloture seq may be an improper list -- a cons whose tail is another
+  ;; seqable -- and handing one to FSet's converter faults the heap.
+  (convert 'seq
+           (if (and (consp x) (not (alexandria:proper-list-p x)))
+               (seq->list x)
+               x)))
 
 (defun-1 #_partial (fn &rest args)
   (apply #'partial fn args))
@@ -3062,18 +3085,21 @@ Implemented as an alist.")
 
 (defun-1 #_parse-long (s)
   (check-type s string)
-  (or (ignore-errors (values (parse-integer s))) #_nil))
+  (if (ppcre:scan "^[+-]?[0-9]+$" s)
+      (values (parse-integer s))
+      #_nil))
 
 (defun-1 #_parse-double (s)
   (check-type s string)
-  (let ((*read-default-float-format* 'double-float))
-    (or (ignore-errors
-         (let ((value (with-standard-io-syntax
-                        (let ((*read-eval* nil)
-                              (*read-default-float-format* 'double-float))
-                          (read-from-string s)))))
-           (and (realp value) (float value 1d0))))
-        #_nil)))
+  (if (ppcre:scan "^[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?$" s)
+      (or (ignore-errors
+           (let ((value (with-standard-io-syntax
+                          (let ((*read-eval* nil)
+                                (*read-default-float-format* 'double-float))
+                            (read-from-string s)))))
+             (and (realp value) (float value 1d0))))
+          #_nil)
+      #_nil))
 
 (defun-1 #_parse-boolean (s)
   (check-type s string)
@@ -3115,3 +3141,14 @@ Implemented as an alist.")
   ((pred coll)
    (let ((pred (ifn-function pred)))
      (#_filter (lambda (x) (? (not (truthy? (funcall pred x))))) coll))))
+
+(extend-type symbol
+  #_IDeref
+  (#_deref (x) (symbol-value x)))
+
+(extend-type function
+  #_IDeref
+  (#_deref (x) x))
+
+(defun-1 #_boolean (x)
+  (? (truthy? x)))

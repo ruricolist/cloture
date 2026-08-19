@@ -316,6 +316,18 @@ Also return (as a second value) a list of all the symbols bound."
                    ((consp x) (walk (car x)) (walk (cdr x))))))
     (walk form)))
 
+(defun splice-clojure-seq (x)
+  "X's elements as a Common Lisp list, when X is a Clojure collection.
+A list, a string and anything not seqable are returned unchanged."
+  (cond ((or (null x) (consp x) (stringp x)) x)
+        ((eql x |clojure.core|:|nil|) '())
+        ((seqable? x)
+         (nreverse (|clojure.core|:|reduce|
+                    (lambda (acc element) (cons element acc))
+                    '()
+                    x)))
+        (t x)))
+
 (defun fbind-all-keywords ()
   "Fbind every keyword in the KEYWORD package that has no function binding."
   (do-external-symbols (symbol (find-package "KEYWORD"))

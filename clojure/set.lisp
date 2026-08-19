@@ -4,6 +4,9 @@
 (defun-1 #_intersection (&rest sets)
   (reduce #'fset:intersection sets))
 
+(defun-1 #_difference (set &rest sets)
+  (reduce #'fset:set-difference sets :initial-value set))
+
 (defun-1 #_union (&rest sets)
   (reduce #'fset:union sets))
 

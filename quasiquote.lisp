@@ -34,9 +34,16 @@
 ;; Note that we want our own tokens for decompilation reasons,
 ;; but as functions they must evaluate the usual way.
 (defun list (&rest r) r) ;; (apply #'cl:list r)
-(defun list* (&rest r) (apply #'cl:list* r))
-(defun cons (x y) (cl:cons x y))
-(defun append (&rest r) (apply #'cl:append r))
+(defun list* (&rest r)
+  ;; The tail is spliced, so it must be a list before cl:list* consumes it.
+  (apply #'cl:list*
+         (cl:append (cl:butlast r)
+                    (cl:list (cloture::splice-clojure-seq (cl:car (cl:last r)))))))
+(defun cons (x y) (cl:cons x (cloture::splice-clojure-seq y)))
+(defun append (&rest r)
+  ;; Clojure splices any seqable, so a lazy-seq or an FSet collection must
+  ;; become a list before cl:append sees it as a tail.
+  (apply #'cl:append (cl:mapcar #'cloture::splice-clojure-seq r)))
 (defun nconc (&rest r) (apply #'cl:nconc r))
 ;; These supporting functions don't have a standard name
 (defun make-vector (l) (coerce l 'simple-vector))

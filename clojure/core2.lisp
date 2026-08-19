@@ -301,3 +301,17 @@
       v
       (do (require (symbol (namespace sym)))
           (resolve sym)))))
+
+(defn some-fn [& preds]
+  (fn [& args]
+    (some (fn [p] (some p args)) preds)))
+
+(defn every-pred [& preds]
+  (fn [& args]
+    (every? (fn [p] (every? p args)) preds)))
+
+(defn coll? [x]
+  (or (vector? x) (map? x) (set? x) (seq? x)))
+
+(defn list? [x]
+  (and (seq? x) (not (vector? x)) (not (map? x)) (not (set? x))))
