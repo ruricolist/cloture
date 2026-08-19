@@ -13,8 +13,14 @@
   (:documentation "Sub-root of all Clojure conditions.")
   (:default-initargs :cause #_nil)
   (:report (lambda (c s)
-             (with-slots (message) c
-               (format s "~a" message)))))
+             (cond ((slot-boundp c 'message)
+                    (format s "~a" (slot-value c 'message)))
+                   ((and (typep c 'simple-condition)
+                         (simple-condition-format-control c))
+                    (apply #'format s
+                           (simple-condition-format-control c)
+                           (simple-condition-format-arguments c)))
+                   (t (format s "~a" (type-of c)))))))
 
 (defmacro define-simple-error-constructor (name)
   (let* ((ctor-name (string+ name "."))
@@ -42,6 +48,9 @@
 
 (defcondition* #_IllegalStateException (#_RuntimeException) ())
 (define-simple-error-constructor #_IllegalStateException)
+
+(defcondition* #_IndexOutOfBoundsException (#_RuntimeException) ())
+(define-simple-error-constructor #_IndexOutOfBoundsException)
 
 (defcondition* #_ArityException (#_IllegalArgumentException)
   ((actual :initarg :actual)

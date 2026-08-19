@@ -1017,3 +1017,103 @@
     (is (= [nil] (mapv (keyword "b") [{:a 1}]))))
   (testing "a namespaced keyword is callable"
     (is (= 1 (:my.ns/a {:my.ns/a 1})))))
+
+(deftest test-assoc-arities
+  (testing "a map takes any number of key/value pairs"
+    (is (= {:a 1} (assoc {} :a 1)))
+    (is (= {:a 1 :b 2} (assoc {} :a 1 :b 2)))
+    (is (= {:a 1 :b 2 :c 3} (assoc {} :a 1 :b 2 :c 3)))
+    (is (= {:a 2} (assoc {:a 1} :a 2))))
+  (testing "a vector associates by index"
+    (is (= [:x 2 3] (assoc [1 2 3] 0 :x)))
+    (is (= [:x 2 :z] (assoc [1 2 3] 0 :x 2 :z)))
+    (is (= :x (get (assoc [1 2 3] 0 :x) 0))))
+  (testing "an index one past the end appends"
+    (is (= [1 2 3 4] (assoc [1 2 3] 3 4))))
+  (testing "a bad index is an error"
+    (is (thrown? Exception (assoc [1 2 3] 9 :oob)))
+    (is (thrown? Exception (assoc [1 2 3] :k :v)))))
+
+(deftest test-update
+  (is (= {:a 2} (update {:a 1} :a inc)))
+  (is (= {:a 3} (update {:a 1} :a + 2))))
+
+(deftest test-string-trim
+  (is (= "a b" (s/trim "  a b  ")))
+  (is (= "a  " (s/triml "  a  ")))
+  (is (= "  a" (s/trimr "  a  ")))
+  (is (= "a" (s/trim-newline "a\n")))
+  (is (= "a" (s/trim-newline "a\r\n"))))
+
+(deftest test-string-blank?
+  (is (true? (s/blank? "")))
+  (is (true? (s/blank? "   \t\n")))
+  (is (true? (s/blank? nil)))
+  (is (false? (s/blank? "a")))
+  (is (false? (s/blank? " a "))))
+
+(deftest test-string-capitalize
+  (is (= "Foo" (s/capitalize "fOO")))
+  (is (= "A" (s/capitalize "a")))
+  (is (= "" (s/capitalize ""))))
+
+(deftest test-string-split
+  (is (= ["a" "b" "c"] (s/split "a,b,c" #",")))
+  (is (= ["a" "b,c"] (s/split "a,b,c" #"," 2)))
+  (testing "trailing empty strings are dropped"
+    (is (= ["a" "" "b"] (s/split "a,,b,," #","))))
+  (is (= ["a" "b"] (s/split-lines "a\nb")))
+  (is (= ["a" "b"] (s/split-lines "a\r\nb"))))
+
+(deftest test-string-search
+  (is (true? (s/includes? "hello" "ell")))
+  (is (false? (s/includes? "hello" "z")))
+  (is (= 2 (s/index-of "hello" "l")))
+  (is (= 3 (s/last-index-of "hello" "l")))
+  (is (nil? (s/index-of "hello" "z"))))
+
+(deftest test-sort
+  (is (= [1 2 3] (sort [3 1 2])))
+  (is (= [3 2 1] (sort > [3 1 2])))
+  (is (= [] (sort [])))
+  (is (= ["a" "bb"] (sort-by count ["bb" "a"])))
+  (is (= [[1] [1 2]] (sort-by count [[1 2] [1]]))))
+
+(deftest test-frequencies
+  (is (= {:a 2 :b 1} (frequencies [:a :b :a])))
+  (is (= {} (frequencies []))))
+
+(deftest test-seq-additions
+  (is (= [1 3] (vec (take-while odd? [1 3 4 5]))))
+  (is (= [4 5] (vec (drop-while odd? [1 3 4 5]))))
+  (is (= [[1 2] [3]] (split-at 2 [1 2 3])))
+  (is (= [[1 3] [4]] (split-with odd? [1 3 4])))
+  (is (nil? (not-empty [])))
+  (is (= [1] (not-empty [1])))
+  (is (= [1 :a 2 :b] (vec (interleave [1 2] [:a :b]))))
+  (is (= [[0 :a] [1 :b]] (vec (map-indexed (fn [i x] [i x]) [:a :b]))))
+  (is (= [[1 2] [3 4]] (vec (partition 2 [1 2 3 4 5]))))
+  (is (= [[1 2] [3]] (vec (partition-all 2 [1 2 3]))))
+  (is (true? (distinct? 1 2 3)))
+  (is (false? (distinct? 1 2 2))))
+
+(deftest test-parse
+  (is (= 42 (parse-long "42")))
+  (is (= -7 (parse-long "-7")))
+  (is (nil? (parse-long "4x")))
+  (is (= 1.5 (parse-double "1.5")))
+  (is (nil? (parse-double "x")))
+  (is (true? (parse-boolean "true")))
+  (is (false? (parse-boolean "false")))
+  (is (nil? (parse-boolean "maybe"))))
+
+(deftest test-compare-and-set
+  (let [a (atom 1)]
+    (is (true? (compare-and-set! a 1 2)))
+    (is (= 2 @a))
+    (is (false? (compare-and-set! a 9 3)))
+    (is (= 2 @a))))
+
+(deftest test-namespace
+  (is (= "a" (namespace :a/b)))
+  (is (nil? (namespace :b))))

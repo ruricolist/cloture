@@ -48,7 +48,7 @@
                   "Fn"
                   "set!"
                   "imul"
-                  "IAssociative"
+                  "IAssociative" "-assoc"
                   "ICollection" "-conj"
                   "IComparable"
                   "ICounted"
@@ -86,6 +86,7 @@
                   "RuntimeException" "RuntimeException."
                   "IllegalArgumentException" "IllegalArgumentException."
                   "IllegalStateException" "IllegalStateException."
+                  "IndexOutOfBoundsException" "IndexOutOfBoundsException."
                   "AssertionError" "AssertionError."
                   "ExceptionInfo" "ExceptionInfo."
                   "ArityException" "ArityException."
@@ -113,7 +114,8 @@
 (define-clojure-package "clojure.string"
   (:use)
   (:export "starts-with?" "ends-with?" "join" "replace" "re-quote-replacement" "upper-case"
-           "lower-case"))
+           "lower-case" "trim" "triml" "trimr" "trim-newline" "blank?" "capitalize"
+           "split" "split-lines" "includes?" "index-of" "last-index-of" "escape"))
 
 (define-clojure-package "clojure.template"
   (:use)

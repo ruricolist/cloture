@@ -814,7 +814,7 @@ nested)."
 
 (defprotocol #_IAssociative
   (#_contains-key? (coll k))
-  (#_assoc (coll k v)))
+  (#_-assoc (coll k v)))
 
 (defprotocol #_IMap
   (#_-dissoc (coll k ks)))
@@ -962,9 +962,9 @@ nested)."
   (#_next (x) (#_next (record-map x)))
   #_IAssociative
   (#_contains-key? (x key) (#_contains-key? (record-map x) key))
-  (#_assoc (x key value)
+  (#_-assoc (x key value)
            (make-instance (class-of x)
-                          'map (#_assoc (record-map x)
+                          'map (#_-assoc (record-map x)
                                         key value)))
   #_IMap
   (#_-dissoc (x key keys)
@@ -1166,7 +1166,7 @@ nested)."
   (#_lookup (coll _ default) default)
   #_IAssociative
   (#_contains-key? (coll _) #_false)
-  (#_assoc (coll k v) (fset:map (k v)))
+  (#_-assoc (coll k v) (fset:map (k v)))
   #_IEquiv
   (#_equiv (self other) (#_nil? other))
   #_IReduce
@@ -1310,10 +1310,11 @@ nested)."
 
 (extend-type fset:seq
   #_IVector
-  (#_assoc-n (coll val n)
-             (if (< n (size coll))
+  (#_assoc-n (coll n val)
+             (if (<= 0 n (size coll))
                  (with coll n val)
-                 (error (clojure-program-error "Bad index for ~a" coll))))
+                 (error (#_IndexOutOfBoundsException.
+                         (fmt "Bad index ~a for ~a" n coll)))))
   #_ISeq
   (#_first (x) (if (empty? x) #_nil (fset:first x)))
   (#_rest (x) (if (empty? x) () (fset:subseq x 1)))
@@ -1340,9 +1341,11 @@ nested)."
                  (fset:subseq c 0 (1- (size c)))))
   #_IAssociative
   (#_contains-key? (seq idx) (? (< -1 idx (size seq))))
-  (#_assoc (seq idx value)
-           (if (numberp idx)
-               (#_assoc-n seq idx value)))
+  (#_-assoc (seq idx value)
+           (if (integerp idx)
+               (#_assoc-n seq idx value)
+               (error (#_IllegalArgumentException.
+                       (fmt "Key must be integer: ~a" idx)))))
   #_IKVReduce
   (#_kv-reduce (seq f init)
                (if (empty? seq) seq
@@ -1426,7 +1429,7 @@ nested)."
   (#_invoke (x arg) (#_lookup x arg))
   #_IAssociative
   (#_contains-key? (map key) (? (fset:contains? map key)))
-  (#_assoc (map key value) (with map key value))
+  (#_-assoc (map key value) (with map key value))
   #_IMap
   (#_-dissoc (map key keys)
              (#_reduce #'less map (cons key keys)))
@@ -2544,9 +2547,9 @@ Analogous to `mapcar'."
                    ((list key)
                     (let* ((old (#_lookup m key))
                            (new (apply f old args)))
-                      (#_assoc m key new)))
+                      (#_-assoc m key new)))
                    ((list* key keys)
-                    (#_assoc m key (rec (#_lookup m key) keys)))))))
+                    (#_-assoc m key (rec (#_lookup m key) keys)))))))
       (rec m ks))))
 
 (defun-1 #_subvec (v start &optional end)
@@ -2949,7 +2952,7 @@ Implemented as an alist.")
   (#_contains-key? (map key)
                    (let* ((alist (array-map-alist map)))
                      (? (assoc key alist :test #'egal))))
-  (#_assoc (map key value) (#_assoc (array-map->map map) key value))
+  (#_-assoc (map key value) (#_-assoc (array-map->map map) key value))
   #_IMap
   (#_-dissoc (map key keys)
              (mvlet* ((alist (array-map-alist map))
@@ -2977,3 +2980,75 @@ Implemented as an alist.")
 
 (defun-1 #_vector (&rest elts)
   (convert 'seq elts))
+
+(defun seq->list (coll)
+  "COLL's elements as a Common Lisp list."
+  (nreverse (#_reduce (lambda (acc x) (cons x acc)) '() coll)))
+
+(defun sort-predicate (comp)
+  "A two-argument Common Lisp predicate from the Clojure comparator COMP."
+  (let ((fn (ifn-function comp)))
+    (lambda (a b)
+      (let ((result (funcall fn a b)))
+        (if (numberp result)
+            (minusp result)
+            (truthy? result))))))
+
+(defn #_sort
+  ((coll) (#_sort #'#_compare coll))
+  ((comp coll)
+   (convert 'seq (stable-sort (seq->list coll) (sort-predicate comp)))))
+
+(defn #_sort-by
+  ((keyfn coll) (#_sort-by keyfn #'#_compare coll))
+  ((keyfn comp coll)
+   (let ((key (ifn-function keyfn))
+         (pred (sort-predicate comp)))
+     (convert 'seq
+              (stable-sort (seq->list coll)
+                           (lambda (a b) (funcall pred (funcall key a) (funcall key b))))))))
+
+(defun-1 #_shuffle (coll)
+  (convert 'seq (alexandria:shuffle (seq->list coll))))
+
+(defun-1 #_rand-nth (coll)
+  (let ((list (seq->list coll)))
+    (if (null list)
+        (error (#_IndexOutOfBoundsException. "rand-nth on an empty collection"))
+        (nth (random (length list)) list))))
+
+(defun-1 #_parse-long (s)
+  (check-type s string)
+  (or (ignore-errors (values (parse-integer s))) #_nil))
+
+(defun-1 #_parse-double (s)
+  (check-type s string)
+  (let ((*read-default-float-format* 'double-float))
+    (or (ignore-errors
+         (let ((value (with-standard-io-syntax
+                        (let ((*read-eval* nil)
+                              (*read-default-float-format* 'double-float))
+                          (read-from-string s)))))
+           (and (realp value) (float value 1d0))))
+        #_nil)))
+
+(defun-1 #_parse-boolean (s)
+  (check-type s string)
+  (cond ((string= s "true") #_true)
+        ((string= s "false") #_false)
+        (t #_nil)))
+
+(defun-1 #_compare-and-set! (atom old new)
+  (? (atomics:cas (atom-value atom) old new)))
+
+(defun-1 #_namespace (x)
+  (etypecase x
+    (string #_nil)
+    (symbol
+     (let* ((name (symbol-name x))
+            (slash (position #\/ name)))
+       (cond ((and slash (plusp slash)) (subseq name 0 slash))
+             ((keywordp x) #_nil)
+             ((and (symbol-package x) (clojure-package? (symbol-package x)))
+              (package-name (symbol-package x)))
+             (t #_nil))))))
