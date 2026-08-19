@@ -61,6 +61,12 @@
 (defcondition* #_AssertionError (#_Exception) ())
 (define-simple-error-constructor #_AssertionError)
 
+(defcondition* #_ExceptionInfo (#_RuntimeException)
+  ((data :initarg :data :reader exception-info-data)))
+
+(defun #_ExceptionInfo. (msg data &optional (cause #_nil))
+  (make-condition '#_ExceptionInfo :message msg :data data :cause cause))
+
 (defcondition* #_IllegalAccessError (#_Error) ()) ;Skipping some parents.
 (define-simple-error-constructor #_IllegalAccessError)
 

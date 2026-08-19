@@ -986,3 +986,18 @@
     (is (= [1 2] (vary-meta (with-meta [1 2] {:a 1}) assoc :b 2))))
   (testing "no metadata means the fn sees nil"
     (is (= {:b 2} (meta (vary-meta [1 2] assoc :b 2))))))
+
+(deftest test-ex-info
+  (testing "message and data round-trip"
+    (let [e (ex-info "boom" {:a 1})]
+      (is (= "boom" (ex-message e)))
+      (is (= {:a 1} (ex-data e)))))
+  (testing "an ex-info is throwable and catchable"
+    (is (= "boom" (try (throw (ex-info "boom" {:a 1}))
+                       (catch Exception e (ex-message e)))))
+    (is (= {:a 1} (try (throw (ex-info "boom" {:a 1}))
+                       (catch Exception e (ex-data e))))))
+  (testing "ex-data is nil for anything else"
+    (is (nil? (ex-data (Exception. "plain"))))
+    (is (nil? (ex-data 4)))
+    (is (nil? (ex-message 4)))))

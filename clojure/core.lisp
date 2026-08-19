@@ -594,6 +594,19 @@ nested)."
 (defun-1 #_throw (arg)
   (error arg))
 
+(defun-1 #_ex-info (msg map &optional (cause #_nil))
+  (#_ExceptionInfo. msg map cause))
+
+(defun-1 #_ex-data (x)
+  (if (typep x '#_ExceptionInfo)
+      (exception-info-data x)
+      #_nil))
+
+(defun-1 #_ex-message (x)
+  (if (typep x 'condition)
+      (#_.getMessage x)
+      #_nil))
+
 (def #_Throwable (find-class 'condition))
 
 (define-clojure-macro #_-> (x &rest steps)

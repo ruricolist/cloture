@@ -87,6 +87,7 @@
                   "IllegalArgumentException" "IllegalArgumentException."
                   "IllegalStateException" "IllegalStateException."
                   "AssertionError" "AssertionError."
+                  "ExceptionInfo" "ExceptionInfo."
                   "ArityException" "ArityException."
                   "IllegalAccessError" "IllegalAccessError."
                   ".getClassName"
