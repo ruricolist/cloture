@@ -326,8 +326,10 @@ Returns the form as a list."
                            (find-package "user"))
                      &allow-other-keys)
   (let ((*package* (find-package "user"))))
-  (with-clojure-reader ()
-    (apply #'load file args)))
+  (multiple-value-prog1
+      (with-clojure-reader ()
+        (apply #'load file args))
+    (fbind-all-keywords)))
 
 (defun compile-clojure (file &rest args
                         &key ((:package *package*)

@@ -316,6 +316,12 @@ Also return (as a second value) a list of all the symbols bound."
                    ((consp x) (walk (car x)) (walk (cdr x))))))
     (walk form)))
 
+(defun fbind-all-keywords ()
+  "Fbind every keyword in the KEYWORD package that has no function binding."
+  (do-external-symbols (symbol (find-package "KEYWORD"))
+    (unless (fboundp symbol)
+      (fbind-keywords symbol))))
+
 (defun callable-keyword (keyword)
   "KEYWORD, fbound so that it can be called as a function of one map."
   (fbind-keywords keyword)
