@@ -977,3 +977,12 @@
     (is (symbol? (symbol "clojure.core" "inc")))
     (is (= "inc" (name (symbol "clojure.core" "inc"))))
     (is (not= (symbol "inc") (symbol "clojure.core" "inc")))))
+
+(deftest test-vary-meta
+  (testing "the metadata map is passed through the fn"
+    (is (= {:a 1 :b 2}
+           (meta (vary-meta (with-meta [1 2] {:a 1}) assoc :b 2)))))
+  (testing "the value itself is unchanged"
+    (is (= [1 2] (vary-meta (with-meta [1 2] {:a 1}) assoc :b 2))))
+  (testing "no metadata means the fn sees nil"
+    (is (= {:b 2} (meta (vary-meta [1 2] assoc :b 2))))))

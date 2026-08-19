@@ -197,3 +197,6 @@
 
 (defn keep [f coll]
   (filter some? (map f coll)))
+
+(defn vary-meta [obj f & args]
+  (with-meta obj (apply f (meta obj) args)))
