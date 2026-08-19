@@ -117,7 +117,9 @@
   ([] [])
   ([to] to)
   ([to from]
-   (apply conj to (seq from))))
+   (apply conj to (seq from)))
+  ([to xform from]
+   (transduce xform conj to from)))
 
 (defn max
   ([x] x)
@@ -178,9 +180,6 @@
 (defn complement [f]
   (fn [& args] (not (apply f args))))
 
-(defn remove [pred coll]
-  (filter (complement pred) coll))
-
 (defn mapcat [f & colls]
   (apply concat (apply map f colls)))
 
@@ -195,8 +194,7 @@
 (defn filterv [pred coll]
   (vec (filter pred coll)))
 
-(defn keep [f coll]
-  (filter some? (map f coll)))
+
 
 (defn vary-meta [obj f & args]
   (with-meta obj (apply f (meta obj) args)))

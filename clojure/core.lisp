@@ -1976,13 +1976,56 @@ nested)."
     (map/1 (lambda (args) (apply fn args))
            (zip cols))))
 
+(defun transducer (step)
+  "A transducer whose two-argument arity is STEP, called with the reducing
+function and the reduction's result and input."
+  (lambda (rf)
+    (let ((rf (ifn-function rf)))
+      (lambda (&rest args)
+        (ematch args
+          ((list) (funcall rf))
+          ((list result) (funcall rf result))
+          ((list result input) (funcall step rf result input)))))))
+
+(defun map-transducer (f)
+  (let ((f (ifn-function f)))
+    (transducer (lambda (rf result input)
+                  (funcall rf result (funcall f input))))))
+
+(defun filter-transducer (pred)
+  (let ((pred (ifn-function pred)))
+    (transducer (lambda (rf result input)
+                  (if (truthy? (funcall pred input))
+                      (funcall rf result input)
+                      result)))))
+
+(defun remove-transducer (pred)
+  (let ((pred (ifn-function pred)))
+    (transducer (lambda (rf result input)
+                  (if (truthy? (funcall pred input))
+                      result
+                      (funcall rf result input))))))
+
+(defun keep-transducer (f)
+  (let ((f (ifn-function f)))
+    (transducer (lambda (rf result input)
+                  (let ((value (funcall f input)))
+                    (if (eql value #_nil)
+                        result
+                        (funcall rf result value)))))))
+
 (defun-1 #_map (fn &rest colls)
   (ematch colls
-    ((list) '())
+    ((list) (map-transducer fn))
     ((list coll) (map/1 fn coll))
     ((list* _ _) (apply #'map/n fn colls))))
 
-(defun-1 #_filter (pred coll)
+(defun-1 #_filter (pred &optional (coll nil coll-supplied?))
+  (if (not coll-supplied?)
+      (filter-transducer pred)
+      (filter-seq pred coll)))
+
+(defun filter-seq (pred coll)
   (fbind ((pred (ifn-function pred)))
     (if (not (seq? coll)) '()
         (lazy-seq
@@ -1990,7 +2033,7 @@ nested)."
             (if (not (seq? coll)) '()
                 (multiple-value-bind (first rest) (first+rest coll)
                   (if (truthy? (pred first))
-                      (cons first (#_filter pred rest))
+                      (cons first (filter-seq pred rest))
                       (filter* rest)))))))))
 
 (defun repeatedly (fn &optional n)
@@ -3052,3 +3095,23 @@ Implemented as an alist.")
              ((and (symbol-package x) (clojure-package? (symbol-package x)))
               (package-name (symbol-package x)))
              (t #_nil))))))
+
+(defn #_transduce
+  ((xform f coll)
+   (#_transduce xform f (funcall (ifn-function f)) coll))
+  ((xform f init coll)
+   (let ((rf (funcall (ifn-function xform) f)))
+     (funcall (ifn-function rf)
+              (#_reduce rf init coll)))))
+
+(defn #_keep
+  ((f) (keep-transducer f))
+  ((f coll)
+   (#_filter (lambda (x) (? (not (eql x #_nil))))
+             (#_map f coll))))
+
+(defn #_remove
+  ((pred) (remove-transducer pred))
+  ((pred coll)
+   (let ((pred (ifn-function pred)))
+     (#_filter (lambda (x) (? (not (truthy? (funcall pred x))))) coll))))

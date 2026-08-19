@@ -1117,3 +1117,20 @@
 (deftest test-namespace
   (is (= "a" (namespace :a/b)))
   (is (nil? (namespace :b))))
+
+(deftest test-transducers
+  (testing "into with a transducer"
+    (is (= [2 3 4] (into [] (map inc) [1 2 3])))
+    (is (= [1 3] (into [] (filter odd?) [1 2 3])))
+    (is (= [2] (into [] (remove odd?) [1 2 3])))
+    (is (= {1 1 3 3} (into {} (keep (fn [x] (if (odd? x) [x x] nil))) [1 2 3]))))
+  (testing "transduce"
+    (is (= 9 (transduce (map inc) + 0 [1 2 3])))
+    (is (= 9 (transduce (map inc) + [1 2 3])))
+    (is (= 4 (transduce (filter odd?) + [1 2 3]))))
+  (testing "the sequence arities still work"
+    (is (= [2 3 4] (vec (map inc [1 2 3]))))
+    (is (= [1 3] (vec (filter odd? [1 2 3]))))
+    (is (= [2] (vec (remove odd? [1 2 3]))))
+    (is (= [1 3] (vec (keep (fn [x] (if (odd? x) x nil)) [1 2 3]))))
+    (is (= [2] (vec (into [] [2]))))))
