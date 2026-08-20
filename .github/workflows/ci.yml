@@ -1,0 +1,33 @@
+name: CI
+
+on: [push, pull_request]
+
+env:
+  GITHUB_WORKSPACE: $HOME/common-lisp/cloture
+
+jobs:
+  test:
+    name: ${{ matrix.lisp }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        lisp: [sbcl]
+        os: [ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Roswell
+        env:
+          LISP: ${{ matrix.lisp }}
+        run: |
+          curl -L https://raw.githubusercontent.com/roswell/roswell/master/scripts/install-for-ci.sh | sh
+      - name: Run tests
+        run: |
+          PATH="~/.roswell/bin:$PATH"
+          mkdir ~/common-lisp && cd ~/common-lisp
+          git clone https://github.com/slburson/fset.git
+          git clone https://github.com/slburson/misc-extensions.git
+          ros run -- --eval '(progn (ql:register-local-projects) (uiop:quit 0))'
+          ros run -- --eval '(progn (ql:quickload :cloture) (uiop:quit 0))'
+          ros run -- --eval '(progn (asdf:test-system :cloture) (uiop:quit 0))' 2>&1 | tee output.txt
+          grep '0 failures, 0 errors' output.txt
