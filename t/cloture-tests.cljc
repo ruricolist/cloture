@@ -610,6 +610,12 @@
   (is (= {:a 1 :b 2}
          (get-in {:a 1 :b 2} nil :nothing))))
 
+(deftest test-get-from-hash-table
+  (let [h (CL:MAKE-HASH-TABLE)]
+    (CL:SETF (CL:GETHASH :a h) 1)
+    (is (= 1 (get h :a)))
+    (is (= :nf (get h :b :nf)))))
+
 (deftest test-persistent!
   (let [x (transient {})]
     (persistent! x)

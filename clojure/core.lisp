@@ -1128,9 +1128,9 @@ nested)."
               (if val? val not-found)))
   hash-table
   (#_lookup (table key)
-            (gethash table key #_nil))
+            (gethash key table #_nil))
   (#_lookup (table key not-found)
-            (gethash table key not-found))
+            (gethash key table not-found))
   set
   (#_lookup (set key)
             (#_lookup set key #_nil))
