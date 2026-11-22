@@ -286,6 +286,18 @@
 (deftest test-thread-last
   (= 3/4 (->> 5 (+ 3) (/ 2) (- 1))))
 
+(deftest test-cond->
+  (is (= 1 (cond-> 1)))
+  (is (= 20 (cond-> 1 true inc false (* 100) true (* 10))))
+  (is (= [1 2] (cond-> [1] (= 1 1) (conj 2)))))
+
+(deftest test-some->
+  (is (= 1 (some-> 1)))
+  (is (= 3 (some-> 1 inc inc)))
+  (is (nil? (some-> {:a 1} (get :b) inc)))
+  (is (= 2 (some-> {:a 1} (get :a) inc)))
+  (is (false? (some-> false not not))))
+
 (deftest loop-recur
   (let [fact
         (fn [n]
