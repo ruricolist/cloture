@@ -1730,7 +1730,8 @@ nested)."
   (macroexpand (assure symbol sym)))
 
 (defun-1 #_resolve (sym)
-  (#_ns-resolve #_*ns* sym))
+  ;; #_*ns* is only exposed in core-vars.lisp, which loads after this file.
+  (#_ns-resolve *package* sym))
 
 (defun-1 #_symbol (ns &optional name)
   (if (not (nil? name))

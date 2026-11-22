@@ -570,6 +570,9 @@
   (is (= '(def x (fn x []))
          (macroexpand '(defn x [])))))
 
+(deftest test-resolve
+  (is (resolve 'inc)))
+
 (deftest test-name
   (is (= "c" (name 'c)))
   (is (= "c" (name :c)))
