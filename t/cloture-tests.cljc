@@ -321,6 +321,9 @@
   (is (= '([:x 1] [:y 2])
          (seq {:x 1 :y 2}))))
 
+(deftest seq-of-empty-string
+  (is (nil? (seq ""))))
+
 (deftest test-empty?
   (is (empty? '()))
   (is (empty? nil)))

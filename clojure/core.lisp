@@ -1305,7 +1305,8 @@ nested)."
 
 (extend-type string
   #_ISeqable
-  (#_seq (s) (coerce s 'list))
+  ;; (seq "") is nil, as in Clojure: the empty list is truthy in Cloture.
+  (#_seq (s) (if (emptyp s) #_nil (coerce s 'list)))
   #_IEquiv
   (#_equiv (x y)
            (? (and (stringp y)
