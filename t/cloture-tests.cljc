@@ -699,6 +699,11 @@
 (deftest test-string-replace-with-empty
   (is (= "ac" (s/replace "abc" #"b" ""))))
 
+(deftest test-string-join
+  (is (= "1, 2, 3" (s/join ", " [1 2 3])))
+  (is (= "123" (s/join (map inc [0 1 2]))))
+  (is (= "" (s/join ", " nil))))
+
 (deftest test-distinct
   (let [l '(:x :y :z 1 2 3 :x :z :y 3 2 1)]
     (is (= (count (set l))
