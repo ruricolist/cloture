@@ -361,6 +361,10 @@
   (is (= (hash 'clojure.test::thrown?)
          (hash 'thrown?))))
 
+(deftest symbol-of-one-argument
+  (is (symbol? (symbol "x")))
+  (is (= "x" (name (symbol "x")))))
+
 (deftest re-find-test
   (is (nil? (re-find #"sss" "Loch Ness")))
   (is (= "ss" (re-find #"s+" "dress")))
