@@ -62,6 +62,10 @@
      (replace-aux s
                   (compiled-regex-function match)
                   replacement))
+    ;; An empty replacement deletes the match: the replacement-string
+    ;; grammar does not parse "".
+    (((type function) (and (type string) (satisfies emptyp)))
+     (ppcre:regex-replace-all match s ""))
     (((type function) (type string))
      (replace-aux s match (parse-replacement-string replacement)))
     (((type function) (type replacement-string))

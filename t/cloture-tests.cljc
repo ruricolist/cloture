@@ -696,6 +696,9 @@
   (is (= "lmostAay igPay atinLay"
          (s/replace "Almost Pig Latin" #"\b(\w)(\w+)\b" "$2$1ay"))))
 
+(deftest test-string-replace-with-empty
+  (is (= "ac" (s/replace "abc" #"b" ""))))
+
 (deftest test-distinct
   (let [l '(:x :y :z 1 2 3 :x :z :y 3 2 1)]
     (is (= (count (set l))
