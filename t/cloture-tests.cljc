@@ -616,6 +616,11 @@
     (is (= 1 (get h :a)))
     (is (= :nf (get h :b :nf)))))
 
+(deftest test-get-from-non-collection
+  (is (nil? (get false :k)))
+  (is (nil? (get 42 :k)))
+  (is (= :nf (get 42 :k :nf))))
+
 (deftest test-persistent!
   (let [x (transient {})]
     (persistent! x)

@@ -1135,7 +1135,16 @@ nested)."
   (#_lookup (set key)
             (#_lookup set key #_nil))
   (#_lookup (set key not-found)
-            (if (fset:lookup set key) key not-found)))
+            (if (fset:lookup set key) key not-found))
+  ;; As in Clojure, anything without a lookup of its own answers
+  ;; not-found: (get false :k) and (get 42 :k) are nil.
+  t
+  (#_lookup (x key)
+            (declare (ignore x key))
+            #_nil)
+  (#_lookup (x key not-found)
+            (declare (ignore x key))
+            not-found))
 
 (extend-protocol #_IMeta
   t
