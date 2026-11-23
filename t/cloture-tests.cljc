@@ -409,6 +409,9 @@
   (is (= '((1 2 3)) (#(list %&) 1 2 3)))
   (is (= '(1 (2 3)) (#(list % %&) 1 2 3))))
 
+(deftest function-literal-numbered-args
+  (is (= '(2 1) (#(list %2 %1) 1 2))))
+
 (deftest deref-syntax
   (is (= '(clojure.core:deref :x)
          '@:x)))

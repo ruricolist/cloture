@@ -2672,7 +2672,9 @@ Analogous to `mapcar'."
 
 (defun-1 #_mix-collection-hash (hash-basis count)
   ;; TODO export from cl-murmurhash
-  (mask-int (murmurhash::hash-integer count hash-basis t)))
+  ;; HASH-BASIS is a sum of signed hashes, but murmurhash's seed is an
+  ;; (UNSIGNED-BYTE 32): its low 32 bits are the same seed, unsigned.
+  (mask-int (murmurhash::hash-integer count (ldb (byte 32 0) hash-basis) t)))
 
 (defvar *unchecked-math* #_false)
 

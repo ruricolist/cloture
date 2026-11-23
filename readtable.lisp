@@ -138,7 +138,7 @@
                        (cons next
                              (loop while (digit-char-p (peek-char nil stream))
                                    collect (read-char stream nil nil t))))
-                     (chars (coerce 'string chars))
+                     (chars (coerce chars 'string))
                      (n (parse-integer chars)))
                 (%n n)))
              (t
