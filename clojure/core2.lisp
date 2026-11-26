@@ -69,6 +69,22 @@
 (defmacro when-let [[bind test] & body]
   `(if-let [~bind ~test] (do ~@body)))
 
+(defmacro cond-> [expr & clauses]
+  (let [g (gensym "cond")]
+    (loop [cs (seq clauses) binds [g expr]]
+      (if cs
+        (recur (next (next cs))
+               (conj binds g (list 'if (first cs) (list '-> g (first (next cs))) g)))
+        (list 'let binds g)))))
+
+(defmacro some-> [expr & forms]
+  (let [g (gensym "some")]
+    (loop [fs (seq forms) binds [g expr]]
+      (if fs
+        (recur (next fs)
+               (conj binds g (list 'if (list 'nil? g) nil (list '-> g (first fs)))))
+        (list 'let binds g)))))
+
 (defn fnil
   ([f x]
    (fn [arg1 & args]
