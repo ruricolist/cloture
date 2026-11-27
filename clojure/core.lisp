@@ -1128,14 +1128,23 @@ nested)."
               (if val? val not-found)))
   hash-table
   (#_lookup (table key)
-            (gethash table key #_nil))
+            (gethash key table #_nil))
   (#_lookup (table key not-found)
-            (gethash table key not-found))
+            (gethash key table not-found))
   set
   (#_lookup (set key)
             (#_lookup set key #_nil))
   (#_lookup (set key not-found)
-            (if (fset:lookup set key) key not-found)))
+            (if (fset:lookup set key) key not-found))
+  ;; As in Clojure, anything without a lookup of its own answers
+  ;; not-found: (get false :k) and (get 42 :k) are nil.
+  t
+  (#_lookup (x key)
+            (declare (ignore x key))
+            #_nil)
+  (#_lookup (x key not-found)
+            (declare (ignore x key))
+            not-found))
 
 (extend-protocol #_IMeta
   t
@@ -1296,7 +1305,8 @@ nested)."
 
 (extend-type string
   #_ISeqable
-  (#_seq (s) (coerce s 'list))
+  ;; (seq "") is nil, as in Clojure: the empty list is truthy in Cloture.
+  (#_seq (s) (if (emptyp s) #_nil (coerce s 'list)))
   #_IEquiv
   (#_equiv (x y)
            (? (and (stringp y)
@@ -1720,12 +1730,13 @@ nested)."
   (macroexpand (assure symbol sym)))
 
 (defun-1 #_resolve (sym)
-  (#_ns-resolve #_*ns* sym))
+  ;; #_*ns* is only exposed in core-vars.lisp, which loads after this file.
+  (#_ns-resolve *package* sym))
 
 (defun-1 #_symbol (ns &optional name)
   (if (not (nil? name))
       (intern name (#_the-ns ns))
-      (intern name)))
+      (intern ns)))
 
 (defun-1 #_symbol? (x)
   (? (and (symbolp x) (not (keywordp x)))))

@@ -333,6 +333,9 @@
   (is (= '([:x 1] [:y 2])
          (seq {:x 1 :y 2}))))
 
+(deftest seq-of-empty-string
+  (is (nil? (seq ""))))
+
 (deftest test-empty?
   (is (empty? '()))
   (is (empty? nil)))
@@ -369,6 +372,10 @@
                 'thrown?)))
   (is (= (hash 'clojure.test::thrown?)
          (hash 'thrown?))))
+
+(deftest symbol-of-one-argument
+  (is (symbol? (symbol "x")))
+  (is (= "x" (name (symbol "x")))))
 
 (deftest re-find-test
   (is (nil? (re-find #"sss" "Loch Ness")))
@@ -579,6 +586,9 @@
   (is (= '(def x (fn x []))
          (macroexpand '(defn x [])))))
 
+(deftest test-resolve
+  (is (resolve 'inc)))
+
 (deftest test-name
   (is (= "c" (name 'c)))
   (is (= "c" (name :c)))
@@ -621,6 +631,17 @@
 (deftest test-get-in
   (is (= {:a 1 :b 2}
          (get-in {:a 1 :b 2} nil :nothing))))
+
+(deftest test-get-from-hash-table
+  (let [h (CL:MAKE-HASH-TABLE)]
+    (CL:SETF (CL:GETHASH :a h) 1)
+    (is (= 1 (get h :a)))
+    (is (= :nf (get h :b :nf)))))
+
+(deftest test-get-from-non-collection
+  (is (nil? (get false :k)))
+  (is (nil? (get 42 :k)))
+  (is (= :nf (get 42 :k :nf))))
 
 (deftest test-persistent!
   (let [x (transient {})]
@@ -686,6 +707,14 @@
 (deftest test-string-replace
   (is (= "lmostAay igPay atinLay"
          (s/replace "Almost Pig Latin" #"\b(\w)(\w+)\b" "$2$1ay"))))
+
+(deftest test-string-replace-with-empty
+  (is (= "ac" (s/replace "abc" #"b" ""))))
+
+(deftest test-string-join
+  (is (= "1, 2, 3" (s/join ", " [1 2 3])))
+  (is (= "123" (s/join (map inc [0 1 2]))))
+  (is (= "" (s/join ", " nil))))
 
 (deftest test-distinct
   (let [l '(:x :y :z 1 2 3 :x :z :y 3 2 1)]
